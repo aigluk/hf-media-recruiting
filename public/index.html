@@ -840,18 +840,12 @@ function renderResults(leads) {
   }
 
   document.getElementById('resultsGrid').innerHTML = leads.map((lead, idx) => {
-    const isVerified = lead.verified === true;
-    const verifiedBadge = isVerified
-      ? `<span class="badge" style="background:#dcfce7;color:#16a34a;border-color:#bbf7d0;">✓ OSM verifiziert</span>`
-      : `<span class="badge" style="background:#fef3c7;color:#92400e;border-color:#fcd34d;">⚠ KI-generiert</span>`;
     const websiteUrl = lead.website ? (lead.website.startsWith('http') ? lead.website : 'https://' + lead.website) : null;
-    const mapUrl = lead.mapUrl || (lead.region ? `https://www.google.com/maps/search/${encodeURIComponent(lead.name + ' ' + lead.region)}` : null);
     return `
     <div class="lead-card" style="animation-delay: ${idx * 30}ms;">
       <div class="lead-name">${lead.name}</div>
       <div class="lead-badges">
         <span class="badge">${lead.industry}</span>
-        ${verifiedBadge}
       </div>
 
       <div class="lead-details">
@@ -865,11 +859,7 @@ function renderResults(leads) {
         </div>
         <div class="detail-item">
           <div class="detail-label">Website</div>
-          <div class="detail-value">${websiteUrl ? `<a href="${websiteUrl}" target="_blank" rel="noreferrer" style="color:#0066cc;word-break:break-all;">${lead.website}</a>` : '<span style="color:#999;">Nicht bekannt</span>'}</div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Quelle</div>
-          <div class="detail-value" style="font-size:11px;color:#999;">${lead.source || 'AI'}</div>
+          <div class="detail-value">${websiteUrl ? `<a href="${websiteUrl}" target="_blank" rel="noreferrer" style="color:#0066cc;word-break:break-all;">${lead.website}</a>` : '<span style="color:#999;">K.A.</span>'}</div>
         </div>
       </div>
 
@@ -878,9 +868,9 @@ function renderResults(leads) {
       <div class="lead-actions">
         <button class="btn-action primary" onclick='openDetailsModal(${JSON.stringify(lead).replace(/'/g, "&apos;")})' style="grid-column: span 2; margin-bottom: 8px;">ℹ️ DETAILS & KONTAKTE</button>
         <button class="btn-action" onclick='openMessageModal(${JSON.stringify(lead).replace(/'/g, "&apos;")})'>💬 NACHRICHT</button>
-        ${websiteUrl && websiteUrl !== 'null'
+        ${websiteUrl
           ? `<button class="btn-action btn-action--primary" onclick="window.open('${websiteUrl}', '_blank')">🌐 WEBSITE</button>`
-          : mapUrl ? `<button class="btn-action" onclick="window.open('${mapUrl}', '_blank')">📍 MAPS</button>` : `<button class="btn-action" disabled style="opacity:0.4;">Keine Website</button>`
+          : `<button class="btn-action" disabled style="opacity:0.4;">Keine Website</button>`
         }
       </div>
     </div>
@@ -929,9 +919,9 @@ function openDetailsModal(lead) {
     
     <div style="display: flex; gap: 12px; margin-top: 2rem;">
       <button class="btn btn-primary" style="flex: 1;" onclick='closeDetailsModal(); openMessageModal(${JSON.stringify(lead).replace(/'/g, "&apos;")})'>💬 LinkedIn Nachricht generieren</button>
-      ${lead.website && lead.website !== 'null' 
+      ${lead.website
         ? `<button class="btn btn-secondary" style="flex: 1;" onclick="window.open('${lead.website.startsWith('http') ? lead.website : 'https://' + lead.website}', '_blank')">🌐 Website öffnen</button>`
-        : `<button class="btn btn-secondary" style="flex: 1;" onclick="window.open('https://www.google.com/maps/search/${encodeURIComponent(lead.name + ' ' + (lead.region || 'Österreich'))}', '_blank')">📍 Auf Maps suchen</button>`
+        : `<button class="btn btn-secondary" style="flex: 1;" disabled style="opacity:0.5;">Website K.A.</button>`
       }
     </div>
   `;

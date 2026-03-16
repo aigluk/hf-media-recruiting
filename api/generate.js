@@ -1,6 +1,6 @@
-// Helper: extract contact data from raw HTML
-function extractFromHtml(html, companyName) {
-  // Extract phone numbers - Austrian/German formats
+// ── Helper: Extract contact data from raw HTML ──
+function extractFromHtml(html) {
+  // Extract phone numbers — Austrian/German formats
   const phonePatterns = [
     /(?:Tel(?:efon)?|Phone|Telefon|Tel\.)[.\s:]*(\+?[0-9\s\(/\)\-\.]{8,20})/gi,
     /(\+43[\s\-]?[0-9\s\-\/]{6,20})/g,
@@ -19,18 +19,18 @@ function extractFromHtml(html, companyName) {
   const emailMatch = html.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
   const email = emailMatch ? emailMatch[0] : null;
 
-  // Extract CEO/Geschäftsführer from impressum text
+  // Extract CEO/Geschäftsführer
   const ceoPatterns = [
-    /Geschäftsführ(?:er|ung|in)[:\s]+([A-ZÄÖÜa-z\s,\.]{5,60})/i,
-    /Inhaber[:\s]+([A-ZÄÖÜa-z\s,\.]{5,40})/i,
-    /CEO[:\s]+([A-ZÄÖÜa-z\s,\.]{5,40})/i,
-    /Leitung[:\s]+([A-ZÄÖÜa-z\s,\.]{5,40})/i,
+    /Gesch[äa]ftsf[üu]hr(?:er|ung|in)[:\s]+([A-ZÄÖÜ][a-zäöüß]+\s[A-ZÄÖÜ][a-zäöüß]+(?:\s[A-ZÄÖÜ][a-zäöüß]+)?)/i,
+    /Inhaber(?:in)?[:\s]+([A-ZÄÖÜ][a-zäöüß]+\s[A-ZÄÖÜ][a-zäöüß]+(?:\s[A-ZÄÖÜ][a-zäöüß]+)?)/i,
+    /CEO[:\s]+([A-ZÄÖÜ][a-zäöüß]+\s[A-ZÄÖÜ][a-zäöüß]+)/i,
+    /Leitung[:\s]+([A-ZÄÖÜ][a-zäöüß]+\s[A-ZÄÖÜ][a-zäöüß]+)/i,
   ];
   let ceos = null;
   for (const p of ceoPatterns) {
     const m = html.match(p);
     if (m && m[1]) {
-      ceos = m[1].trim().replace(/\n/g, ' ').slice(0, 80);
+      ceos = m[1].trim().slice(0, 80);
       break;
     }
   }
@@ -38,50 +38,57 @@ function extractFromHtml(html, companyName) {
   return { phone, email, ceos };
 }
 
-// Helper: try to fetch & scrape a page (contact, impressum, etc.)
+// ── Helper: Fetch single URL with timeout ──
 async function scrapeUrl(url) {
   try {
     const ctrl = new AbortController();
     const timeout = setTimeout(() => ctrl.abort(), 4000);
     const r = await fetch(url, {
       signal: ctrl.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HFMediaBot/1.0; +https://www.hfmedia.at)' }
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
+      redirect: 'follow',
     });
     clearTimeout(timeout);
     if (!r.ok) return null;
     const ctype = r.headers.get('content-type') || '';
     if (!ctype.includes('text')) return null;
-    const text = await r.text();
-    return text;
+    return await r.text();
   } catch {
     return null;
   }
 }
 
-// Helper: try to get contact data from a website (tries homepage, /kontakt, /impressum)
+// ── Helper: Scrape contact info from a website ──
 async function enrichFromWebsite(website) {
-  const base = website.endsWith('/') ? website.slice(0, -1) : website;
-  const pages = [base, `${base}/kontakt`, `${base}/impressum`, `${base}/contact`, `${base}/ueber-uns`];
+  const base = website.replace(/\/+$/, '');
+  const pages = [base, `${base}/kontakt`, `${base}/impressum`, `${base}/contact`, `${base}/ueber-uns`, `${base}/team`, `${base}/jobs`, `${base}/karriere`];
   let allHtml = '';
   for (const url of pages) {
     const html = await scrapeUrl(url);
     if (html) {
-      allHtml += html;
-      if (allHtml.length > 30000) break;
+      allHtml += ' ' + html;
+      if (allHtml.length > 50000) break;
     }
   }
   return allHtml ? extractFromHtml(allHtml) : null;
 }
 
-// Helper: search for a company website using a free approach (constructing likely URLs)
-async function findWebsite(companyName, region) {
-  // Try to find with simple Google-style search on firmenabc.at API
-  const query = encodeURIComponent(`${companyName} ${region} site:.at OR site:.com`);
-  // Use Claude's knowledge about the company (already embedded in the AI generation step)
-  return null; // Will be populated from Claude's initial response
+// ── Helper: Verify a website actually exists (returns true/false) ──
+async function verifyWebsite(url) {
+  try {
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 3000);
+    const r = await fetch(url, { signal: ctrl.signal, method: 'HEAD', redirect: 'follow',
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+    });
+    clearTimeout(timeout);
+    return r.ok || r.status === 301 || r.status === 302;
+  } catch {
+    return false;
+  }
 }
 
-// Robust JSON extraction from Claude's text
+// ── Helper: Robust JSON extraction ──
 function extractJson(text) {
   const start = text.indexOf('{');
   const end = text.lastIndexOf('}');
@@ -89,12 +96,14 @@ function extractJson(text) {
   try {
     return JSON.parse(text.slice(start, end + 1));
   } catch {
-    // Try to repair: remove JS comments (invalid JSON)
     const cleaned = text.slice(start, end + 1).replace(/\/\/.*$/gm, '').replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
     try { return JSON.parse(cleaned); } catch { return null; }
   }
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// MAIN HANDLER
+// ════════════════════════════════════════════════════════════════════════
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -110,35 +119,46 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Branches parameter is required.' });
   }
 
-  // ── STEP 1: Generate real company list with websites from Claude ──
-  const step1Prompt = `Du bist ein österreichischer Unternehmensrechercheur. Finde 20 ECHTE, existierende österreichische Unternehmen.
+  // ══════════ STEP 1: Claude als Data Researcher ══════════
+  const dataResearchPrompt = `Rolle: Du bist ein hochpräziser Data-Researcher. Dein Ziel ist es, immer reale Unternehmen (keine Fiktion!) aus der Branche "${branches}" in "${custom || 'Österreich'}" zu finden.
+${size ? `Mitarbeitergröße: ${size}` : ''}
+${tier ? `Tier: ${tier}` : ''}
 
-SUCHKRITERIEN:
-- Branchen: ${branches}
-- Mitarbeitergröße: ${size || 'beliebig'}
-${tier ? `- Tier: ${tier}` : ''}
-${custom ? `- PFLICHTSTANDORT: "${custom}" — Alle Firmen MÜSSEN in dieser Stadt/Region sein (max. 10km Umkreis)!` : ''}
+DEINE MISSION: 100% REALITÄTS-CHECK
+Du darfst niemals eine URL "raten" oder auf Basis des Namens konstruieren. Du musst jede Information durch einen internen A/B-Abgleich verifizieren, auch wenn die Domain vielleicht anders anfängt als der Firmen-/Hotel-/Gebäude-Name! Das ist essentiell.
 
-REGELN:
-1. Nur ECHTE, nachweislich existierende Firmen.
-2. "website": Die echte Website-URL. Du kennst die meisten großen Lokale. Wenn du eine Firma kennst und ihre Website weißt, trage sie ein. Sonst schreib die wahrscheinlichste URL (z.B. "https://www.restaurantname.at"). NIEMALS null oder K.A., wenn es realistisch eine Website gibt!
-3. "phone": Aus deinem Wissen. Wenn du die Nummer kennst, eintragen. Sonst leer lassen.
-4. "ceos": Aus deinem Wissen (Geschäftsführer, Inhaber). Wenn unbekannt, leer lassen.
-5. "region": Exakte Adresse oder Stadt.
+SCHRITT 1: Die A/B Such-Verifizierung
+Führe für jedes potenzielle Unternehmen zwei unabhängige Suchen durch:
+  Suche A: [Name des Betriebs] + [Ort] + offizielle Webseite
+  Suche B: [Name des Betriebs] + [Ort] + Impressum
+Nur wenn beide Suchen auf die gleiche Basis-Domain führen (auch wenn diese anders heißt als der Betrieb, z.B. wirtshaus-mit-herz.at für Gasthof Huber), ist die Webseite valide.
 
-Antworte NUR mit validem JSON, kein Markdown.
+SCHRITT 2: Strikte Filter-Regeln (Blacklist)
+Jedes Ergebnis von booking.com, herold.at, firmenabc.at, tripadvisor.at, wko.at, facebook.com oder karriere.at wird sofort verworfen. Ich will die echte, eigene Webseite des Betriebs.
 
+SCHRITT 3: Der Inhalts-Check (Deep Dive)
+Besuche die Webseite virtuell und stelle sicher:
+  Pfad-Check: Existiert eine Seite unter /jobs, /karriere oder /team? Wenn nein: Firma ignorieren, nächste suchen.
+  Namens-Check: Steht im Impressum wirklich die Firma, die wir suchen?
+  Personen-Check: Wer ist laut Impressum oder Team-Seite der Geschäftsführer (GF) oder die Marketingleitung? (Vorname + Nachname zwingend erforderlich).
+
+SCHRITT 4: Lückenlose Datenausgabe
+Gib die Daten nur aus, wenn JEDES Feld zu 100% korrekt befüllt werden kann. Keine Platzhalter. Kein "K.A.". Liefere lieber 10 perfekte Ergebnisse als 20 mit Lücken.
+
+Antworte NUR als JSON ohne Erklärungen:
 {
   "leads": [
     {
-      "name": "Echter Name",
-      "industry": "${branches}",
-      "employees": "Schätzung",
-      "region": "Exakter Ort",
-      "website": "https://...",
-      "phone": "Nummer oder leer",
-      "ceos": "Name(n) oder leer",
-      "focus": "Kurzbeschreibung"
+      "name": "Echter Firmenname",
+      "industry": "Branche",
+      "employees": "Mitarbeiteranzahl oder Schätzung",
+      "region": "Exakter Standort mit Adresse",
+      "website": "https://www.echte-domain.at",
+      "phone": "Echte Telefonnummer",
+      "ceos": "Vorname Nachname des/der Geschäftsführer(s)",
+      "department_heads": "Marketing-/HR-Leitung wenn bekannt",
+      "contact_persons": "Weitere Ansprechpartner wenn bekannt",
+      "focus": "Was macht die Firma genau und worauf spezialisiert?"
     }
   ]
 }`;
@@ -155,9 +175,9 @@ Antworte NUR mit validem JSON, kein Markdown.
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 6000,
-        system: 'Du bist ein reiner JSON-Generator. Antworte AUSSCHLIESSLICH mit validem JSON. Beginne mit { und ende mit }. Kein Text, kein Markdown.',
-        messages: [{ role: 'user', content: step1Prompt }]
+        max_tokens: 8000,
+        system: 'Du bist ein reiner JSON-Generator und Data-Researcher. Antworte AUSSCHLIESSLICH mit validem JSON. Beginne mit { und ende mit }. Kein Text, kein Markdown. Liefere nur Ergebnisse die du zu 100% verifizieren kannst.',
+        messages: [{ role: 'user', content: dataResearchPrompt }]
       })
     });
 
@@ -170,47 +190,56 @@ Antworte NUR mit validem JSON, kein Markdown.
     const rawText = claudeData?.content?.[0]?.text || '';
     const parsed = extractJson(rawText);
     if (!parsed || !Array.isArray(parsed.leads)) {
-      return res.status(500).json({ error: 'Claude lieferte kein gültiges JSON. Bitte erneut versuchen.' });
+      return res.status(500).json({ error: 'Keine gültige Antwort von der KI. Bitte erneut versuchen.' });
     }
     leads = parsed.leads;
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 
-  // ── STEP 2: Scrape each company's website for real phone/CEO data ──
+  // ══════════ STEP 2: Real Web Scraping — verify & enrich from actual websites ══════════
   const enrichedLeads = await Promise.all(leads.map(async (lead) => {
-    let website = lead.website && lead.website !== 'K.A.' && lead.website !== '' ? lead.website : null;
+    let website = lead.website || null;
     if (website && !website.startsWith('http')) website = 'https://' + website;
 
-    let phone = lead.phone && lead.phone !== 'K.A.' && lead.phone !== '' ? lead.phone : null;
-    let ceos = lead.ceos && lead.ceos !== 'K.A.' && lead.ceos !== '' ? lead.ceos : null;
-    let contact_persons = '';
-    let department_heads = '';
+    let phone = lead.phone || null;
+    let ceos = lead.ceos || null;
+    let email = null;
+    let websiteValid = false;
 
-    // Try scraping the website to fill missing fields
-    if (website && (!phone || !ceos)) {
+    // Verify the website actually exists
+    if (website) {
+      websiteValid = await verifyWebsite(website);
+    }
+
+    // If website is valid, scrape it for additional/corrected data
+    if (websiteValid) {
       const scraped = await enrichFromWebsite(website);
       if (scraped) {
-        if (!phone && scraped.phone) phone = scraped.phone;
-        if (!ceos && scraped.ceos) ceos = scraped.ceos;
-        if (!contact_persons && scraped.email) contact_persons = scraped.email;
+        // Only override if we found something concrete on the real site
+        if (scraped.phone && scraped.phone.replace(/\D/g, '').length >= 6) phone = scraped.phone;
+        if (scraped.ceos) ceos = scraped.ceos;
+        if (scraped.email) email = scraped.email;
       }
     }
 
     return {
       name: lead.name,
       industry: lead.industry || branches,
-      employees: lead.employees || 'k.A.',
-      region: lead.region || custom || 'Österreich',
-      website: website,
-      phone: phone || 'K.A.',
-      ceos: ceos || 'K.A.',
-      department_heads: department_heads || 'K.A.',
-      contact_persons: contact_persons || 'K.A.',
+      employees: lead.employees || '',
+      region: lead.region || custom || '',
+      website: websiteValid ? website : null,
+      phone: phone || '',
+      ceos: ceos || '',
+      department_heads: lead.department_heads || '',
+      contact_persons: email || lead.contact_persons || '',
       focus: lead.focus || '',
-      contact: phone || contact_persons || 'K.A.'
+      contact: phone || email || ''
     };
   }));
 
-  return res.status(200).json({ leads: enrichedLeads });
+  // Filter out leads without a verified website (per user request: no K.A.)
+  const validLeads = enrichedLeads.filter(l => l.website);
+
+  return res.status(200).json({ leads: validLeads.length > 0 ? validLeads : enrichedLeads });
 }

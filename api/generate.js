@@ -119,46 +119,50 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Branches parameter is required.' });
   }
 
-  // ══════════ STEP 1: Claude als Data Researcher ══════════
-  const dataResearchPrompt = `Rolle: Du bist ein hochpräziser Data-Researcher. Dein Ziel ist es, immer reale Unternehmen (keine Fiktion!) aus der Branche "${branches}" in "${custom || 'Österreich'}" zu finden.
+  const dataResearchPrompt = `Rolle: Du bist ein hochpräziser Data-Researcher für österreichische Unternehmen. Dein Ziel: Finde 20 ECHTE, existierende Unternehmen aus der Branche "${branches}" in "${custom || 'Österreich'}".
 ${size ? `Mitarbeitergröße: ${size}` : ''}
 ${tier ? `Tier: ${tier}` : ''}
 
 DEINE MISSION: 100% REALITÄTS-CHECK
-Du darfst niemals eine URL "raten" oder auf Basis des Namens konstruieren. Du musst jede Information durch einen internen A/B-Abgleich verifizieren, auch wenn die Domain vielleicht anders anfängt als der Firmen-/Hotel-/Gebäude-Name! Das ist essentiell.
 
-SCHRITT 1: Die A/B Such-Verifizierung
-Führe für jedes potenzielle Unternehmen zwei unabhängige Suchen durch:
+SCHRITT 1: Firmennamen finden
+Suche aus deinem Trainingswissen 20 echte, reale Unternehmen der Branche "${branches}" am Standort "${custom || 'Österreich'}". Nur Firmen die wirklich existieren und dort physisch ansässig sind.
+
+SCHRITT 2: Website-Verifizierung (WICHTIGSTE REGEL!)
+Du darfst niemals eine URL raten oder auf Basis des Namens konstruieren.
+Führe für jedes Unternehmen einen internen A/B-Abgleich durch:
   Suche A: [Name des Betriebs] + [Ort] + offizielle Webseite
   Suche B: [Name des Betriebs] + [Ort] + Impressum
-Nur wenn beide Suchen auf die gleiche Basis-Domain führen (auch wenn diese anders heißt als der Betrieb, z.B. wirtshaus-mit-herz.at für Gasthof Huber), ist die Webseite valide.
+Nur wenn beide Suchen auf die gleiche Basis-Domain führen, ist die URL valide.
+Die Domain kann anders heißen als der Betrieb (z.B. wirtshaus-mit-herz.at für Gasthof Huber).
 
-SCHRITT 2: Strikte Filter-Regeln (Blacklist)
-Jedes Ergebnis von booking.com, herold.at, firmenabc.at, tripadvisor.at, wko.at, facebook.com oder karriere.at wird sofort verworfen. Ich will die echte, eigene Webseite des Betriebs.
+SCHRITT 3: Blacklist — Diese Domains NIEMALS als Website angeben:
+booking.com, herold.at, firmenabc.at, tripadvisor.at, wko.at, facebook.com, karriere.at, google.com, yelp.com, instagram.com
+Nur die echte, eigene Webseite des Betriebs!
 
-SCHRITT 3: Der Inhalts-Check (Deep Dive)
-Besuche die Webseite virtuell und stelle sicher:
-  Pfad-Check: Existiert eine Seite unter /jobs, /karriere oder /team? Wenn nein: Firma ignorieren, nächste suchen.
-  Namens-Check: Steht im Impressum wirklich die Firma, die wir suchen?
-  Personen-Check: Wer ist laut Impressum oder Team-Seite der Geschäftsführer (GF) oder die Marketingleitung? (Vorname + Nachname zwingend erforderlich).
+SCHRITT 4: Kontaktdaten recherchieren
+Für jede Firma: Suche die Telefonnummer (meist auf der Website unter /kontakt oder /impressum oder im Footer).
+Suche den Geschäftsführer (meist im Impressum der Website oder im Firmenbuch).
+Gib Vorname + Nachname an.
 
-SCHRITT 4: Lückenlose Datenausgabe
-Gib die Daten nur aus, wenn JEDES Feld zu 100% korrekt befüllt werden kann. Keine Platzhalter. Kein "K.A.". Liefere lieber 10 perfekte Ergebnisse als 20 mit Lücken.
+SCHRITT 5: Ausgabe
+Gib 20 Ergebnisse aus. Jedes MUSS eine echte Website haben.
+Wenn du für eine Firma keine verifizierte Website findest, überspringe sie und nimm die nächste.
 
-Antworte NUR als JSON ohne Erklärungen:
+Antworte NUR als JSON:
 {
   "leads": [
     {
       "name": "Echter Firmenname",
-      "industry": "Branche",
-      "employees": "Mitarbeiteranzahl oder Schätzung",
-      "region": "Exakter Standort mit Adresse",
+      "industry": "${branches}",
+      "employees": "Schätzung (z.B. 5-20)",
+      "region": "Exakter Ort (z.B. Salzburg Stadt, Getreidegasse 15)",
       "website": "https://www.echte-domain.at",
       "phone": "Echte Telefonnummer",
-      "ceos": "Vorname Nachname des/der Geschäftsführer(s)",
-      "department_heads": "Marketing-/HR-Leitung wenn bekannt",
-      "contact_persons": "Weitere Ansprechpartner wenn bekannt",
-      "focus": "Was macht die Firma genau und worauf spezialisiert?"
+      "ceos": "Vorname Nachname",
+      "department_heads": "Marketingleitung wenn bekannt",
+      "contact_persons": "HR / Weitere Kontakte",
+      "focus": "Kurzbeschreibung der Spezialisierung"
     }
   ]
 }`;

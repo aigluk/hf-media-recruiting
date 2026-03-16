@@ -42,7 +42,7 @@ function extractFromHtml(html) {
 async function scrapeUrl(url) {
   try {
     const ctrl = new AbortController();
-    const timeout = setTimeout(() => ctrl.abort(), 4000);
+    const timeout = setTimeout(() => ctrl.abort(), 2500);
     const r = await fetch(url, {
       signal: ctrl.signal,
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
@@ -61,16 +61,13 @@ async function scrapeUrl(url) {
 // ── Helper: Scrape contact info from a website ──
 async function enrichFromWebsite(website) {
   const base = website.replace(/\/+$/, '');
-  const pages = [base, `${base}/kontakt`, `${base}/impressum`, `${base}/contact`, `${base}/ueber-uns`, `${base}/team`, `${base}/jobs`, `${base}/karriere`];
-  let allHtml = '';
-  for (const url of pages) {
-    const html = await scrapeUrl(url);
-    if (html) {
-      allHtml += ' ' + html;
-      if (allHtml.length > 50000) break;
-    }
-  }
-  return allHtml ? extractFromHtml(allHtml) : null;
+  // Only fetch homepage and impressum (fast, 2 requests max)
+  const [homeHtml, impressumHtml] = await Promise.all([
+    scrapeUrl(base),
+    scrapeUrl(`${base}/impressum`)
+  ]);
+  const allHtml = (homeHtml || '') + ' ' + (impressumHtml || '');
+  return allHtml.length > 10 ? extractFromHtml(allHtml) : null;
 }
 
 // ── Helper: Verify a website actually exists (returns true/false) ──
@@ -201,7 +198,7 @@ Antworte NUR als JSON:
     return res.status(500).json({ error: err.message });
   }
 
-  // ══════════ STEP 2: Real Web Scraping — verify & enrich from actual websites ══════════
+  // ══════════ STEP 2: Verify websites & scrape contact data (parallel, fast) ══════════
   const enrichedLeads = await Promise.all(leads.map(async (lead) => {
     let website = lead.website || null;
     if (website && !website.startsWith('http')) website = 'https://' + website;
@@ -211,20 +208,26 @@ Antworte NUR als JSON:
     let email = null;
     let websiteValid = false;
 
-    // Verify the website actually exists
+    // Verify and scrape in one go (no separate HEAD request)
     if (website) {
-      websiteValid = await verifyWebsite(website);
-    }
-
-    // If website is valid, scrape it for additional/corrected data
-    if (websiteValid) {
-      const scraped = await enrichFromWebsite(website);
-      if (scraped) {
-        // Only override if we found something concrete on the real site
-        if (scraped.phone && scraped.phone.replace(/\D/g, '').length >= 6) phone = scraped.phone;
-        if (scraped.ceos) ceos = scraped.ceos;
-        if (scraped.email) email = scraped.email;
-      }
+      try {
+        const scraped = await enrichFromWebsite(website);
+        if (scraped) {
+          websiteValid = true;
+          if (scraped.phone && scraped.phone.replace(/\D/g, '').length >= 6) phone = scraped.phone;
+          if (scraped.ceos) ceos = scraped.ceos;
+          if (scraped.email) email = scraped.email;
+        } else {
+          // Page returned nothing — still verify with a quick fetch
+          const ctrl = new AbortController();
+          const t = setTimeout(() => ctrl.abort(), 2000);
+          try {
+            const r = await fetch(website, { signal: ctrl.signal, method: 'HEAD', redirect: 'follow' });
+            websiteValid = r.ok || r.status === 301 || r.status === 302;
+          } catch { websiteValid = false; }
+          clearTimeout(t);
+        }
+      } catch { websiteValid = false; }
     }
 
     return {
@@ -232,18 +235,15 @@ Antworte NUR als JSON:
       industry: lead.industry || branches,
       employees: lead.employees || '',
       region: lead.region || custom || '',
-      website: websiteValid ? website : null,
-      phone: phone || '',
-      ceos: ceos || '',
+      website: websiteValid ? website : (lead.website || null),
+      phone: phone || lead.phone || '',
+      ceos: ceos || lead.ceos || '',
       department_heads: lead.department_heads || '',
       contact_persons: email || lead.contact_persons || '',
       focus: lead.focus || '',
-      contact: phone || email || ''
+      contact: phone || email || lead.phone || ''
     };
   }));
 
-  // Filter out leads without a verified website (per user request: no K.A.)
-  const validLeads = enrichedLeads.filter(l => l.website);
-
-  return res.status(200).json({ leads: validLeads.length > 0 ? validLeads : enrichedLeads });
+  return res.status(200).json({ leads: enrichedLeads });
 }

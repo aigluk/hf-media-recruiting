@@ -19,9 +19,13 @@ export default async function handler(req, res) {
 Branchen: ${branches}
 Mitarbeitergröße: ${size || 'beliebig'}
 ${tier ? `Tier: ${tier}` : ''}
-${custom ? `Zusatz: ${custom}` : ''}
+${custom ? `MUSS-KRITERIUM (Ort/Name/Fokus): ${custom} - Generiere AUSSCHLIESSLICH Firmen, die exakt zu diesem Begriff passen (z.B. in genau dieser Stadt/Region lokalisiert sind). Erfinde keine Orte!` : ''}
 
-Nutze ECHTE Firmennamen wenn möglich.
+WICHTIGE REGELN:
+1. Nutze ECHTE Firmennamen und echte Daten aus Österreich.
+2. Gib AUSSCHLIESSLICH valides JSON zurück. Kein Text davor, kein Text danach.
+3. Verwende innerhalb der JSON-Werte (für Texte) UNBEDINGT einfache Anführungszeichen (') anstatt doppelter Anführungszeichen ("), um Syntax-Fehler zu vermeiden.
+4. Schließe alle Arrays und Objekte korrekt.
 
 JSON Format EXAKT:
 {
@@ -30,7 +34,7 @@ JSON Format EXAKT:
       "name": "Firmenname",
       "industry": "Branche",
       "employees": "Zahl",
-      "region": "Region",
+      "region": "Region (Muss zu ${custom || 'Österreich'} passen)",
       "website": "domain.at",
       "phone": "Telefonnummer (aus Firmenbuch/Web)",
       "ceos": "Namen der Geschäftsführer/CEOs",

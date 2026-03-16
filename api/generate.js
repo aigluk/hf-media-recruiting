@@ -24,8 +24,8 @@ ${custom ? `MUSS-KRITERIUM (Ort/Name/Fokus): ${custom} - Generiere AUSSCHLIESSLI
 WICHTIGE REGELN:
 1. Nutze ECHTE Firmennamen und echte Daten aus Österreich.
 2. Gib AUSSCHLIESSLICH valides JSON zurück. Kein Text davor, kein Text danach.
-3. Verwende innerhalb der JSON-Werte (für Texte) UNBEDINGT einfache Anführungszeichen (') anstatt doppelter Anführungszeichen ("), um Syntax-Fehler zu vermeiden.
-4. Schließe alle Arrays und Objekte korrekt.
+3. Formatiere den Output als striktes, valides Standard-JSON. Wenn du Anführungszeichen innerhalb von Text-Feldern verwendest, MUSST du diese mit einem Backslash maskieren (\"), z.B. "description": "Das ist ein \"Test\"".
+4. Schließe alle Arrays und Objekte korrekt. Das bedeutet: am Ende muss das JSON fehlerfrei mit } enden.
 
 JSON Format EXAKT:
 {

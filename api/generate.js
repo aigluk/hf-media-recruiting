@@ -116,53 +116,25 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Branches parameter is required.' });
   }
 
-  const dataResearchPrompt = `Rolle: Du bist ein hochpräziser Data-Researcher für österreichische Unternehmen. Dein Ziel: Finde 20 ECHTE, existierende Unternehmen aus der Branche "${branches}" in "${custom || 'Österreich'}".
+  const dataResearchPrompt = `Du bist ein Lead-Generator für österreichische Unternehmen. Branche: "${branches}". Standort: "${custom || 'ganz Österreich'}".
 ${size ? `Mitarbeitergröße: ${size}` : ''}
 ${tier ? `Tier: ${tier}` : ''}
 
-DEINE MISSION: 100% REALITÄTS-CHECK
+Erstelle eine Liste mit exakt 20 ECHTEN Unternehmen dieser Branche an diesem Standort.
 
-SCHRITT 1: Firmennamen finden
-Suche aus deinem Trainingswissen 20 echte, reale Unternehmen der Branche "${branches}" am Standort "${custom || 'Österreich'}". Nur Firmen die wirklich existieren und dort physisch ansässig sind.
+ANFORDERUNGEN:
+- Nur real existierende Unternehmen, die du aus deinem Trainingswissen kennst.
+- Für jedes Unternehmen MUSS die echte Website angegeben werden (z.B. https://www.firmenname.at). Die Domain muss nicht dem Firmennamen entsprechen!
+- VERBOTEN als Website: booking.com, herold.at, firmenabc.at, tripadvisor, wko.at, facebook.com, google.com, instagram.com
+- Telefonnummer: Die echte Nummer der Firma (aus Website-Footer, Kontakt oder Impressum).
+- Geschäftsführer: Der echte Name (Vorname + Nachname), meist im Impressum oder Firmenbuch zu finden.
+- Standort: Exakte Adresse oder Stadtteil.
 
-SCHRITT 2: Website-Verifizierung (WICHTIGSTE REGEL!)
-Du darfst niemals eine URL raten oder auf Basis des Namens konstruieren.
-Führe für jedes Unternehmen einen internen A/B-Abgleich durch:
-  Suche A: [Name des Betriebs] + [Ort] + offizielle Webseite
-  Suche B: [Name des Betriebs] + [Ort] + Impressum
-Nur wenn beide Suchen auf die gleiche Basis-Domain führen, ist die URL valide.
-Die Domain kann anders heißen als der Betrieb (z.B. wirtshaus-mit-herz.at für Gasthof Huber).
+Liefere 20 Ergebnisse. Antworte NUR mit JSON:
+{"leads":[{"name":"...","industry":"${branches}","employees":"5-20","region":"Straße, PLZ Ort","website":"https://...","phone":"+43...","ceos":"Vorname Nachname","department_heads":"...","contact_persons":"...","focus":"Spezialisierung"}]}`;
 
-SCHRITT 3: Blacklist — Diese Domains NIEMALS als Website angeben:
-booking.com, herold.at, firmenabc.at, tripadvisor.at, wko.at, facebook.com, karriere.at, google.com, yelp.com, instagram.com
-Nur die echte, eigene Webseite des Betriebs!
+  const systemPrompt = 'Du bist ein österreichischer Firmenrecherche-Experte. Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt. Beginne mit { und beende mit }. Kein Markdown, kein erklärende Text. Du kennst hunderte echte österreichische Unternehmen aus deinem Training — nutze dieses Wissen.';
 
-SCHRITT 4: Kontaktdaten recherchieren
-Für jede Firma: Suche die Telefonnummer (meist auf der Website unter /kontakt oder /impressum oder im Footer).
-Suche den Geschäftsführer (meist im Impressum der Website oder im Firmenbuch).
-Gib Vorname + Nachname an.
-
-SCHRITT 5: Ausgabe
-Gib 20 Ergebnisse aus. Jedes MUSS eine echte Website haben.
-Wenn du für eine Firma keine verifizierte Website findest, überspringe sie und nimm die nächste.
-
-Antworte NUR als JSON:
-{
-  "leads": [
-    {
-      "name": "Echter Firmenname",
-      "industry": "${branches}",
-      "employees": "Schätzung (z.B. 5-20)",
-      "region": "Exakter Ort (z.B. Salzburg Stadt, Getreidegasse 15)",
-      "website": "https://www.echte-domain.at",
-      "phone": "Echte Telefonnummer",
-      "ceos": "Vorname Nachname",
-      "department_heads": "Marketingleitung wenn bekannt",
-      "contact_persons": "HR / Weitere Kontakte",
-      "focus": "Kurzbeschreibung der Spezialisierung"
-    }
-  ]
-}`;
 
   let leads = [];
 
@@ -177,7 +149,7 @@ Antworte NUR als JSON:
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 8000,
-        system: 'Du bist ein reiner JSON-Generator und Data-Researcher. Antworte AUSSCHLIESSLICH mit validem JSON. Beginne mit { und ende mit }. Kein Text, kein Markdown. Liefere nur Ergebnisse die du zu 100% verifizieren kannst.',
+        system: systemPrompt,
         messages: [{ role: 'user', content: dataResearchPrompt }]
       })
     });

@@ -1,17 +1,36 @@
+// ── Helper: Check if a company name (or parts of it) appear on the website ──
+function nameMatchesWebsite(companyName, html) {
+  if (!html || !companyName) return false;
+  const lower = html.toLowerCase();
+  const nameLower = companyName.toLowerCase();
+  // Direct match
+  if (lower.includes(nameLower)) return true;
+  // Check if major words (>3 chars) from the name appear
+  const words = nameLower.split(/[\s\-&,]+/).filter(w => w.length > 3);
+  if (words.length === 0) return true; // Single short word, can't verify
+  const matchCount = words.filter(w => lower.includes(w)).length;
+  return matchCount >= Math.ceil(words.length * 0.5); // At least 50% of significant words match
+}
+
 // ── Helper: Extract contact data from raw HTML ──
 function extractFromHtml(html) {
   // Extract phone numbers — Austrian/German formats
   const phonePatterns = [
-    /(?:Tel(?:efon)?|Phone|Telefon|Tel\.)[.\s:]*(\+?[0-9\s\(/\)\-\.]{8,20})/gi,
-    /(\+43[\s\-]?[0-9\s\-\/]{6,20})/g,
-    /(?:^|\s)(0[0-9]{2,4}[\s\/\-]?[0-9\s\-\/]{4,12})(?:\s|$)/gm,
+    /(?:Tel(?:efon)?|Phone|Fon|Tel\.)[.\s:]*(\+?[0-9\s\(/\)\-\.]{8,20})/gi,
+    /(\+43[\s\-]?(?:\(0\))?[\s]?[0-9\s\-\/]{6,20})/g,
+    /href="tel:([^"]+)"/gi,
   ];
   let phone = null;
   for (const pattern of phonePatterns) {
     const match = html.match(pattern);
     if (match && match[0]) {
-      phone = match[0].replace(/Tel(?:efon)?[.:\s]*/gi, '').trim().slice(0, 30);
-      if (phone.replace(/\D/g, '').length >= 6) break;
+      let raw = match[0];
+      raw = raw.replace(/href="tel:/gi, '').replace(/"/g, '');
+      raw = raw.replace(/Tel(?:efon)?[.:\s]*/gi, '').replace(/Phone[.:\s]*/gi, '').replace(/Fon[.:\s]*/gi, '').trim();
+      if (raw.replace(/\D/g, '').length >= 6) {
+        phone = raw.slice(0, 30);
+        break;
+      }
     }
   }
 
@@ -19,19 +38,23 @@ function extractFromHtml(html) {
   const emailMatch = html.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
   const email = emailMatch ? emailMatch[0] : null;
 
-  // Extract CEO/Geschäftsführer
+  // Extract CEO/Geschäftsführer — STRICT: must be Vorname Nachname format
   const ceoPatterns = [
-    /Gesch[äa]ftsf[üu]hr(?:er|ung|in)[:\s]+([A-ZÄÖÜ][a-zäöüß]+\s[A-ZÄÖÜ][a-zäöüß]+(?:\s[A-ZÄÖÜ][a-zäöüß]+)?)/i,
-    /Inhaber(?:in)?[:\s]+([A-ZÄÖÜ][a-zäöüß]+\s[A-ZÄÖÜ][a-zäöüß]+(?:\s[A-ZÄÖÜ][a-zäöüß]+)?)/i,
-    /CEO[:\s]+([A-ZÄÖÜ][a-zäöüß]+\s[A-ZÄÖÜ][a-zäöüß]+)/i,
-    /Leitung[:\s]+([A-ZÄÖÜ][a-zäöüß]+\s[A-ZÄÖÜ][a-zäöüß]+)/i,
+    /Gesch[äa]ftsf[üu]hr(?:er|ung|erin)[:\s]+([A-ZÄÖÜ][a-zäöüß]+(?:\s(?:Dr\.|Mag\.|Ing\.|DI)?\.?\s?)?[A-ZÄÖÜ][a-zäöüß]+(?:\s[A-ZÄÖÜ][a-zäöüß]+)?)/,
+    /Inhaber(?:in)?[:\s]+([A-ZÄÖÜ][a-zäöüß]+\s[A-ZÄÖÜ][a-zäöüß]+(?:\s[A-ZÄÖÜ][a-zäöüß]+)?)/,
+    /(?:Eigent[üu]mer|Betreiber)(?:in)?[:\s]+([A-ZÄÖÜ][a-zäöüß]+\s[A-ZÄÖÜ][a-zäöüß]+)/,
+    /CEO[:\s]+([A-ZÄÖÜ][a-zäöüß]+\s[A-ZÄÖÜ][a-zäöüß]+)/,
   ];
   let ceos = null;
   for (const p of ceoPatterns) {
     const m = html.match(p);
     if (m && m[1]) {
-      ceos = m[1].trim().slice(0, 80);
-      break;
+      const candidate = m[1].trim();
+      // Verify it has at least 2 words (Vorname + Nachname)
+      if (candidate.split(/\s+/).length >= 2) {
+        ceos = candidate.slice(0, 80);
+        break;
+      }
     }
   }
 
@@ -58,31 +81,32 @@ async function scrapeUrl(url) {
   }
 }
 
-// ── Helper: Scrape contact info from a website ──
-async function enrichFromWebsite(website) {
+// ── Helper: Scrape & verify a website (returns null if site doesn't exist) ──
+async function scrapeAndVerify(website, companyName) {
   const base = website.replace(/\/+$/, '');
-  // Only fetch homepage and impressum (fast, 2 requests max)
   const [homeHtml, impressumHtml] = await Promise.all([
     scrapeUrl(base),
     scrapeUrl(`${base}/impressum`)
   ]);
-  const allHtml = (homeHtml || '') + ' ' + (impressumHtml || '');
-  return allHtml.length > 10 ? extractFromHtml(allHtml) : null;
-}
 
-// ── Helper: Verify a website actually exists (returns true/false) ──
-async function verifyWebsite(url) {
-  try {
-    const ctrl = new AbortController();
-    const timeout = setTimeout(() => ctrl.abort(), 3000);
-    const r = await fetch(url, { signal: ctrl.signal, method: 'HEAD', redirect: 'follow',
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-    });
-    clearTimeout(timeout);
-    return r.ok || r.status === 301 || r.status === 302;
-  } catch {
-    return false;
-  }
+  const homeExists = homeHtml && homeHtml.length > 100;
+  if (!homeExists) return { valid: false };
+
+  const allHtml = (homeHtml || '') + ' ' + (impressumHtml || '');
+
+  // Cross-check: does the company name appear on the website?
+  const nameMatch = nameMatchesWebsite(companyName, allHtml);
+
+  // Extract contact data
+  const extracted = extractFromHtml(allHtml);
+
+  return {
+    valid: true,
+    nameVerified: nameMatch,
+    phone: extracted.phone,
+    email: extracted.email,
+    ceos: extracted.ceos,
+  };
 }
 
 // ── Helper: Robust JSON extraction ──
@@ -99,8 +123,6 @@ function extractJson(text) {
 }
 
 // ════════════════════════════════════════════════════════════════════════
-// MAIN HANDLER
-// ════════════════════════════════════════════════════════════════════════
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -116,41 +138,35 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Branches parameter is required.' });
   }
 
-  const dataResearchPrompt = `Du bist ein Lead-Generator für österreichische Unternehmen. Branche: "${branches}". Standort: "${custom || 'ganz Österreich'}".
+  // ══════════ STEP 1: Claude generates company list ══════════
+  const prompt = `Du bist ein Lead-Generator für österreichische Unternehmen. Branche: "${branches}". Standort: "${custom || 'ganz Österreich'}".
 ${size ? `Mitarbeitergröße: ${size}` : ''}
 ${tier ? `Tier: ${tier}` : ''}
 
 Erstelle eine Liste mit exakt 20 ECHTEN Unternehmen dieser Branche an diesem Standort.
 
-ANFORDERUNGEN:
-- Nur real existierende Unternehmen, die du aus deinem Trainingswissen kennst.
-- Für jedes Unternehmen MUSS die echte Website angegeben werden (z.B. https://www.firmenname.at). Die Domain muss nicht dem Firmennamen entsprechen!
-- VERBOTEN als Website: booking.com, herold.at, firmenabc.at, tripadvisor, wko.at, facebook.com, google.com, instagram.com
-- Telefonnummer: Die echte Nummer der Firma (aus Website-Footer, Kontakt oder Impressum).
-- Geschäftsführer: Der echte Name (Vorname + Nachname), meist im Impressum oder Firmenbuch zu finden.
-- Standort: Exakte Adresse oder Stadtteil.
+STRIKTE REGELN:
+1. Nur REAL existierende Firmen mit exaktem Firmennamen laut Handelsregister oder offiziellem Webauftritt. Erfinde niemals Firmennamen!
+2. Website: Die echte, offizielle Webseite. Die Domain kann anders heißen als der Betrieb! Achte darauf. VERBOTEN: booking.com, herold.at, firmenabc.at, tripadvisor, wko.at, facebook.com, google.com, instagram.com
+3. Geschäftsführer: Echter Vorname + Nachname. Keine generischen Bezeichnungen wie "Management" oder "Team"!
+4. Adresse: Exakte Straße, PLZ und Ort. Gleiche diese mit dem Firmensitz ab.
+5. Telefon: Echte Nummer.
 
-Liefere 20 Ergebnisse. Antworte NUR mit JSON:
+Antworte NUR mit JSON:
 {"leads":[{"name":"...","industry":"${branches}","employees":"5-20","region":"Straße, PLZ Ort","website":"https://...","phone":"+43...","ceos":"Vorname Nachname","department_heads":"...","contact_persons":"...","focus":"Spezialisierung"}]}`;
 
-  const systemPrompt = 'Du bist ein österreichischer Firmenrecherche-Experte. Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt. Beginne mit { und beende mit }. Kein Markdown, kein erklärende Text. Du kennst hunderte echte österreichische Unternehmen aus deinem Training — nutze dieses Wissen.';
-
+  const systemPrompt = 'Du bist ein österreichischer Firmenrecherche-Experte. Antworte AUSSCHLIESSLICH mit validem JSON. Beginne mit { und beende mit }. Kein Markdown. Du kennst hunderte echte österreichische Unternehmen — nutze dieses Wissen. Gib NUR Firmen aus, die du SICHER kennst. Erfinde KEINE Firmennamen.';
 
   let leads = [];
-
   try {
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 8000,
         system: systemPrompt,
-        messages: [{ role: 'user', content: dataResearchPrompt }]
+        messages: [{ role: 'user', content: prompt }]
       })
     });
 
@@ -160,60 +176,52 @@ Liefere 20 Ergebnisse. Antworte NUR mit JSON:
     }
 
     const claudeData = await claudeRes.json();
-    const rawText = claudeData?.content?.[0]?.text || '';
-    const parsed = extractJson(rawText);
+    const parsed = extractJson(claudeData?.content?.[0]?.text || '');
     if (!parsed || !Array.isArray(parsed.leads)) {
-      return res.status(500).json({ error: 'Keine gültige Antwort von der KI. Bitte erneut versuchen.' });
+      return res.status(500).json({ error: 'Keine gültige Antwort. Bitte erneut versuchen.' });
     }
     leads = parsed.leads;
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 
-  // ══════════ STEP 2: Verify websites & scrape contact data (parallel, fast) ══════════
+  // ══════════ STEP 2: Server-side Cross-Check & Enrichment ══════════
   const enrichedLeads = await Promise.all(leads.map(async (lead) => {
     let website = lead.website || null;
     if (website && !website.startsWith('http')) website = 'https://' + website;
 
-    let phone = lead.phone || null;
-    let ceos = lead.ceos || null;
-    let email = null;
-    let websiteValid = false;
+    let phone = lead.phone || '';
+    let ceos = lead.ceos || '';
+    let email = '';
+    let verified = false;
 
-    // Verify and scrape in one go (no separate HEAD request)
     if (website) {
-      try {
-        const scraped = await enrichFromWebsite(website);
-        if (scraped) {
-          websiteValid = true;
-          if (scraped.phone && scraped.phone.replace(/\D/g, '').length >= 6) phone = scraped.phone;
-          if (scraped.ceos) ceos = scraped.ceos;
-          if (scraped.email) email = scraped.email;
-        } else {
-          // Page returned nothing — still verify with a quick fetch
-          const ctrl = new AbortController();
-          const t = setTimeout(() => ctrl.abort(), 2000);
-          try {
-            const r = await fetch(website, { signal: ctrl.signal, method: 'HEAD', redirect: 'follow' });
-            websiteValid = r.ok || r.status === 301 || r.status === 302;
-          } catch { websiteValid = false; }
-          clearTimeout(t);
-        }
-      } catch { websiteValid = false; }
+      const result = await scrapeAndVerify(website, lead.name);
+      if (result.valid) {
+        verified = true;
+        // Override with scraped data if found (real data > Claude's guess)
+        if (result.phone) phone = result.phone;
+        if (result.ceos) ceos = result.ceos;
+        if (result.email) email = result.email;
+      }
     }
+
+    // Clean up generic CEO names that Claude invents
+    const genericCeoPatterns = /^(Management|Team|Familie|Managementgeführt|.*Management$|.*Team$)/i;
+    if (genericCeoPatterns.test(ceos)) ceos = '';
 
     return {
       name: lead.name,
       industry: lead.industry || branches,
       employees: lead.employees || '',
       region: lead.region || custom || '',
-      website: websiteValid ? website : (lead.website || null),
-      phone: phone || lead.phone || '',
-      ceos: ceos || lead.ceos || '',
+      website: verified ? website : (website || null),
+      phone: phone,
+      ceos: ceos,
       department_heads: lead.department_heads || '',
       contact_persons: email || lead.contact_persons || '',
       focus: lead.focus || '',
-      contact: phone || email || lead.phone || ''
+      contact: phone || email || ''
     };
   }));
 

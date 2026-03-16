@@ -207,7 +207,7 @@ Antworte NUR mit JSON:
     }
 
     // Clean up generic CEO names that Claude invents
-    const genericCeoPatterns = /^(Management|Team|Familie|Managementgeführt|.*Management$|.*Team$)/i;
+    const genericCeoPatterns = /^(Management|Team|Familie|Managementgeführt|Verwaltung|Betreiber|Inhaber|Geschäftsführung|Leitung|Eigentümer|Chef|.*Management$|.*Team$|.*Verwaltung$|.*Familie$|.*Betreiber$)/i;
     if (genericCeoPatterns.test(ceos)) ceos = '';
 
     return {

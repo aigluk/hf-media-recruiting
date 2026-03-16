@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HF Media Recruiting System</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: #f5f7fa;
+      color: #1a1a1a;
+    }
+
+    .page-wrapper {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background: white;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 1.5rem 2rem;
+      text-align: center;
+    }
+
+    .badge-hf {
+      display: inline-block;
+      background: #0066cc;
+      color: white;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.75rem;
+    }
+
+    .header-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #0066cc;
+      margin-bottom: 0.5rem;
+    }
+
+    .header-subtitle {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .content {
+      flex: 1;
+      padding: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .search-panel {
+      background: white;
+      border-radius: 8px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      border: 1px solid #e5e7eb;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 1rem;
+    }
+
+    /* SCHNELLFILTER */
+    .quick-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 2rem;
+    }
+
+    .quick-chip {
+      padding: 8px 14px;
+      background: #f9fafb;
+      border: 1px solid #d1d5db;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .quick-chip:hover {
+      border-color: #0066cc;
+      background: #e6f0ff;
+    }
+
+    .quick-chip.active {
+      background: #0066cc;
+      color: white;
+      border-color: #0066cc;
+    }
+
+    /* FILTER ROW */
+    .filter-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 1000px) {
+      .filter-row { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      .filter-row { grid-template-columns: 1fr; }
+    }
+
+    .filter-field {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .filter-label {
+      font-size: 12px;
+      color: #666;
+      font-weight: 600;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    select, input {
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+      color: #1a1a1a;
+      transition: all 0.2s;
+    }
+
+    select:hover, input:hover {
+      border-color: #999;
+    }
+
+    select:focus, input:focus {
+      outline: none;
+      border-color: #0066cc;
+      box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1);
+    }
+
+    .search-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 600px) {
+      .search-actions { grid-template-columns: 1fr; }
+    }
+
+    .btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #0066cc;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #0052a3;
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #f0f4f8;
+      color: #1a1a1a;
+      border: 1px solid #d1d5db;
+    }
+
+    .btn-secondary:hover {
+      background: #e6eef5;
+    }
+
+    /* RESULTS */
+    .results-section {
+      display: none;
+    }
+
+    .results-section.show {
+      display: block;
+    }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .results-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .results-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .results-count {
+      font-size: 13px;
+      color: #0066cc;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .export-btn {
+      padding: 10px 14px;
+      background: white;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .export-btn:hover {
+      border-color: #0066cc;
+      color: #0066cc;
+      background: #f9fbfd;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 16px;
+    }
+
+    @media (max-width: 1200px) {
+      .results-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+    }
+
+    @media (max-width: 600px) {
+      .results-grid { grid-template-columns: 1fr; }
+    }
+
+    .lead-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 1.5rem;
+      transition: all 0.3s;
+      animation: slideIn 0.4s ease-out;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .lead-card:hover {
+      border-color: #0066cc;
+      box-shadow: 0 4px 12px rgba(0, 102, 204, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .lead-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 0.75rem;
+    }
+
+    .lead-badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .badge {
+      padding: 5px 10px;
+      background: #e6f0ff;
+      color: #0066cc;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid #cce0ff;
+    }
+
+    .lead-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 1rem 0;
+      border-top: 1px solid #f0f0f0;
+      border-bottom: 1px solid #f0f0f0;
+      margin-bottom: 1rem;
+      font-size: 12px;
+    }
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .detail-label {
+      color: #999;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .detail-value {
+      color: #1a1a1a;
+      font-weight: 500;
+    }
+
+    .lead-focus {
+      background: #f9fafb;
+      padding: 0.75rem;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 1rem;
+      line-height: 1.4;
+    }
+
+    .lead-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn-action {
+      padding: 9px 12px;
+      background: white;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-action:hover {
+      border-color: #0066cc;
+      color: #0066cc;
+      background: #f9fbfd;
+    }
+
+    .btn-action.primary {
+      background: #0066cc;
+      color: white;
+      border-color: #0066cc;
+    }
+
+    .btn-action.primary:hover {
+      background: #0052a3;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: #999;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #e5e7eb;
+      border-top-color: #0066cc;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 0.5rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 3rem;
+      color: #999;
+    }
+
+    /* MODAL */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 700px;
+      max-height: 85vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: #999;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .modal-close:hover {
+      color: #1a1a1a;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .template-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 1rem;
+    }
+
+    .template-tab {
+      padding: 8px 12px;
+      background: transparent;
+      border: none;
+      color: #999;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .template-tab:hover {
+      color: #1a1a1a;
+    }
+
+    .template-tab.active {
+      color: #0066cc;
+      border-bottom-color: #0066cc;
+    }
+
+    .message-editor {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      font-size: 13px;
+      line-height: 1.6;
+      font-family: 'Courier New', monospace;
+      min-height: 300px;
+      color: #1a1a1a;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+
+    .message-controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-small {
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      background: white;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-small:hover {
+      border-color: #0066cc;
+      color: #0066cc;
+      background: #f9fbfd;
+    }
+
+    .btn-small.regenerate {
+      background: #f0f4f8;
+    }
+
+    .btn-small.regenerate:hover {
+      background: #e6f0ff;
+    }
+
+    .modal-footer {
+      padding: 1.5rem;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      gap: 8px;
+    }
+
+    .modal-footer button {
+      flex: 1;
+      padding: 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 14px;
+    }
+
+    .modal-footer .btn-copy {
+      background: #0066cc;
+      color: white;
+      border: none;
+    }
+
+    .modal-footer .btn-copy:hover {
+      background: #0052a3;
+    }
+
+    .modal-footer .btn-close {
+      background: #f0f4f8;
+      color: #1a1a1a;
+      border: 1px solid #d1d5db;
+    }
+
+    .modal-footer .btn-close:hover {
+      background: #e6eef5;
+    }
+
+    .api-warning {
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      color: #92400e;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      display: none;
+      font-size: 13px;
+    }
+
+    .api-warning.show {
+      display: block;
+    }
+
+    .saved-searches {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .saved-item {
+      padding: 10px 12px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-bottom: 8px;
+      transition: all 0.2s;
+    }
+
+    .saved-item:hover {
+      border-color: #0066cc;
+      background: #f0f4f8;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrapper">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="badge-hf">HF MEDIA RECRUITING TOOL</div>
+    <h1 class="header-title">Recruiting Prospect Finder</h1>
+    <p class="header-subtitle">Finde die richtigen Betriebe und generiere personalisierte LinkedIn Nachrichten in Sekunden</p>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <div class="api-warning" id="apiWarning" style="display: none;">
+      <!-- Key wird nun serverseitig verwaltet -->
+    </div>
+
+    <div class="search-panel">
+      <div class="section-title">Branche (Multiple Auswahl)</div>
+      <div class="quick-filters" id="quickFilters"></div>
+
+      <div class="filter-row">
+        <div class="filter-field">
+          <div class="filter-label">Suche (Name, Ort, Website)</div>
+          <input type="text" id="customFilter" placeholder="z.B. Ebner, Bad Ischl, winzer..." />
+        </div>
+        <div class="filter-field">
+          <div class="filter-label">Mitarbeitergröße</div>
+          <select id="sizeSelect">
+            <option value="">Alle Größen</option>
+            <option value="10-50">10–50 MA</option>
+            <option value="50-100">50–100 MA</option>
+            <option value="100-500">100–500 MA</option>
+            <option value="500+">500+ MA</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <div class="filter-label">Tier</div>
+          <select id="tierSelect">
+            <option value="">Alle Tiers</option>
+            <option value="Tier 1">Tier 1 (Start hier)</option>
+            <option value="Tier 2">Tier 2</option>
+            <option value="Tier 3">Tier 3</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="search-actions">
+        <button class="btn btn-primary" onclick="startSearch()" id="searchBtn">🚀 SUCHEN</button>
+        <button class="btn btn-secondary" onclick="clearSearch()">RESET</button>
+      </div>
+
+      <div class="saved-searches">
+        <div class="filter-label">Gespeicherte Suchen</div>
+        <div id="savedSearchesList"></div>
+        <button class="btn btn-secondary" style="width: 100%; margin-top: 1rem;" onclick="saveCurrentSearch()">+ Aktuelle Suche speichern</button>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="results-section" id="resultsSection">
+      <div class="results-header">
+        <div class="results-info">
+          <div class="results-title">Suchergebnisse</div>
+          <div class="results-count">Gefiltert: <strong id="resultCount">0</strong> Betriebe</div>
+        </div>
+        <button class="export-btn" onclick="exportAll()">📥 CSV Export</button>
+      </div>
+
+      <div class="results-grid" id="resultsGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MESSAGE MODAL -->
+<div class="modal" id="messageModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">LinkedIn Outreach</div>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="template-tabs" id="templateTabs"></div>
+      <div class="message-controls">
+        <button class="btn-small regenerate" onclick="regenerateMessage()">🔄 REGENERIEREN</button>
+        <button class="btn-small" onclick="copyCurrentMessage()">📋 KOPIEREN</button>
+      </div>
+      <div class="message-editor" id="messageEditor"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-copy" onclick="copyCurrentMessage()">📋 IN ZWISCHENABLAGE</button>
+      <button class="btn-close" onclick="closeModal()">FERTIG</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== CONFIG ====================
+const QUICK_FILTERS_LIST = [
+  'Metalltechnik', 'Hotellerie', 'Pflege', 'Handel', 'Industrie', 'Gastronomie', 
+  'Hotels', 'Wellness/Spa', 'Handwerkbranche', 'Tourismusmarketing', 'Logistik',
+  'Einzelhandel', 'IT/Software', 'Finanzdienstleistungen', 'Immobilienbranche'
+];
+
+const ALL_BRANCHES = [
+  'Metalltechnik', 'Gastronomie', 'Hotellerie', 'Wellness/Spa', 'Industrie',
+  'Handwerkbranche', 'Tourismusmarketing', 'Logistik', 'Einzelhandel', 'Gesundheit/Pflege',
+  'IT/Software', 'Finanzdienstleistungen', 'Immobilienbranche', 'Bildung', 'Maschinenbau',
+  'Elektrotechnik', 'Bauwirtschaft', 'Marketing/Werbung', 'Pflege', 'Handel'
+];
+
+let currentSearchResults = [];
+let currentProspect = null;
+let currentTemplates = [];
+let currentTemplateIdx = 0;
+let selectedBranches = [];
+
+// ==================== INIT ====================
+window.addEventListener('load', () => {
+  checkApiKey();
+  loadSavedSearches();
+  initQuickFilters();
+});
+
+function checkApiKey() {
+  // Kein lokaler API-Key-Check mehr nötig, alles passiert auf Vercel
+  document.getElementById('apiWarning').classList.remove('show');
+}
+
+function initQuickFilters() {
+  const container = document.getElementById('quickFilters');
+  container.innerHTML = QUICK_FILTERS_LIST.map(branch =>
+    `<div class="quick-chip" onclick="toggleBranch('${branch}')">${branch}</div>`
+  ).join('');
+}
+
+function toggleBranch(branch) {
+  const idx = selectedBranches.indexOf(branch);
+  if (idx > -1) {
+    selectedBranches.splice(idx, 1);
+  } else {
+    selectedBranches.push(branch);
+  }
+
+  document.querySelectorAll('.quick-chip').forEach((chip, i) => {
+    const b = QUICK_FILTERS_LIST[i];
+    chip.classList.toggle('active', selectedBranches.includes(b));
+  });
+}
+
+// ==================== SEARCH ====================
+async function startSearch() {
+  // Removed API key check
+
+  if (selectedBranches.length === 0) {
+    alert('Wähle mindestens eine Branche!');
+    return;
+  }
+
+  const size = document.getElementById('sizeSelect').value;
+  const tier = document.getElementById('tierSelect').value;
+  const custom = document.getElementById('customFilter').value;
+
+  document.getElementById('resultsSection').classList.add('show');
+  document.getElementById('resultsGrid').innerHTML = '<div class="loading"><span class="spinner"></span> Suche läuft...</div>';
+
+  try {
+    const leads = await generateLeads(selectedBranches.join(', '), size, tier, custom);
+    currentSearchResults = leads;
+    renderResults(leads);
+    document.getElementById('resultCount').textContent = leads.length;
+  } catch (error) {
+    console.error('Error:', error);
+    document.getElementById('resultsGrid').innerHTML = `<div class="no-results">❌ Fehler: ${error.message}</div>`;
+  }
+}
+
+async function generateLeads(branches, size, tier, custom) {
+  const response = await fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ branches, size, tier, custom })
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error || 'Server Error');
+  }
+
+  const data = await response.json();
+  const jsonMatch = data.content[0].text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('Invalid response format');
+
+  const parsed = JSON.parse(jsonMatch[0]);
+  return parsed.leads || [];
+}
+
+function renderResults(leads) {
+  if (!leads.length) {
+    document.getElementById('resultsGrid').innerHTML = '<div class="no-results">Keine Ergebnisse</div>';
+    return;
+  }
+
+  document.getElementById('resultsGrid').innerHTML = leads.map((lead, idx) => `
+    <div class="lead-card" style="animation-delay: ${idx * 30}ms;">
+      <div class="lead-name">${lead.name}</div>
+      <div class="lead-badges">
+        <span class="badge">${lead.industry}</span>
+        <span class="badge">${lead.employees} MA</span>
+      </div>
+
+      <div class="lead-details">
+        <div class="detail-item">
+          <div class="detail-label">Ort</div>
+          <div class="detail-value">${lead.region}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Mitarbeiter</div>
+          <div class="detail-value">${lead.employees}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Kontakt</div>
+          <div class="detail-value">${lead.contact}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Website</div>
+          <div class="detail-value">${lead.website}</div>
+        </div>
+      </div>
+
+      <div class="lead-focus">${lead.focus}</div>
+
+      <div class="lead-actions">
+        <button class="btn-action" onclick='openMessageModal(${JSON.stringify(lead).replace(/'/g, "&apos;")})'>💬 NACHRICHT</button>
+        <button class="btn-action primary" onclick="openWebsite('${lead.website}')">🌐 WEBSITE</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ==================== MESSAGE MODAL ====================
+async function openMessageModal(lead) {
+  // Removed API key check
+  currentProspect = lead;
+
+  try {
+    const response = await fetch('/api/regenerate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'initial', lead })
+    });
+
+    if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'API Error');
+    }
+
+    const data = await response.json();
+    const jsonMatch = data.content[0].text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Invalid response');
+
+    const templates = JSON.parse(jsonMatch[0]);
+    currentTemplates = [templates.template_1, templates.template_2, templates.template_3];
+
+    const tabsContainer = document.getElementById('templateTabs');
+    tabsContainer.innerHTML = currentTemplates.map((_, i) =>
+      `<button class="template-tab ${i === 0 ? 'active' : ''}" onclick="switchTemplate(${i})">Template ${i + 1}</button>`
+    ).join('');
+
+    switchTemplate(0);
+    document.getElementById('modalTitle').textContent = `Nachricht für ${lead.name}`;
+    document.getElementById('messageModal').classList.add('open');
+
+  } catch (error) {
+    alert('Fehler: ' + error.message);
+  }
+}
+
+function switchTemplate(idx) {
+  currentTemplateIdx = idx;
+  document.querySelectorAll('.template-tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+  document.getElementById('messageEditor').textContent = currentTemplates[idx];
+}
+
+async function regenerateMessage() {
+  // Removed API key check
+  document.getElementById('messageEditor').style.opacity = '0.6';
+
+  try {
+    const response = await fetch('/api/regenerate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        type: 'regenerate', 
+        lead: currentProspect, 
+        currentMessage: currentTemplates[currentTemplateIdx] 
+      })
+    });
+
+    if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'API Error');
+    }
+
+    const data = await response.json();
+    const newMessage = data.content[0].text.trim();
+    currentTemplates[currentTemplateIdx] = newMessage;
+    document.getElementById('messageEditor').textContent = newMessage;
+
+  } catch (error) {
+    alert('Fehler: ' + error.message);
+  } finally {
+    document.getElementById('messageEditor').style.opacity = '1';
+  }
+}
+
+function copyCurrentMessage() {
+  const text = document.getElementById('messageEditor').textContent;
+  navigator.clipboard.writeText(text);
+  alert('✅ Kopiert!');
+}
+
+function closeModal() {
+  document.getElementById('messageModal').classList.remove('open');
+}
+
+function openWebsite(website) {
+  const url = website.startsWith('http') ? website : 'https://' + website;
+  window.open(url, '_blank');
+}
+
+// ==================== EXPORT ====================
+function exportAll() {
+  if (!currentSearchResults.length) {
+    alert('Keine Ergebnisse!');
+    return;
+  }
+
+  let csv = 'Name,Branche,Mitarbeiter,Region,Website,Kontakt,Focus\n';
+  currentSearchResults.forEach(lead => {
+    csv += `"${lead.name}","${lead.industry}","${lead.employees}","${lead.region}","${lead.website}","${lead.contact}","${lead.focus}"\n`;
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `leads_${new Date().getTime()}.csv`;
+  link.click();
+}
+
+function clearSearch() {
+  selectedBranches = [];
+  document.querySelectorAll('.quick-chip').forEach(chip => chip.classList.remove('active'));
+  document.getElementById('sizeSelect').value = '';
+  document.getElementById('tierSelect').value = '';
+  document.getElementById('customFilter').value = '';
+  document.getElementById('resultsSection').classList.remove('show');
+  currentSearchResults = [];
+}
+
+// ==================== SAVED SEARCHES ====================
+function saveCurrentSearch() {
+  const search = {
+    branches: selectedBranches.join(', '),
+    size: document.getElementById('sizeSelect').value,
+    tier: document.getElementById('tierSelect').value,
+    custom: document.getElementById('customFilter').value,
+    timestamp: new Date().toLocaleString('de-AT')
+  };
+
+  let saved = JSON.parse(localStorage.getItem('savedSearches') || '[]');
+  saved.push(search);
+  localStorage.setItem('savedSearches', JSON.stringify(saved));
+
+  loadSavedSearches();
+  alert('✅ Suche gespeichert!');
+}
+
+function loadSavedSearches() {
+  const saved = JSON.parse(localStorage.getItem('savedSearches') || '[]');
+  const html = saved.map((s, i) => `
+    <div class="saved-item" onclick="loadSearch(${i})">
+      <strong>${s.branches || 'Custom'}</strong> ${s.size ? `(${s.size})` : ''}
+      <div style="font-size: 11px; color: #999; margin-top: 4px;">${s.timestamp}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('savedSearchesList').innerHTML = html || '<p style="color: #999; font-size: 12px;">Noch keine gespeichert</p>';
+}
+
+function loadSearch(idx) {
+  const saved = JSON.parse(localStorage.getItem('savedSearches') || '[]')[idx];
+  if (saved) {
+    selectedBranches = saved.branches.split(', ').filter(b => b);
+    document.querySelectorAll('.quick-chip').forEach((chip, i) => {
+      chip.classList.toggle('active', selectedBranches.includes(QUICK_FILTERS_LIST[i]));
+    });
+    document.getElementById('sizeSelect').value = saved.size;
+    document.getElementById('tierSelect').value = saved.tier;
+    document.getElementById('customFilter').value = saved.custom;
+    setTimeout(startSearch, 100);
+  }
+}
+</script>
+
+</body>
+</html>

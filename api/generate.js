@@ -56,7 +56,12 @@ JSON Format EXAKT:
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Anthropic API Error:', errorText);
-      return res.status(response.status).json({ error: 'Downstream API error' });
+      try {
+        const errorJson = JSON.parse(errorText);
+        return res.status(response.status).json({ error: errorJson.error?.message || 'Downstream API error', details: errorJson });
+      } catch (e) {
+        return res.status(response.status).json({ error: errorText || 'Downstream API error' });
+      }
     }
 
     const data = await response.json();

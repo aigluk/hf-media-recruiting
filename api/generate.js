@@ -44,8 +44,7 @@ export default async function handler(req, res) {
     limit: '20',
     language: 'de',
     region: 'AT',
-    async: 'false',
-    fields: 'query,name,full_address,street,city,postal_code,state,country,phone,site,type,subtypes,description,rating,reviews,working_hours,business_status,range,latitude,longitude'
+    async: 'false'
   });
 
   try {

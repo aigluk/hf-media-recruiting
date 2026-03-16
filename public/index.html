@@ -839,30 +839,37 @@ function renderResults(leads) {
     return;
   }
 
-  document.getElementById('resultsGrid').innerHTML = leads.map((lead, idx) => `
+  document.getElementById('resultsGrid').innerHTML = leads.map((lead, idx) => {
+    const isVerified = lead.verified === true;
+    const verifiedBadge = isVerified
+      ? `<span class="badge" style="background:#dcfce7;color:#16a34a;border-color:#bbf7d0;">✓ OSM verifiziert</span>`
+      : `<span class="badge" style="background:#fef3c7;color:#92400e;border-color:#fcd34d;">⚠ KI-generiert</span>`;
+    const websiteUrl = lead.website ? (lead.website.startsWith('http') ? lead.website : 'https://' + lead.website) : null;
+    const mapUrl = lead.mapUrl || (lead.region ? `https://www.google.com/maps/search/${encodeURIComponent(lead.name + ' ' + lead.region)}` : null);
+    return `
     <div class="lead-card" style="animation-delay: ${idx * 30}ms;">
       <div class="lead-name">${lead.name}</div>
       <div class="lead-badges">
         <span class="badge">${lead.industry}</span>
-        <span class="badge">${lead.employees} MA</span>
+        ${verifiedBadge}
       </div>
 
       <div class="lead-details">
         <div class="detail-item">
-          <div class="detail-label">Ort</div>
-          <div class="detail-value">${lead.region}</div>
+          <div class="detail-label">Ort / Adresse</div>
+          <div class="detail-value">${lead.address || lead.region}</div>
         </div>
         <div class="detail-item">
-          <div class="detail-label">Mitarbeiter</div>
-          <div class="detail-value">${lead.employees}</div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Kontakt</div>
-          <div class="detail-value">${lead.contact}</div>
+          <div class="detail-label">Telefon</div>
+          <div class="detail-value">${lead.phone ? `<a href="tel:${lead.phone}" style="color:#0066cc;">${lead.phone}</a>` : 'K.A.'}</div>
         </div>
         <div class="detail-item">
           <div class="detail-label">Website</div>
-          <div class="detail-value">${lead.website}</div>
+          <div class="detail-value">${websiteUrl ? `<a href="${websiteUrl}" target="_blank" rel="noreferrer" style="color:#0066cc;word-break:break-all;">${lead.website}</a>` : '<span style="color:#999;">Nicht bekannt</span>'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Quelle</div>
+          <div class="detail-value" style="font-size:11px;color:#999;">${lead.source || 'AI'}</div>
         </div>
       </div>
 
@@ -871,10 +878,14 @@ function renderResults(leads) {
       <div class="lead-actions">
         <button class="btn-action primary" onclick='openDetailsModal(${JSON.stringify(lead).replace(/'/g, "&apos;")})' style="grid-column: span 2; margin-bottom: 8px;">ℹ️ DETAILS & KONTAKTE</button>
         <button class="btn-action" onclick='openMessageModal(${JSON.stringify(lead).replace(/'/g, "&apos;")})'>💬 NACHRICHT</button>
-        <button class="btn-action" onclick="openWebsite('${lead.website}')">🌐 WEBSITE</button>
+        ${websiteUrl
+          ? `<button class="btn-action btn-action--primary" onclick="window.open('${websiteUrl}', '_blank')">🌐 WEBSITE</button>`
+          : mapUrl ? `<button class="btn-action" onclick="window.open('${mapUrl}', '_blank')">📍 MAPS</button>` : `<button class="btn-action" disabled style="opacity:0.4;">Keine Website</button>`
+        }
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 // ==================== DETAILS MODAL ====================

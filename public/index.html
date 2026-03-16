@@ -823,17 +823,14 @@ async function generateLeads(branches, size, tier, custom) {
     body: JSON.stringify({ branches, size, tier, custom })
   });
 
+  const data = await response.json();
+
   if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.error || 'Server Error');
+    throw new Error(data.error || 'Server Error');
   }
 
-  const data = await response.json();
-  const jsonMatch = data.content[0].text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('Invalid response format');
-
-  const parsed = JSON.parse(jsonMatch[0]);
-  return parsed.leads || [];
+  // Backend now returns pre-parsed { leads: [...] } directly
+  return data.leads || [];
 }
 
 function renderResults(leads) {

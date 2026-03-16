@@ -14,37 +14,16 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Branches parameter is required.' });
   }
 
-  const prompt = `Generiere 20 realistische österreichische Unternehmen für:
+  const prompt = `Generiere eine JSON-Liste mit 20 realistischen staatlich eingetragenen österreichischen Unternehmen.
 
-Branchen: ${branches}
-Mitarbeitergröße: ${size || 'beliebig'}
-${tier ? `Tier: ${tier}` : ''}
-${custom ? `MUSS-KRITERIUM (Ort/Name/Fokus): ${custom} - Generiere AUSSCHLIESSLICH Firmen, die exakt zu diesem Begriff passen (z.B. in genau dieser Stadt/Region lokalisiert sind). Erfinde keine Orte!` : ''}
+Suchparameter:
+- Branchen: ${branches}
+- Mitarbeitergröße: ${size || 'beliebig'}
+${tier ? `- Tier: ${tier}` : ''}
+${custom ? `- Suchregion/Firma: ${custom} (PFLICHT: Alle Firmen müssen sich in dieser Region befinden!)` : ''}
 
-WICHTIGE REGELN:
-1. Nutze ECHTE Firmennamen und echte Daten aus Österreich.
-2. Gib AUSSCHLIESSLICH valides JSON zurück. Kein Text davor, kein Text danach.
-3. Formatiere den Output als striktes, valides Standard-JSON. Wenn du Anführungszeichen innerhalb von Text-Feldern verwendest, MUSST du diese mit einem Backslash maskieren (\"), z.B. "description": "Das ist ein \"Test\"".
-4. Schließe alle Arrays und Objekte korrekt. Das bedeutet: am Ende muss das JSON fehlerfrei mit } enden.
-
-JSON Format EXAKT:
-{
-  "leads": [
-    {
-      "name": "Firmenname",
-      "industry": "Branche",
-      "employees": "Zahl",
-      "region": "Region (Muss zu ${custom || 'Österreich'} passen)",
-      "website": "domain.at",
-      "phone": "Telefonnummer (aus Firmenbuch/Web)",
-      "ceos": "Namen der Geschäftsführer/CEOs",
-      "department_heads": "Namen zuständiger Abteilungsleiter",
-      "contact_persons": "Sonstige wichtige Kontaktpersonen (HR etc.)",
-      "focus": "Kurzbeschreibung: Was macht die Firma genau und worauf sind sie spezialisiert?",
-      "contact": "Zentrale Kontaktinfo"
-    }
-  ]
-}`;
+Antworte NUR mit einem validen JSON-Objekt ohne Erklärungen. Format:
+{"leads":[{"name":"...","industry":"...","employees":"...","region":"...","website":"...","phone":"...","ceos":"...","department_heads":"...","contact_persons":"...","focus":"...","contact":"..."}]}`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -56,7 +35,8 @@ JSON Format EXAKT:
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4000,
+        max_tokens: 6000,
+        system: 'Du bist ein JSON-Generator. Du antwortest AUSSCHLIESSLICH mit validem JSON. Kein Markdown, keine Erklärungen, kein Text davor oder danach. Beginne deine Antwort direkt mit { und beende sie mit }.',
         messages: [{ role: 'user', content: prompt }]
       })
     });
@@ -73,7 +53,34 @@ JSON Format EXAKT:
     }
 
     const data = await response.json();
-    return res.status(200).json(data);
+    const rawText = data?.content?.[0]?.text || '';
+
+    // Server-side robust JSON extraction and validation
+    // Find the outermost { ... } block
+    const jsonStart = rawText.indexOf('{');
+    const jsonEnd = rawText.lastIndexOf('}');
+
+    if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
+      console.error('No valid JSON block found in Claude response:', rawText.slice(0, 500));
+      return res.status(500).json({ error: 'Keine gültige Antwort von Claude erhalten. Bitte erneut versuchen.' });
+    }
+
+    const jsonStr = rawText.slice(jsonStart, jsonEnd + 1);
+
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch (parseErr) {
+      console.error('JSON parse error:', parseErr.message, '\nRaw excerpt:', jsonStr.slice(0, 500));
+      return res.status(500).json({ error: 'Claude hat ungültiges JSON geliefert. Bitte erneut versuchen.' });
+    }
+
+    if (!parsed.leads || !Array.isArray(parsed.leads)) {
+      return res.status(500).json({ error: 'Ungültiges Antwortformat. Bitte erneut versuchen.' });
+    }
+
+    // Return pre-parsed leads directly (no more frontend JSON parsing needed)
+    return res.status(200).json({ leads: parsed.leads });
   } catch (error) {
     console.error('Fetch error:', error);
     return res.status(500).json({ error: error.message });

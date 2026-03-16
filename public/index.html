@@ -878,7 +878,7 @@ function renderResults(leads) {
       <div class="lead-actions">
         <button class="btn-action primary" onclick='openDetailsModal(${JSON.stringify(lead).replace(/'/g, "&apos;")})' style="grid-column: span 2; margin-bottom: 8px;">ℹ️ DETAILS & KONTAKTE</button>
         <button class="btn-action" onclick='openMessageModal(${JSON.stringify(lead).replace(/'/g, "&apos;")})'>💬 NACHRICHT</button>
-        ${websiteUrl
+        ${websiteUrl && websiteUrl !== 'null'
           ? `<button class="btn-action btn-action--primary" onclick="window.open('${websiteUrl}', '_blank')">🌐 WEBSITE</button>`
           : mapUrl ? `<button class="btn-action" onclick="window.open('${mapUrl}', '_blank')">📍 MAPS</button>` : `<button class="btn-action" disabled style="opacity:0.4;">Keine Website</button>`
         }
@@ -929,7 +929,10 @@ function openDetailsModal(lead) {
     
     <div style="display: flex; gap: 12px; margin-top: 2rem;">
       <button class="btn btn-primary" style="flex: 1;" onclick='closeDetailsModal(); openMessageModal(${JSON.stringify(lead).replace(/'/g, "&apos;")})'>💬 LinkedIn Nachricht generieren</button>
-      <button class="btn btn-secondary" style="flex: 1;" onclick="openWebsite('${lead.website}')">🌐 Website öffnen</button>
+      ${lead.website && lead.website !== 'null' 
+        ? `<button class="btn btn-secondary" style="flex: 1;" onclick="window.open('${lead.website.startsWith('http') ? lead.website : 'https://' + lead.website}', '_blank')">🌐 Website öffnen</button>`
+        : `<button class="btn btn-secondary" style="flex: 1;" onclick="window.open('https://www.google.com/maps/search/${encodeURIComponent(lead.name + ' ' + (lead.region || 'Österreich'))}', '_blank')">📍 Auf Maps suchen</button>`
+      }
     </div>
   `;
   

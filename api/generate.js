@@ -133,12 +133,92 @@ export default async function handler(req, res) {
     // Fall through to Claude fallback
   }
 
-  // Step 2: If we got enough real data, return it
-  if (osmLeads.length >= 5) {
-    return res.status(200).json({ leads: osmLeads.slice(0, 20), source: 'openstreetmap' });
+  // Step 2: Enrich OSM data with Claude if we have leads
+  if (osmLeads.length > 0) {
+    console.log(`Enriching ${osmLeads.length} OSM leads with Claude...`);
+    
+    // Create a simplified list for Claude to enrich
+    const leadsToEnrich = osmLeads.map((l, idx) => ({
+      id: idx,
+      name: l.name,
+      address: l.address || l.region,
+      knownWebsite: l.website
+    }));
+
+    const enrichPrompt = `Hier ist eine Liste echter österreichischer Unternehmen mit sicheren Standorten.
+Bitte durchsuche dein Wissen nach fehlenden Daten für diese Firmen.
+Wenn du dir bei einer Information unsicher bist, gib null oder "K.A." zurück. Rate keine Websites und erfinde keine Personen!
+
+WICHTIGSTE REGELN ZUR QUALITÄT:
+- "website": Muss eine echte, existierende und exakte URL sein (z.B. "https://www.firma.at"). Wenn du die URL nicht sicher kennst, gib null zurück!
+- "employees": Schätze eine realistische Bandbreite (z.B. "10-50", "200-500") anstatt einer exakten Zahl, wenn du unsicher bist.
+- "ceos": Nur die echten Geschäftsführer eintragen (häufig aus dem Impressum bekannt).
+
+Antworte AUSSCHLIESSLICH mit valider JSON:
+{"enriched": [
+  {
+    "id": 0, // Muss mit der ID der Eingabe übereinstimmen
+    "website": "Die echte Website URL oder null",
+    "employees": "Schätzung der Mitarbeiter (z.B. '10-50')",
+    "ceos": "Namen der Geschäftsführer (oder K.A.)",
+    "department_heads": "Namen zuständiger Abteilungsleiter (oder K.A.)",
+    "contact_persons": "HR etc. (oder K.A.)"
+  }
+]}
+
+Firmenliste:
+${JSON.stringify(leadsToEnrich, null, 2)}`;
+
+    try {
+      const enrichRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 4000,
+          system: 'Du bist ein JSON-Generator. Antworte NUR UND AUSSCHLIESSLICH mit validem JSON. Keine Markdown Blöcke. Beginne mit { und ende mit }',
+          messages: [{ role: 'user', content: enrichPrompt }]
+        })
+      });
+
+      if (enrichRes.ok) {
+        const enrichData = await enrichRes.json();
+        const rawText = enrichData?.content?.[0]?.text || '';
+        const jsonStart = rawText.indexOf('{');
+        const jsonEnd = rawText.lastIndexOf('}');
+        
+        if (jsonStart !== -1 && jsonEnd > jsonStart) {
+          const parsed = JSON.parse(rawText.slice(jsonStart, jsonEnd + 1));
+          if (parsed.enriched && Array.isArray(parsed.enriched)) {
+            // Merge enriched data back into osmLeads
+            parsed.enriched.forEach(eLead => {
+              const original = osmLeads[eLead.id];
+              if (original) {
+                if (eLead.website && !original.website) original.website = eLead.website;
+                if (eLead.employees && eLead.employees !== 'K.A.') original.employees = eLead.employees;
+                if (eLead.ceos && eLead.ceos !== 'K.A.') original.ceos = eLead.ceos;
+                if (eLead.department_heads && eLead.department_heads !== 'K.A.') original.department_heads = eLead.department_heads;
+                if (eLead.contact_persons && eLead.contact_persons !== 'K.A.') original.contact_persons = eLead.contact_persons;
+              }
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Claude Enrichment failed (ignoring and returning bare OSM data):', e.message);
+    }
   }
 
-  // Step 3: Fallback to Claude for regions with low OSM coverage
+  // Step 3: If we got enough real data, return it
+  if (osmLeads.length >= 5) {
+    return res.status(200).json({ leads: osmLeads.slice(0, 20), source: 'openstreetmap + enriched' });
+  }
+
+  // Step 4: Fallback to Claude only for regions with extremely low OSM coverage
   console.log(`OSM returned only ${osmLeads.length} results, falling back to Claude.`);
 
   const prompt = `Generiere eine JSON-Liste mit ${20 - osmLeads.length} realen österreichischen Unternehmen.

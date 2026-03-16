@@ -32,8 +32,12 @@ JSON Format EXAKT:
       "employees": "Zahl",
       "region": "Region",
       "website": "domain.at",
-      "focus": "Beschreibung",
-      "contact": "HR/Leitung"
+      "phone": "Telefonnummer (aus Firmenbuch/Web)",
+      "ceos": "Namen der Geschäftsführer/CEOs",
+      "department_heads": "Namen zuständiger Abteilungsleiter",
+      "contact_persons": "Sonstige wichtige Kontaktpersonen (HR etc.)",
+      "focus": "Kurzbeschreibung: Was macht die Firma genau und worauf sind sie spezialisiert?",
+      "contact": "Zentrale Kontaktinfo"
     }
   ]
 }`;

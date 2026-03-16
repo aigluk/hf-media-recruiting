@@ -695,6 +695,22 @@
   </div>
 </div>
 
+<!-- DETAILS MODAL -->
+<div class="modal" id="detailsModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title" id="detailsTitle">Firmendetails</div>
+      <button class="modal-close" onclick="closeDetailsModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="detailsContent"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-close" onclick="closeDetailsModal()" style="width: 100%;">ZURÜCK ZUR LISTE</button>
+    </div>
+  </div>
+</div>
+
 <!-- MESSAGE MODAL -->
 <div class="modal" id="messageModal">
   <div class="modal-content">
@@ -856,11 +872,65 @@ function renderResults(leads) {
       <div class="lead-focus">${lead.focus}</div>
 
       <div class="lead-actions">
+        <button class="btn-action primary" onclick='openDetailsModal(${JSON.stringify(lead).replace(/'/g, "&apos;")})' style="grid-column: span 2; margin-bottom: 8px;">ℹ️ DETAILS & KONTAKTE</button>
         <button class="btn-action" onclick='openMessageModal(${JSON.stringify(lead).replace(/'/g, "&apos;")})'>💬 NACHRICHT</button>
-        <button class="btn-action primary" onclick="openWebsite('${lead.website}')">🌐 WEBSITE</button>
+        <button class="btn-action" onclick="openWebsite('${lead.website}')">🌐 WEBSITE</button>
       </div>
     </div>
   `).join('');
+}
+
+// ==================== DETAILS MODAL ====================
+function openDetailsModal(lead) {
+  document.getElementById('detailsTitle').textContent = lead.name;
+  
+  const html = `
+    <div style="margin-bottom: 24px;">
+      <h3 style="font-size: 13px; color: #666; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">Zusammenfassung & Fokus</h3>
+      <div style="background: #f0f4f8; padding: 16px; border-radius: 8px; font-size: 14px; line-height: 1.6; color: #1a1a1a;">
+        ${lead.focus || 'Keine spezifische Beschreibung generiert.'}
+      </div>
+    </div>
+    
+    <h3 style="font-size: 13px; color: #666; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">Wichtige Kontakte & Daten</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; background: white; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb;">
+      
+      <div>
+        <div style="font-size: 11px; color: #999; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Geschäftsführung (CEOs)</div>
+        <div style="font-size: 14px; font-weight: 600; color: #1a1a1a;">${lead.ceos || lead.contact || 'K.A.'}</div>
+      </div>
+      
+      <div>
+        <div style="font-size: 11px; color: #999; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Abteilungsleiter</div>
+        <div style="font-size: 14px; font-weight: 500; color: #1a1a1a;">${lead.department_heads || 'K.A.'}</div>
+      </div>
+      
+      <div>
+        <div style="font-size: 11px; color: #999; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Weitere Kontaktpersonen (HR)</div>
+        <div style="font-size: 14px; font-weight: 500; color: #1a1a1a;">${lead.contact_persons || lead.contact || 'K.A.'}</div>
+      </div>
+      
+      <div>
+        <div style="font-size: 11px; color: #999; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Telefon (Website/Firmenbuch)</div>
+        <div style="font-size: 14px; font-weight: 600;">
+          ${lead.phone && lead.phone !== 'K.A.' ? `<a href="tel:${lead.phone}" style="color: #0066cc; text-decoration: none;">${lead.phone}</a>` : '<span style="color:#999">Nicht angegeben</span>'}
+        </div>
+      </div>
+      
+    </div>
+    
+    <div style="display: flex; gap: 12px; margin-top: 2rem;">
+      <button class="btn btn-primary" style="flex: 1;" onclick='closeDetailsModal(); openMessageModal(${JSON.stringify(lead).replace(/'/g, "&apos;")})'>💬 LinkedIn Nachricht generieren</button>
+      <button class="btn btn-secondary" style="flex: 1;" onclick="openWebsite('${lead.website}')">🌐 Website öffnen</button>
+    </div>
+  `;
+  
+  document.getElementById('detailsContent').innerHTML = html;
+  document.getElementById('detailsModal').classList.add('open');
+}
+
+function closeDetailsModal() {
+  document.getElementById('detailsModal').classList.remove('open');
 }
 
 // ==================== MESSAGE MODAL ====================

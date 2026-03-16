@@ -20,13 +20,24 @@ export default async function handler(req, res) {
 
 Firma: ${lead.name}
 Branche: ${lead.industry}
-Mitarbeiter: ${lead.employees}
+Website: ${lead.website}
+Kontakt/CEO: ${lead.ceos || lead.contact || 'zuständige Leitung'}
 
-Template 1: FORMAL - Jobseite-Check + Potenzial
-Template 2: DIREKT - Problem-Lösung-CTA
-Template 3: ENGAGEMENT - Frage stellen
+WICHTIGE REGELN:
+1. Absolut KEINE Emojis verwenden!
+2. Schreibe immer in der Ich-Form ("ich" statt "wir"), außer bei "Wir von HF Media".
+3. Kurz, modern, direkt und nicht schleimig.
+4. Alle Varianten müssen den Link enthalten: https://www.hfmedia.at/recruiting
 
-Alle: HF Media erwähnen, Link: https://www.hfmedia.at/recruiting
+Variante 1: Exakt diese Struktur (Variablen sinnvoll füllen):
+"Sehr geehrte(r) Herr/Frau [Name] (oder zuständige Leitung),
+ich hab mir eure Jobseite auf [Website] angesehen. Der Auftritt schaut echt sauber aus und wirkt sehr professionell.
+Gerade in der [Branche] ist ja die schnelle Besetzung oft der kritischste Punkt. Ich seh da bei euch noch einiges an Potenzial, wie man das Recruiting für die Gen Z deutlich nachhaltiger, effizienter und vor allem kostengünstiger hinkriegt als über das klassische Netzwerk oder teure Zeitungs-Inserate. Wir von HF Media sind genau darauf spezialisiert.
+Ich würd euch das einfach mal kurz unverbindlich in einer 10-Minuten-Bedarfsanalyse kostenlos auschecken und die Hebel zeigen. Wenn's danach für Sie spannend klingt, können wir uns kurz dazu austauschen, wenn nicht, ist das natürlich auch völlig okay.
+Vorab-Infos: https://www.hfmedia.at/recruiting"
+
+Variante 2: Ähnlich, aber etwas frecher & direkter (auf ein akutes Problem bezogen).
+Variante 3: Kurz & knackig (Fokus auf Kosteneinsparung & Zeitgewinn).
 
 JSON Format:
 {
@@ -37,14 +48,18 @@ JSON Format:
   } else if (type === 'regenerate') {
     if (!lead || !currentMessage) return res.status(400).json({ error: 'Lead and currentMessage are required.' });
     maxTokens = 800;
-    prompt = `Generiere eine NEUE Alternative zur folgenden LinkedIn-Nachricht für ${lead.name}:
+    prompt = `Generiere eine NEUE Alternative zur folgenden LinkedIn-Nachricht für ${lead.name}.
 
 Aktuelle Nachricht:
 ${currentMessage}
 
-Gleicher Stil, aber komplett anders formuliert!
+WICHTIGE REGELN:
+1. Absolut KEINE Emojis!
+2. Schreibe immer in der Ich-Form ("ich" statt "wir"), außer bei "Wir von HF Media".
+3. Kurz, modern, direkt und nicht schleimig.
+4. HF Media Link einbinden: https://www.hfmedia.at/recruiting
 
-Gib NUR die Nachricht zurück.`;
+Gib NUR die Nachricht zurück (ohne Anführungszeichen, ohne Einleitungsvokabeln).`;
   } else {
     return res.status(400).json({ error: 'Invalid type' });
   }

@@ -85,15 +85,18 @@ export default async function handler(req, res) {
     const leads = places
       .filter(p => p.name && p.business_status !== 'CLOSED_PERMANENTLY')
       .map(place => {
-        // Clean up website URL
-        let website = place.site || null;
+        // Clean up website URL (field is 'website', not 'site')
+        let website = place.website || null;
         if (website) {
-          // Remove Google UTM tracking
+          // Decode percent-encoded URL first, then remove UTM tracking
           try {
-            const url = new URL(website);
+            const decoded = decodeURIComponent(website);
+            const url = new URL(decoded);
             url.searchParams.delete('utm_source');
             url.searchParams.delete('utm_medium');
             url.searchParams.delete('utm_campaign');
+            url.searchParams.delete('utm_content');
+            url.searchParams.delete('utm_term');
             website = url.toString();
           } catch {
             // Keep as-is if URL parsing fails

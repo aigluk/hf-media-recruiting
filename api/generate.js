@@ -15,76 +15,23 @@ const BRANCH_SEARCH_MAP = {
   'Gesundheit/Pflege': 'Arztpraxis Pflegeheim Apotheke',
 };
 
-// ── Fetch a URL with timeout ──
-async function fetchWithTimeout(url, timeoutMs = 3000) {
-  try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), timeoutMs);
-    const r = await fetch(url, {
-      signal: ctrl.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-      redirect: 'follow'
-    });
-    clearTimeout(t);
-    if (!r.ok) return null;
-    const ct = r.headers.get('content-type') || '';
-    if (!ct.includes('text')) return null;
-    return await r.text();
-  } catch { return null; }
-}
-
-// ── Scrape CEO name from impressum/homepage ──
-async function scrapeCeoFromWebsite(websiteUrl) {
-  if (!websiteUrl) return null;
-  const base = websiteUrl.replace(/\/+$/, '');
-  const [homeHtml, impressumHtml] = await Promise.all([
-    fetchWithTimeout(base, 2500),
-    fetchWithTimeout(`${base}/impressum`, 2500)
-  ]);
-  const html = (homeHtml || '') + ' ' + (impressumHtml || '');
-  if (!html.trim()) return null;
-
-  // Strip all HTML tags first for cleaner matching
-  const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-
-  const patterns = [
-    /Gesch[äa]ftsf[üu]hr(?:er|erin|ung)[:\s,]+([A-ZÄÖÜ][a-zäöüß]+ [A-ZÄÖÜ][a-zäöüß]+(?:\s[A-ZÄÖÜ][a-zäöüß]+)?)/,
-    /Inhaber(?:in)?[:\s,]+([A-ZÄÖÜ][a-zäöüß]+ [A-ZÄÖÜ][a-zäöüß]+(?:\s[A-ZÄÖÜ][a-zäöüß]+)?)/,
-    /(?:Eigent[üu]mer|Betreiber)(?:in)?[:\s,]+([A-ZÄÖÜ][a-zäöüß]+ [A-ZÄÖÜ][a-zäöüß]+)/,
-    /CEO[:\s]+([A-ZÄÖÜ][a-zäöüß]+ [A-ZÄÖÜ][a-zäöüß]+)/,
-    /(?:Mag\.|Dr\.|Ing\.|DI|DI\(FH\))\.?\s+([A-ZÄÖÜ][a-zäöüß]+ [A-ZÄÖÜ][a-zäöüß]+)/,
-  ];
-
-  for (const pattern of patterns) {
-    const m = text.match(pattern);
-    if (m && m[1]) {
-      const name = m[1].trim();
-      if (name.split(' ').length >= 2) return name;
-    }
-  }
-  return null;
-}
-
-// ── Claude batch CEO lookup for verified companies ──
+// ── Single Claude batch call: CEO lookup for all 20 verified companies ──
 async function lookupCeosWithClaude(leads, apiKey) {
-  const needsCeo = leads.filter(l => !l.ceos);
-  if (needsCeo.length === 0) return {};
-
-  const companyList = needsCeo.map((l, i) =>
-    `${i + 1}. "${l.name}" — ${l.region}`
+  const companyList = leads.map((l, i) =>
+    `${i + 1}. "${l.name}", ${l.region}`
   ).join('\n');
 
-  const prompt = `Du bist ein österreichischer Firmenrecherche-Experte.
+  const prompt = `Diese Firmen wurden soeben live von Google Maps abgerufen und sind 100% real und verifiziert.
 
-Suche den Geschäftsführer (GF) oder Inhaber für jede der folgenden ECHTEN, verifizierten Firmen.
-Diese Firmen existieren wirklich — sie stammen direkt von Google Maps.
-Antworte NUR wenn du den Namen mit hoher Sicherheit kennst (aus Firmenbuch, Impressum, Presseberichten).
-Erfinde KEINE Namen.
+Deine Aufgabe: Nenne den Geschäftsführer (GF), Inhaber oder CEO jeder Firma.
+- Nur echte Namen (Vorname + Nachname) die du aus deinem Trainingswissen kennst.
+- Wenn du einen Namen nicht sicher weißt: null.
+- KEINE erfundenen Namen.
 
 ${companyList}
 
-Antworte NUR als JSON: {"results": {"1": "Vorname Nachname", "2": null, "3": "Vorname Nachname", ...}}
-Verwende null wenn du den Namen nicht sicher kennst.`;
+Antworte NUR als JSON:
+{"1": "Vorname Nachname", "2": null, "3": "Vorname Nachname"}`;
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -96,27 +43,19 @@ Verwende null wenn du den Namen nicht sicher kennst.`;
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
-        system: 'Du bist ein österreichischer Firmenrecherche-Experte. Antworte AUSSCHLIESSLICH mit validem JSON. Erfinde keine Namen — nur Namen die du wirklich kennst.',
+        max_tokens: 1500,
+        system: 'Antworte ausschließlich mit validem JSON. Kein Markdown, kein Text davor oder danach.',
         messages: [{ role: 'user', content: prompt }]
       })
     });
     if (!res.ok) return {};
     const data = await res.json();
-    const text = data?.content?.[0]?.text || '';
+    const text = (data?.content?.[0]?.text || '').trim();
     const start = text.indexOf('{');
     const end = text.lastIndexOf('}');
     if (start === -1) return {};
     const parsed = JSON.parse(text.slice(start, end + 1));
-    // Map back: results is { "1": "Name", ... } — convert to { companyName: ceo }
-    const map = {};
-    needsCeo.forEach((l, i) => {
-      const ceo = parsed.results?.[String(i + 1)];
-      if (ceo && typeof ceo === 'string' && ceo.trim().split(' ').length >= 2) {
-        map[l.name] = ceo.trim();
-      }
-    });
-    return map;
+    return parsed; // { "1": "Name", "2": null, ... }
   } catch { return {}; }
 }
 
@@ -193,25 +132,18 @@ export default async function handler(req, res) {
       };
     });
 
-  // ── STEP 2: Scrape each website's /impressum for CEO name (parallel) ──
-  await Promise.all(baseleads.map(async (lead) => {
-    if (lead.website) {
-      const ceo = await scrapeCeoFromWebsite(lead.website);
-      if (ceo) lead.ceos = ceo;
-    }
-  }));
-
-  // ── STEP 3: Claude batch lookup for companies still missing CEO ──
+  // ── STEP 2: Claude fast batch CEO lookup for all verified companies ──
   const ceoMap = await lookupCeosWithClaude(baseleads, claudeKey);
-  baseleads.forEach(lead => {
-    if (!lead.ceos && ceoMap[lead.name]) {
-      lead.ceos = ceoMap[lead.name];
+  baseleads.forEach((lead, i) => {
+    const ceo = ceoMap[String(i + 1)];
+    if (ceo && typeof ceo === 'string' && ceo.trim().split(/\s+/).length >= 2) {
+      lead.ceos = ceo.trim();
     }
   });
 
   return res.status(200).json({
     leads: baseleads,
-    source: 'Google Maps (Outscraper) + Impressum Scraping + Claude CEO Lookup',
+    source: 'Google Maps (Outscraper) + Claude CEO Lookup',
     query,
     total: baseleads.length
   });

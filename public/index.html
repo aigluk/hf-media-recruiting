@@ -620,6 +620,23 @@
       border-color: #0066cc;
       background: #f0f4f8;
     }
+
+    /* STATUS SELECT */
+    .status-select {
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 4px;
+      border: 1px solid #d1d5db;
+      background: white;
+      cursor: pointer;
+      outline: none;
+    }
+    .status-select.neuoffen { border-color: #d1d5db; color: #6b7280; }
+    .status-select.kontaktiert { border-color: #f59e0b; color: #d97706; background: #fffbeb; }
+    .status-select.nichterreicht { border-color: #f97316; color: #c2410c; background: #fff7ed; }
+    .status-select.nochmalanrufen { border-color: #3b82f6; color: #1d4ed8; background: #eff6ff; }
+    .status-select.keininteresse { border-color: #ef4444; color: #b91c1c; background: #fef2f2; }
   </style>
 </head>
 <body>
@@ -648,22 +665,23 @@
           <input type="text" id="customFilter" placeholder="z.B. Ebner, Bad Ischl, winzer..." />
         </div>
         <div class="filter-field">
-          <div class="filter-label">Mitarbeitergröße</div>
-          <select id="sizeSelect">
-            <option value="">Alle Größen</option>
-            <option value="10-50">10–50 MA</option>
-            <option value="50-100">50–100 MA</option>
-            <option value="100-500">100–500 MA</option>
-            <option value="500+">500+ MA</option>
+          <div class="filter-label">Bewertung (Sterne)</div>
+          <select id="ratingSelect" onchange="if(currentSearchResults.length > 0) applyLocalFilter()">
+            <option value="">Alle anzeigen</option>
+            <option value="4.0">Ab 4.0 ⭐</option>
+            <option value="4.5">Ab 4.5 ⭐</option>
+            <option value="4.8">Ab 4.8 ⭐</option>
           </select>
         </div>
         <div class="filter-field">
-          <div class="filter-label">Tier</div>
-          <select id="tierSelect">
-            <option value="">Alle Tiers</option>
-            <option value="Tier 1">Tier 1 (Start hier)</option>
-            <option value="Tier 2">Tier 2</option>
-            <option value="Tier 3">Tier 3</option>
+          <div class="filter-label">Status Filter</div>
+          <select id="statusFilter" onchange="if(currentSearchResults.length > 0) applyLocalFilter()">
+            <option value="Neu/Offen">⚪ Nur Neu/Offen</option>
+            <option value="Kontaktiert">🟡 Kontaktiert</option>
+            <option value="Nicht erreicht">🟠 Nicht erreicht</option>
+            <option value="Nochmal anrufen">🔵 Nochmal anrufen</option>
+            <option value="Kein Interesse">🔴 Kein Interesse</option>
+            <option value="Alle">Alle anzeigen</option>
           </select>
         </div>
       </div>
@@ -751,6 +769,7 @@ const ALL_BRANCHES = [
 ];
 
 let currentSearchResults = [];
+let currentFilteredLeads = [];
 let currentProspect = null;
 let currentTemplates = [];
 let currentTemplateIdx = 0;
@@ -798,22 +817,46 @@ async function startSearch() {
     return;
   }
 
-  const size = document.getElementById('sizeSelect').value;
-  const tier = document.getElementById('tierSelect').value;
+  const rating = document.getElementById('ratingSelect').value;
   const custom = document.getElementById('customFilter').value;
 
   document.getElementById('resultsSection').classList.add('show');
   document.getElementById('resultsGrid').innerHTML = '<div class="loading"><span class="spinner"></span> Suche läuft...</div>';
 
   try {
-    const leads = await generateLeads(selectedBranches.join(', '), size, tier, custom);
+    const leads = await generateLeads(selectedBranches.join(', '), '', rating, custom);
     currentSearchResults = leads;
-    renderResults(leads);
-    document.getElementById('resultCount').textContent = leads.length;
+    applyLocalFilter();
   } catch (error) {
     console.error('Error:', error);
     document.getElementById('resultsGrid').innerHTML = `<div class="no-results">❌ Fehler: ${error.message}</div>`;
   }
+}
+
+function applyLocalFilter() {
+  const statusFilterVal = document.getElementById('statusFilter') ? document.getElementById('statusFilter').value : 'Neu/Offen';
+  const ratingFilterVal = document.getElementById('ratingSelect') ? document.getElementById('ratingSelect').value : '';
+  
+  let filtered = currentSearchResults.filter(lead => {
+    if (ratingFilterVal) {
+      if (!lead.rating || lead.rating < parseFloat(ratingFilterVal)) return false;
+    }
+
+    const leadKey = encodeKey(lead.name + '|' + lead.region);
+    let status = lead.status;
+    const localStatus = localStorage.getItem('lead_status_' + leadKey);
+    if (localStatus) status = localStatus;
+    
+    if (statusFilterVal === 'Alle') return true;
+    if (statusFilterVal === 'Neu/Offen') {
+      return status === 'Neu/Offen' || !status;
+    }
+    return status === statusFilterVal;
+  });
+
+  currentFilteredLeads = filtered.slice(0, 20);
+  document.getElementById('resultCount').textContent = currentFilteredLeads.length;
+  renderResults(currentFilteredLeads);
 }
 
 async function generateLeads(branches, size, tier, custom) {
@@ -823,7 +866,13 @@ async function generateLeads(branches, size, tier, custom) {
     body: JSON.stringify({ branches, size, tier, custom })
   });
 
-  const data = await response.json();
+  const resText = await response.text();
+  let data;
+  try {
+    data = JSON.parse(resText);
+  } catch(e) {
+    throw new Error('Server Error: ' + resText.slice(0, 150) + '...');
+  }
 
   if (!response.ok) {
     throw new Error(data.error || 'Server Error');
@@ -831,6 +880,32 @@ async function generateLeads(branches, size, tier, custom) {
 
   // Backend now returns pre-parsed { leads: [...] } directly
   return data.leads || [];
+}
+
+function encodeKey(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
+async function updateLeadStatus(key, status, selectElem) {
+  localStorage.setItem('lead_status_' + key, status);
+  const className = status.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  selectElem.className = 'status-select ' + className;
+  
+  const lead = currentSearchResults.find(l => encodeKey(l.name + '|' + l.region) === key);
+  if (lead) lead.status = status;
+  
+  const currentFilter = document.getElementById('statusFilter') ? document.getElementById('statusFilter').value : 'Neu/Offen';
+  if (currentFilter !== 'Alle' && status !== currentFilter) {
+     applyLocalFilter();
+  }
+  
+  try {
+    await fetch('/api/status', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ key: 'lead_status_' + key, status })
+    });
+  } catch(e) {}
 }
 
 function renderResults(leads) {
@@ -841,21 +916,41 @@ function renderResults(leads) {
 
   document.getElementById('resultsGrid').innerHTML = leads.map((lead, idx) => {
     const websiteUrl = lead.website ? (lead.website.startsWith('http') ? lead.website : 'https://' + lead.website) : null;
+    const leadKey = encodeKey(lead.name + '|' + lead.region);
+    const localStatus = localStorage.getItem('lead_status_' + leadKey);
+    const status = localStatus || lead.status || 'Neu/Offen';
+    const statusClass = status.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
     return `
     <div class="lead-card" style="animation-delay: ${idx * 30}ms;">
-      <div class="lead-name">${lead.name}</div>
+      <div class="lead-name" style="font-size: 20px; color: #004080; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 12px;">${lead.name}</div>
       <div class="lead-badges">
         <span class="badge">${lead.industry}</span>
+        <select class="status-select ${statusClass}" onchange="updateLeadStatus('${leadKey}', this.value, this)">
+          <option value="Neu/Offen" ${status === 'Neu/Offen' ? 'selected' : ''}>⚪ Neu/Offen</option>
+          <option value="Kontaktiert" ${status === 'Kontaktiert' ? 'selected' : ''}>🟡 Kontaktiert</option>
+          <option value="Nicht erreicht" ${status === 'Nicht erreicht' ? 'selected' : ''}>🟠 Nicht erreicht</option>
+          <option value="Nochmal anrufen" ${status === 'Nochmal anrufen' ? 'selected' : ''}>🔵 Nochmal anrufen</option>
+          <option value="Kein Interesse" ${status === 'Kein Interesse' ? 'selected' : ''}>🔴 Kein Interesse</option>
+        </select>
       </div>
 
       <div class="lead-details">
+        <div class="detail-item" style="grid-column: span 2; background: #f0f8ff; padding: 10px; border-radius: 6px; border-left: 4px solid #0066cc; margin-bottom: 8px;">
+          <div class="detail-label" style="color: #0066cc; margin-bottom: 4px;">CEO / Geschäftsführer</div>
+          <div class="detail-value" style="font-size: 15px; font-weight: 700;">${lead.ceos || lead.owner || '<span style="color:#999;">K.A.</span>'}</div>
+        </div>
         <div class="detail-item">
           <div class="detail-label">Ort / Adresse</div>
-          <div class="detail-value">${lead.address || lead.region}</div>
+          <div class="detail-value" style="word-break:break-all;">${lead.address || lead.region}</div>
         </div>
         <div class="detail-item">
           <div class="detail-label">Telefon</div>
           <div class="detail-value">${lead.phone ? `<a href="tel:${lead.phone}" style="color:#0066cc;">${lead.phone}</a>` : 'K.A.'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">E-Mail (Allgemein)</div>
+          <div class="detail-value">${(lead.email_general || lead.emails) ? `<a href="mailto:${lead.email_general || lead.emails.split(',')[0].trim()}" style="color:#0066cc;">${lead.email_general || lead.emails.split(',')[0].trim()}</a>` : '<span style="color:#999;">K.A.</span>'}</div>
         </div>
         <div class="detail-item">
           <div class="detail-label">Website</div>
@@ -863,7 +958,7 @@ function renderResults(leads) {
         </div>
       </div>
 
-      <div class="lead-focus">${lead.focus}</div>
+      <div class="lead-focus">${lead.description || lead.focus || 'Keine Beschreibung vorhanden.'}</div>
 
       <div class="lead-actions">
         <button class="btn-action primary" onclick='openDetailsModal(${JSON.stringify(lead).replace(/'/g, "&apos;")})' style="grid-column: span 2; margin-bottom: 8px;">ℹ️ DETAILS & KONTAKTE</button>
@@ -886,7 +981,7 @@ function openDetailsModal(lead) {
     <div style="margin-bottom: 24px;">
       <h3 style="font-size: 13px; color: #666; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">Zusammenfassung & Fokus</h3>
       <div style="background: #f0f4f8; padding: 16px; border-radius: 8px; font-size: 14px; line-height: 1.6; color: #1a1a1a;">
-        ${lead.focus || 'Keine spezifische Beschreibung generiert.'}
+        ${lead.description || lead.focus || 'Keine spezifische Beschreibung generiert.'}
       </div>
     </div>
     
@@ -894,18 +989,22 @@ function openDetailsModal(lead) {
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; background: white; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb;">
       
       <div>
-        <div style="font-size: 11px; color: #999; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Geschäftsführung (CEOs)</div>
-        <div style="font-size: 14px; font-weight: 600; color: #1a1a1a;">${lead.ceos || lead.contact || 'K.A.'}</div>
+        <div style="font-size: 11px; color: #0066cc; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Geschäftsführung (CEOs / Inhaber)</div>
+        <div style="font-size: 14px; font-weight: 700; color: #1a1a1a;">${lead.ceos || lead.owner || 'K.A.'}</div>
       </div>
       
       <div>
-        <div style="font-size: 11px; color: #999; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Abteilungsleiter</div>
-        <div style="font-size: 14px; font-weight: 500; color: #1a1a1a;">${lead.department_heads || 'K.A.'}</div>
+        <div style="font-size: 11px; color: #999; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">E-Mail (Allgemein)</div>
+        <div style="font-size: 14px; font-weight: 500; color: #1a1a1a;">
+          ${(lead.email_general || lead.emails) ? `<a href="mailto:${lead.email_general || lead.emails.split(',')[0].trim()}" style="color:#0066cc; text-decoration:none;">${lead.email_general || lead.emails.split(',')[0].trim()}</a>` : 'K.A.'}
+        </div>
       </div>
       
       <div>
-        <div style="font-size: 11px; color: #999; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Weitere Kontaktpersonen (HR)</div>
-        <div style="font-size: 14px; font-weight: 500; color: #1a1a1a;">${lead.contact_persons || lead.contact || 'K.A.'}</div>
+        <div style="font-size: 11px; color: #999; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">E-Mail (Persönlich / GF)</div>
+        <div style="font-size: 14px; font-weight: 500; color: #1a1a1a;">
+          ${lead.email_ceo ? `<a href="mailto:${lead.email_ceo}" style="color:#0066cc; text-decoration:none;">${lead.email_ceo}</a>` : '<span style="color:#999;">K.A.</span>'}
+        </div>
       </div>
       
       <div>
@@ -946,12 +1045,18 @@ async function openMessageModal(lead) {
       body: JSON.stringify({ type: 'initial', lead })
     });
 
-    if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'API Error');
+    const resText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(resText);
+    } catch(e) {
+      throw new Error('API Error: ' + resText.slice(0, 100));
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'API Error');
+    }
+
     const jsonMatch = data.content[0].text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Invalid response');
 
@@ -993,12 +1098,18 @@ async function regenerateMessage() {
       })
     });
 
-    if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'API Error');
+    const resText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(resText);
+    } catch(e) {
+      throw new Error('API Error: ' + resText.slice(0, 100));
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'API Error');
+    }
+
     const newMessage = data.content[0].text.trim();
     currentTemplates[currentTemplateIdx] = newMessage;
     document.getElementById('messageEditor').textContent = newMessage;
@@ -1027,14 +1138,17 @@ function openWebsite(website) {
 
 // ==================== EXPORT ====================
 function exportAll() {
-  if (!currentSearchResults.length) {
+  if (!currentFilteredLeads || !currentFilteredLeads.length) {
     alert('Keine Ergebnisse!');
     return;
   }
 
-  let csv = 'Name,Branche,Mitarbeiter,Region,Website,Kontakt,Focus\n';
-  currentSearchResults.forEach(lead => {
-    csv += `"${lead.name}","${lead.industry}","${lead.employees}","${lead.region}","${lead.website}","${lead.contact}","${lead.focus}"\n`;
+  let csv = 'Name,Branche,Mitarbeiter,Region,Website,Telefon,E-Mail (Allgemein),E-Mail (Persönlich),CEO/Inhaber,Focus,Status\n';
+  currentFilteredLeads.forEach(lead => {
+    const leadKey = encodeKey(lead.name + '|' + lead.region);
+    const localStatus = localStorage.getItem('lead_status_' + leadKey);
+    const status = localStatus || lead.status || 'Neu/Offen';
+    csv += `"${lead.name}","${lead.industry}","${lead.employees}","${lead.region}","${lead.website}","${lead.phone || ''}","${lead.email_general || ''}","${lead.email_ceo || ''}","${lead.ceos || lead.owner || ''}","${lead.focus || lead.description}","${status}"\n`;
   });
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1048,7 +1162,7 @@ function clearSearch() {
   selectedBranches = [];
   document.querySelectorAll('.quick-chip').forEach(chip => chip.classList.remove('active'));
   document.getElementById('sizeSelect').value = '';
-  document.getElementById('tierSelect').value = '';
+  if (document.getElementById('ratingSelect')) document.getElementById('ratingSelect').value = '';
   document.getElementById('customFilter').value = '';
   document.getElementById('resultsSection').classList.remove('show');
   currentSearchResults = [];
@@ -1059,7 +1173,7 @@ function saveCurrentSearch() {
   const search = {
     branches: selectedBranches.join(', '),
     size: document.getElementById('sizeSelect').value,
-    tier: document.getElementById('tierSelect').value,
+    rating: document.getElementById('ratingSelect') ? document.getElementById('ratingSelect').value : '',
     custom: document.getElementById('customFilter').value,
     timestamp: new Date().toLocaleString('de-AT')
   };
@@ -1075,24 +1189,34 @@ function saveCurrentSearch() {
 function loadSavedSearches() {
   const saved = JSON.parse(localStorage.getItem('savedSearches') || '[]');
   const html = saved.map((s, i) => `
-    <div class="saved-item" onclick="loadSearch(${i})">
-      <strong>${s.branches || 'Custom'}</strong> ${s.size ? `(${s.size})` : ''}
-      <div style="font-size: 11px; color: #999; margin-top: 4px;">${s.timestamp}</div>
+    <div class="saved-item" style="display:flex; justify-content:space-between; align-items:center;">
+      <div onclick="loadSearch(${i})" style="flex:1;">
+        <strong>${s.branches || 'Custom'}</strong> ${s.size ? `(${s.size})` : ''}
+        <div style="font-size: 11px; color: #999; margin-top: 4px;">${s.timestamp}</div>
+      </div>
+      <button onclick="deleteSearch(${i}); event.stopPropagation();" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:16px; padding:0 8px;" title="Löschen">🗑️</button>
     </div>
   `).join('');
 
   document.getElementById('savedSearchesList').innerHTML = html || '<p style="color: #999; font-size: 12px;">Noch keine gespeichert</p>';
 }
 
+function deleteSearch(idx) {
+  let saved = JSON.parse(localStorage.getItem('savedSearches') || '[]');
+  saved.splice(idx, 1);
+  localStorage.setItem('savedSearches', JSON.stringify(saved));
+  loadSavedSearches();
+}
+
 function loadSearch(idx) {
   const saved = JSON.parse(localStorage.getItem('savedSearches') || '[]')[idx];
-  if (saved) {
+  if (saved && saved.branches) {
     selectedBranches = saved.branches.split(', ').filter(b => b);
     document.querySelectorAll('.quick-chip').forEach((chip, i) => {
       chip.classList.toggle('active', selectedBranches.includes(QUICK_FILTERS_LIST[i]));
     });
     document.getElementById('sizeSelect').value = saved.size;
-    document.getElementById('tierSelect').value = saved.tier;
+    if (document.getElementById('ratingSelect') && saved.rating) document.getElementById('ratingSelect').value = saved.rating;
     document.getElementById('customFilter').value = saved.custom;
     setTimeout(startSearch, 100);
   }

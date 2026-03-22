@@ -16,30 +16,37 @@ export default async function handler(req, res) {
   if (type === 'initial') {
     if (!lead) return res.status(400).json({ error: 'Lead data is required.' });
     
-    prompt = `Generiere 3 unterschiedliche LinkedIn-Nachrichten für:
+    prompt = `Generiere 3 komplett unterschiedliche LinkedIn-Nachrichten-Vorlagen für einen Erstkontakt.
 
+Lead-Informationen:
 Firma: ${lead.name}
 Branche: ${lead.industry}
 Website: ${lead.website}
 Kontakt/CEO: ${lead.ceos || lead.contact || 'zuständige Leitung'}
 
-WICHTIGE REGELN:
+WICHTIGE REGELN FÜR ALLE BRANCHEN/NACHRICHTEN:
 1. Absolut KEINE Emojis verwenden!
-2. Schreibe immer in der Ich-Form ("ich" statt "wir"), außer bei "Wir von HF Media".
-3. Kurz, modern, direkt und nicht schleimig.
-4. Alle Varianten müssen den Link enthalten: https://www.hfmedia.at/recruiting
+2. Schreibe immer in der Ich-Form ("ich" statt "wir"), außer bei "Wir (als Agentur/Unternehmen)".
+3. Alle 3 Varianten müssen unten (z.B. als P.S. oder unauffällig am Ende) den Link enthalten: https://www.hfmedia.at/recruiting
+4. Schreibe flüssig, professionell und nicht als marktschreierischer Pitch.
 
-Variante 1: Exakt diese Struktur (Variablen sinnvoll füllen):
-"Sehr geehrte(r) Herr/Frau [Name] (oder zuständige Leitung),
-ich hab mir eure Jobseite auf [Website] angesehen. Der Auftritt schaut echt sauber aus und wirkt sehr professionell.
-Gerade in der [Branche] ist ja die schnelle Besetzung oft der kritischste Punkt. Ich seh da bei euch noch einiges an Potenzial, wie man das Recruiting für die Gen Z deutlich nachhaltiger, effizienter und vor allem kostengünstiger hinkriegt als über das klassische Netzwerk oder teure Zeitungs-Inserate. Wir von HF Media sind genau darauf spezialisiert.
-Ich würd euch das einfach mal kurz unverbindlich in einer 10-Minuten-Bedarfsanalyse kostenlos auschecken und die Hebel zeigen. Wenn's danach für Sie spannend klingt, können wir uns kurz dazu austauschen, wenn nicht, ist das natürlich auch völlig okay.
-Vorab-Infos: https://www.hfmedia.at/recruiting"
+VARIANTE 1 (Klassisch & Höflich - Sie-Form):
+- Fokus auf "Vielen Dank für die Vernetzung".
+- Dezent auf das Thema Recruiting/Mitarbeitergewinnung in der [Branche] anspielen.
+- Biete einen lockeren Erfahrungsaustausch an.
 
-Variante 2: Ähnlich, aber etwas frecher & direkter (auf ein akutes Problem bezogen).
-Variante 3: Kurz & knackig (Fokus auf Kosteneinsparung & Zeitgewinn).
+VARIANTE 2 (Direkt & Persönlich - Du-Form):
+- Starte direkt (ohne "Danke fürs Vernetzen").
+- Sprich den [CEO/Kontakt] per "Du" an (Hallo [Vorname]).
+- Fokussiere dich auf ein typisches Branchen-Problem (Bsp: Gastronomie = Personalmangel/Köche; Immobilien = gute Makler finden; Industrie = Fachkräftemangel).
+- Biete an, wie HF Media dabei helfen kann, und frage unverbindlich nach Interesse.
 
-JSON Format:
+VARIANTE 3 (Extrem kurz & knackig - Sie-Form):
+- Maximal 3-4 kurze Sätze.
+- Komm sofort auf den Punkt: Ihr sucht gute Mitarbeiter im Bereich [Branche]? Wir haben aktuell sehr erfolgreiche Ansätze.
+- Kurzer Call-to-Action (z.B. "Lust auf einen kurzen Austausch?").
+
+Gib NUR das JSON im folgenden Format zurück:
 {
   "template_1": "...",
   "template_2": "...",
@@ -73,8 +80,9 @@ Gib NUR die Nachricht zurück (ohne Anführungszeichen, ohne Einleitungsvokabeln
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-3-5-haiku-20241022',
         max_tokens: maxTokens,
+        system: type === 'initial' ? 'Antworte ausschließlich mit einem gültigen JSON-Objekt. Verwende KEIN Markdown, KEIN ```json. Nur das rohe JSON.' : 'Verwende absolut keine Markdown-Codeblöcke und schreibe den bloßen Text.',
         messages: [{ role: 'user', content: prompt }]
       })
     });

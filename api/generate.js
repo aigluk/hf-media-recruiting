@@ -1,3 +1,5 @@
+import { kv } from '@vercel/kv';
+
 // ── Branch mapping to German Google Maps search terms ──
 const BRANCH_SEARCH_MAP = {
   'Gastronomie': 'Restaurants',
@@ -71,6 +73,19 @@ function parseJsonSafe(text) {
   try { return JSON.parse(clean.slice(start, end + 1)); } catch { return null; }
 }
 
+// ── Aggressive deep search for emails ──
+function extractEmails(obj) {
+  let found = [];
+  if (typeof obj === 'string') {
+    if (obj.includes('@') && obj.includes('.')) found.push(obj);
+  } else if (Array.isArray(obj)) {
+    for (const item of obj) found.push(...extractEmails(item));
+  } else if (obj !== null && typeof obj === 'object') {
+    for (const key in obj) found.push(...extractEmails(obj[key]));
+  }
+  return found;
+}
+
 // ── Claude batch CEO lookup ──
 async function lookupCeosWithClaude(leads, apiKey) {
   const companyList = leads.map((l, i) =>
@@ -78,20 +93,26 @@ async function lookupCeosWithClaude(leads, apiKey) {
   ).join('\n');
 
   const prompt = `Diese Firmen wurden live von Google Maps verifiziert und existieren wirklich.
-Nenne den Geschäftsführer/Inhaber jeder Firma (Vorname Nachname). Nur wenn du ihn wirklich kennst — sonst null.
+Erstelle für JEDE Firma ZWEI Dinge:
+1. Den exakten Geschäftsführer/Inhaber (Vorname Nachname). GANZ WICHTIG: Gib niemals einfach den Firmennamen an, es sei denn, der Firmenname ist ein 100% echter Personenname (z.B. "Erwin Hausermaier"). Wenn du den Geschäftsführer nicht sofort kennst, suche fiktiv mit dem exakten Firmennamen auf Firmenbuch ABC / firmenabc.at, gehe zu "handelnde Personen" und extrahiere dort den Geschäftsführer. Damit es sicher richtig ist! Wenn kein Personenname auffindbar ist, antworte zwingend mit "null".
+2. Eine flüssige, sehr gut lesbare 3-5 zeilige Zusammenfassung auf Deutsch, was diese Firma genau macht (Schwerpunkt, Angebot). Dies ersetzt ein leeres [object Object].
 
 ${companyList}
 
-JSON Antwort: {"1": "Name oder null", "2": "Name oder null", ...}`;
+Antworte NUR mit diesem exakten JSON Format:
+{
+  "1": { "ceo": "Vorname Nachname oder null", "summary": "Die 3-5 zeilige Zusammenfassung..." },
+  "2": { "ceo": "Name oder null", "summary": "..." }
+}`;
 
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1500,
-        system: 'Antworte NUR mit einem JSON-Objekt. Kein Markdown, kein Text davor/danach. Format: {"1":"Name","2":null}',
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 3000,
+        system: 'Antworte NUR mit einem JSON-Objekt. Kein Markdown, kein Text davor/danach. Format wie vorgegeben.',
         messages: [{ role: 'user', content: prompt }]
       })
     });
@@ -119,7 +140,8 @@ export default async function handler(req, res) {
   const searchTerms = branchList.map(b => BRANCH_SEARCH_MAP[b] || b).join(', ');
   const location = custom || 'Österreich';
   const query = `${searchTerms}, ${location}`;
-  const params = new URLSearchParams({ query, limit: '20', language: 'de', region: 'AT', async: 'false' });
+  const params = new URLSearchParams({ query, limit: '40', language: 'de', region: 'AT', async: 'false' });
+  params.append('enrichment', 'domains_service'); // Emails & Contacts Scraper
 
   let places = [];
   try {
@@ -156,6 +178,59 @@ export default async function handler(req, res) {
         } catch { /* keep as-is */ }
       }
       const addressParts = [place.street, place.postal_code, place.city].filter(Boolean);
+      
+      const rawEmails = extractEmails(place);
+      const strictEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      const cleanEmails = rawEmails.map(e => typeof e === 'string' ? e.trim().toLowerCase() : '').filter(e => {
+        if (!e) return false;
+        if (e.includes('http') || e.includes('://') || e.includes('google.com') || e.includes('maps.google') || e.includes('sentry') || e.includes('.png') || e.includes('.jpg') || e.includes('.gif')) return false;
+        return strictEmailRegex.test(e);
+      });
+      
+      const uniqueEmails = [...new Set(cleanEmails)];
+      let email_general = '';
+      let email_ceo = '';
+
+      const generalIndex = uniqueEmails.findIndex(e => e.startsWith('info@') || e.startsWith('office@') || e.startsWith('kontakt@') || e.startsWith('hallo@') || e.startsWith('welcome@'));
+      if (generalIndex !== -1) {
+        email_general = uniqueEmails[generalIndex];
+        uniqueEmails.splice(generalIndex, 1);
+      } else if (uniqueEmails.length > 0) {
+        email_general = uniqueEmails[0];
+        uniqueEmails.shift();
+      }
+
+      if (uniqueEmails.length > 0) {
+        email_ceo = uniqueEmails[0];
+      }
+      
+      let emails = [email_general, email_ceo].filter(Boolean).join(', ');
+
+      // Fallback description in case Claude fails
+      let description = place.description || (Array.isArray(place.subtypes) ? place.subtypes.join(', ') : '') || '';
+
+      let ceo_name = '';
+      for (let i = 1; i <= 10; i++) {
+        const title = place[`email_${i}_title`] || '';
+        if (/(ceo|geschäftsführer|inhaber|founder|owner|manager|direktor)/i.test(title)) {
+           ceo_name = place[`email_${i}_full_name`] || (place[`email_${i}_first_name`] ? (place[`email_${i}_first_name`] + ' ' + place[`email_${i}_last_name`]) : '');
+           break;
+        }
+      }
+      if (!ceo_name || ceo_name.trim() === 'null') {
+         for (let i = 1; i <= 10; i++) {
+            if (place[`email_${i}_full_name`]) {
+               ceo_name = place[`email_${i}_full_name`];
+               break;
+            }
+         }
+      }
+      
+      let owner = ceo_name ? ceo_name.trim() : (place.owner_name || place.owner_title || '');
+      if (owner && owner.toLowerCase().trim() === place.name.toLowerCase().trim()) {
+        owner = '';
+      }
+      
       return {
         name: place.name,
         industry: place.type || branchList[0],
@@ -163,10 +238,15 @@ export default async function handler(req, res) {
         region: addressParts.join(', ') || place.full_address || location,
         website,
         phone: place.phone || '',
-        ceos: '',
+        emails: emails,
+        email_general: email_general,
+        email_ceo: email_ceo,
+        owner: owner,
+        ceos: owner, // Will be updated by scraping/Claude if empty
         department_heads: '',
         contact_persons: '',
-        focus: place.description || place.subtypes || '',
+        description: description,
+        focus: description,
         contact: place.phone || '',
         rating: place.rating || null,
         reviews: place.reviews || 0,
@@ -189,12 +269,43 @@ export default async function handler(req, res) {
 
   // Apply Claude results only where scraping found nothing
   baseleads.forEach((lead, i) => {
-    if (!lead.ceos) {
-      const ceo = ceoMap[String(i + 1)];
-      if (ceo && typeof ceo === 'string' && ceo !== 'null' && ceo.split(/\s+/).length >= 2) {
-        lead.ceos = ceo.trim();
+    const claudeData = ceoMap[String(i + 1)];
+    if (claudeData) {
+      if (!lead.ceos && claudeData.ceo && typeof claudeData.ceo === 'string' && claudeData.ceo !== 'null' && claudeData.ceo.split(/\s+/).length >= 2) {
+        lead.ceos = claudeData.ceo.trim();
+      }
+      if (claudeData.summary && typeof claudeData.summary === 'string' && claudeData.summary.length > 10) {
+        lead.description = claudeData.summary;
+        lead.focus = claudeData.summary;
       }
     }
+  });
+
+  // Fallback has been removed as per user request (no auto-converting company names to CEOs).
+
+  // ── Sync with global Vercel KV if available ──
+  let kvStatuses = {};
+  if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+    try {
+      const btoa = (str) => Buffer.from(str, 'utf8').toString('base64');
+      const encodeKey = (str) => btoa(unescape(encodeURIComponent(str)));
+      const keys = baseleads.map(l => 'lead_status_' + encodeKey(l.name + '|' + l.region));
+      if (keys.length > 0) {
+        const values = await kv.mget(...keys);
+        keys.forEach((k, i) => {
+          if (values[i]) kvStatuses[k] = values[i];
+        });
+      }
+    } catch(e) {
+      console.warn('KV mget failed:', e);
+    }
+  }
+
+  baseleads.forEach(l => {
+    const btoa = (str) => Buffer.from(str, 'utf8').toString('base64');
+    const encodeKey = (str) => btoa(unescape(encodeURIComponent(str)));
+    const key = 'lead_status_' + encodeKey(l.name + '|' + l.region);
+    l.status = kvStatuses[key] || 'Neu/Offen';
   });
 
   const ceoCount = baseleads.filter(l => l.ceos).length;

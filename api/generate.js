@@ -110,7 +110,7 @@ Antworte NUR mit diesem exakten JSON Format:
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
+        model: 'claude-3-haiku-20240307',
         max_tokens: 3000,
         system: 'Antworte NUR mit einem JSON-Objekt. Kein Markdown, kein Text davor/danach. Format wie vorgegeben.',
         messages: [{ role: 'user', content: prompt }]

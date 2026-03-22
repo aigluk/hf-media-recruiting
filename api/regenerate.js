@@ -80,7 +80,7 @@ Gib NUR die Nachricht zurück (ohne Anführungszeichen, ohne Einleitungsvokabeln
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
+        model: 'claude-3-haiku-20240307',
         max_tokens: maxTokens,
         system: type === 'initial' ? 'Antworte ausschließlich mit einem gültigen JSON-Objekt. Verwende KEIN Markdown, KEIN ```json. Nur das rohe JSON.' : 'Verwende absolut keine Markdown-Codeblöcke und schreibe den bloßen Text.',
         messages: [{ role: 'user', content: prompt }]
@@ -90,7 +90,7 @@ Gib NUR die Nachricht zurück (ohne Anführungszeichen, ohne Einleitungsvokabeln
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Anthropic API Error:', errorText);
-      return res.status(response.status).json({ error: 'Downstream API error' });
+      return res.status(response.status).json({ error: errorText });
     }
 
     const data = await response.json();

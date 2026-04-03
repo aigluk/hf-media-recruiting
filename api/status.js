@@ -1,8 +1,14 @@
 import { kv } from '@vercel/kv';
 
 export default async function handler(req, res) {
+  if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST' && req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const PASS = process.env.CRM_PASSWORD || 'nordstein2026';
+  if (req.headers.authorization !== `Bearer ${PASS}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   // Gracefully handle missing KV env variables (fallback behavior)

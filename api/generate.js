@@ -125,7 +125,13 @@ Antworte NUR mit diesem exakten JSON Format:
 
 // ════════════════════════════════════════════════════════════════════════
 export default async function handler(req, res) {
+  if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const PASS = process.env.CRM_PASSWORD || 'nordstein2026';
+  if (req.headers.authorization !== `Bearer ${PASS}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
   const outscraperKey = process.env.OUTSCRAPER_API_KEY;
   const claudeKey = process.env.ANTHROPIC_API_KEY;
@@ -140,7 +146,8 @@ export default async function handler(req, res) {
   const searchTerms = branchList.map(b => BRANCH_SEARCH_MAP[b] || b).join(', ');
   const location = custom || 'Österreich';
   const query = `${searchTerms}, ${location}`;
-  const params = new URLSearchParams({ query, limit: '40', language: 'de', region: 'AT', async: 'false' });
+  // Reduced limit from 40 to 15 to prevent 30s Serverless 504 Execution Timeout
+  const params = new URLSearchParams({ query, limit: '15', language: 'de', region: 'AT', async: 'false' });
   params.append('enrichment', 'domains_service'); // Emails & Contacts Scraper
 
   let places = [];

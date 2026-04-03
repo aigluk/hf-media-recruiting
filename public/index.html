@@ -56,7 +56,7 @@
     .view-section.active { display: block; animation: fadeUp 0.3s ease; }
     @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
 
-    .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2.5rem; }
+    .metrics-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.25rem; margin-bottom: 2.5rem; }
     .metric-card { background: var(--surface); padding: 2rem; border-radius: var(--radius); box-shadow: var(--shadow); position: relative; overflow: hidden; }
     .metric-title { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; }
     .metric-value { font-size: 2.5rem; font-weight: 700; color: var(--text); margin-bottom: 0.25rem; }
@@ -231,23 +231,29 @@
           <div class="metric-card">
             <div class="metric-title">Neue Leads</div>
             <div class="metric-value" id="kpi-new">0</div>
-            <div class="metric-sub">Bereit für Kontakt</div>
+            <div class="metric-sub">Unbearbeitete Kontakte</div>
           </div>
           <div class="metric-card">
             <div class="metric-title">In Akquise</div>
             <div class="metric-value" id="kpi-contact" style="color: var(--primary);">0</div>
-            <div class="metric-sub">Laufende Gespräche</div>
+            <div class="metric-sub">Aktive Gespräche</div>
           </div>
           <div class="metric-card">
-            <div class="metric-title">Abschlüsse / Termine</div>
+            <div class="metric-title">Termin Fixiert</div>
+            <div class="metric-value" id="kpi-termin" style="color: #0891b2;">0</div>
+            <div class="metric-sub">Eingetragene Calls</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Abschlüsse</div>
             <div class="metric-value" id="kpi-won" style="color: #16a34a;">0</div>
-            <div class="metric-sub">Erfolgreiche Leads</div>
+            <div class="metric-sub">Gewonnene Deals</div>
           </div>
           <div class="metric-card" style="cursor: pointer; background: var(--text); color:white;" onclick="syncDatabase()">
-            <div class="metric-title" style="color:rgba(255,255,255,0.7);">Globale Datenbank</div>
-            <div class="metric-value" style="font-size: 1.5rem; font-weight: 600; margin-top: 14px; display:flex; align-items:center; gap:8px; color:white;">
-              <i data-lucide="server" style="color: white; width: 28px; height: 28px;"></i> Vercel Sync
+            <div class="metric-title" style="color:rgba(255,255,255,0.7);">Cloud-Datenbank</div>
+            <div class="metric-value" style="font-size: 1.25rem; font-weight: 600; margin-top: 12px; display:flex; align-items:center; gap:8px; color:white;">
+              <i data-lucide="server" style="color: white; width: 24px; height: 24px;"></i> Vercel KV Sync
             </div>
+            <div style="color:rgba(255,255,255,0.6); font-size:0.75rem; margin-top:6px;" id="kpi-total">0 Leads gespeichert</div>
           </div>
         </div>
         <div class="panel">
@@ -482,15 +488,26 @@
           localStorage.removeItem('crm_token'); state.token = '';
           document.getElementById('authError').style.display = 'block'; hideLoader(); return;
         }
-        let data; try { data = await res.json(); } catch(e) { throw new Error('Keine gültige Datenbank-Antwort.'); }
+        let data;
+        try { data = await res.json(); } catch(e) { throw new Error(`HTTP ${res.status}: Keine gültige Datenbank-Antwort.`); }
         if (data.error) throw new Error(data.error);
-        state.leads = data.leads || [];
-        document.getElementById('authOverlay').style.display = 'none'; document.getElementById('appLayout').classList.add('loaded');
+        state.leads = Array.isArray(data.leads) ? data.leads : [];
+        document.getElementById('authOverlay').style.display = 'none';
+        document.getElementById('appLayout').classList.add('loaded');
         initUI();
       } catch (err) {
-        console.error(err); alert('Serverfehler / Datenbank Fehler:\n' + err.message);
-        document.getElementById('authOverlay').style.display = 'none'; document.getElementById('appLayout').classList.add('loaded');
+        console.error('syncDatabase error:', err);
+        // Show app anyway, but log the error prominently
+        document.getElementById('authOverlay').style.display = 'none';
+        document.getElementById('appLayout').classList.add('loaded');
+        state.leads = [];
         initUI();
+        // Show a non-blocking toast rather than blocking alert
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;bottom:2rem;right:2rem;background:#ef4444;color:white;padding:1rem 1.5rem;border-radius:12px;font-weight:600;z-index:9999;box-shadow:0 10px 40px rgba(0,0,0,0.2)';
+        toast.textContent = 'DB Fehler: ' + err.message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 6000);
       }
       hideLoader();
     }
@@ -530,9 +547,17 @@
     function toggleBranch(el, branch) { el.classList.toggle('active'); const idx = state.activeBranches.indexOf(branch); if(idx > -1) state.activeBranches.splice(idx, 1); else state.activeBranches.push(branch); }
 
     function updateKPIs() {
-      const counts = { NEU: 0, 'IN KONTAKT': 0, 'TERMIN FIXIERT': 0 };
-      state.leads.forEach(l => { const s = l.status || 'NEU'; if(counts[s] !== undefined) counts[s]++; });
-      document.getElementById('kpi-new').textContent = counts['NEU']; document.getElementById('kpi-contact').textContent = counts['IN KONTAKT']; document.getElementById('kpi-won').textContent = counts['TERMIN FIXIERT'];
+      const counts = { 'NEU': 0, 'IN KONTAKT': 0, 'TERMIN FIXIERT': 0, 'ABSCHLUSS / ABSAGE': 0, 'KEIN INTERESSE': 0 };
+      state.leads.forEach(l => {
+        const s = (l.status || 'NEU').trim();
+        if (counts[s] !== undefined) counts[s]++;
+        else counts['NEU']++; // fallback for legacy/unknown statuses
+      });
+      document.getElementById('kpi-new').textContent = counts['NEU'];
+      document.getElementById('kpi-contact').textContent = counts['IN KONTAKT'];
+      document.getElementById('kpi-termin').textContent = counts['TERMIN FIXIERT'];
+      document.getElementById('kpi-won').textContent = counts['ABSCHLUSS / ABSAGE'];
+      document.getElementById('kpi-total').textContent = state.leads.length + ' Leads gespeichert';
     }
 
     function addToCalendar(leadJson) {

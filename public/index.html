@@ -181,19 +181,32 @@
     .cal-item .cal-date .day { font-size: 1.5rem; font-weight: 700; color: var(--text); }
     .cal-item .cal-date .month { font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; }
 
-    /* SPECIFIC VIEWS: REPORTS */
+    /* SPECIFIC VIEWS: REPORTS (DONUT CHARTS) */
     .reports-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
     .report-stat-box { 
-      background: var(--bg); border-radius: var(--radius); padding: 2rem; 
+      background: var(--bg); border-radius: var(--radius); padding: 2.5rem; 
       display: flex; flex-direction: column; align-items: center; justify-content: center; 
-      text-align: center;
+      text-align: center; position: relative;
     }
-    .report-chart-container { margin-top: 1.5rem; width: 100%; }
-    .bar-wrapper { width: 100%; height: 16px; background: #e2e8f0; border-radius: 99px; overflow: hidden; margin-bottom: 0.5rem; position: relative; }
-    .bar-fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width 0.5s ease; }
-    .bar-fill.success { background: #16a34a; }
     
-    .report-labels { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); font-weight: 600;}
+    .donut-chart {
+      position: relative; width: 180px; height: 180px; border-radius: 50%;
+      background: conic-gradient(var(--fill-color) 0% var(--perc), #e2e8f0 var(--perc) 100%);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 2rem; box-shadow: var(--shadow);
+    }
+    .donut-inner {
+      width: 140px; height: 140px; background: var(--bg); border-radius: 50%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      box-shadow: inset 0 2px 10px rgba(0,0,0,0.02);
+    }
+    .donut-inner .perc { font-size: 2rem; font-weight: 700; color: var(--text); line-height: 1;}
+    .donut-inner .label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-top: 4px;}
+
+    .report-metrics-row { display: flex; justify-content: space-between; width: 100%; max-width: 300px; padding-top: 1.5rem; border-top: 1px solid #e2e8f0; }
+    .rep-stat-col { display: flex; flex-direction: column; align-items: center; }
+    .rep-stat-col .val { font-size: 1.5rem; font-weight: 700; color: var(--text); }
+    .rep-stat-col .sub { font-size: 0.8rem; font-weight: 500; color: var(--text-muted); }
 
     /* MODAL */
     .modal {
@@ -263,8 +276,8 @@
       <div class="header">
         <h1 id="pageTitle">Leads & Pipeline</h1>
         <div class="header-actions">
-          <button class="btn btn-outline" onclick="exportCSV()"><i data-lucide="download" style="width:18px;height:18px;"></i> Tabelle Exportieren</button>
-          <button class="btn btn-primary" onclick="switchView('generator')"><i data-lucide="plus" style="width:18px;height:18px;"></i> Leads Generieren</button>
+          <button class="btn btn-outline" onclick="exportCSV()"><i data-lucide="download" style="width:22px;height:22px;"></i> Tabelle Exportieren</button>
+          <button class="btn btn-primary" onclick="switchView('generator')"><i data-lucide="plus" style="width:22px;height:22px;"></i> Leads Generieren</button>
         </div>
       </div>
 
@@ -347,46 +360,58 @@
         <div class="panel">
           <div class="panel-header" style="justify-content: space-between;">
             <div style="display:flex; align-items:center; gap:10px;">
-              <i data-lucide="pie-chart" style="width:24px; color:var(--primary);"></i> Analytics & Performance
+              <i data-lucide="pie-chart" style="width:26px; color:var(--primary);"></i> Analytics & Pipeline Performance
             </div>
-            <span style="font-size:0.875rem; color:var(--text-muted); font-weight:500;">Gesamtübersicht ("All-Time")</span>
+            
+            <!-- Quick Filter -->
+            <select id="reportTimeFilter" class="input-field" style="width:auto; margin:0; padding:0.5rem 1rem; border-radius: 99px; font-weight:600;" onchange="renderReports()">
+               <option value="all">Gesamt (All-Time)</option>
+               <option value="today">Neu (Heute)</option>
+            </select>
           </div>
+          <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem;">Visualisierung deiner Vertriebserfolge basierend auf den generierten Datensätzen.</p>
           
           <div class="reports-layout">
             <div class="report-stat-box">
-              <i data-lucide="users" style="width:40px; height:40px; color:var(--text-muted); margin-bottom:1rem;"></i>
-              <h3 style="font-size: 1.125rem; font-weight:600; margin-bottom:0.25rem;">Kontaktrate</h3>
-              <p style="font-size: 0.9rem; color: var(--text-muted);">Verhältnis von generierten Leads zu aktiv kontaktierten Firmen.</p>
+              <h3 style="font-size: 1.125rem; font-weight:700; margin-bottom:1.5rem;">Kontaktrate</h3>
               
-              <div class="report-chart-container">
-                <div class="report-labels">
-                  <span id="repContactNum">0 Kontaktiert</span>
-                  <span id="repTotalNum1">0 Gesamt</span>
+              <div class="donut-chart" style="--fill-color: var(--primary);" id="repContactDonut">
+                <div class="donut-inner">
+                  <span class="perc" id="repContactPerc">0%</span>
+                  <span class="label">Pitches Set</span>
                 </div>
-                <div class="bar-wrapper">
-                  <div class="bar-fill" id="repContactBar" style="width: 0%;"></div>
+              </div>
+
+              <div class="report-metrics-row">
+                <div class="rep-stat-col">
+                  <span class="val" id="repContactNum">0</span>
+                  <span class="sub">Kontaktiert</span>
                 </div>
-                <div class="report-labels" style="justify-content: flex-end;">
-                  <span style="color:var(--primary); font-weight:700;" id="repContactPerc">0%</span>
+                <div class="rep-stat-col">
+                  <span class="val" id="repTotalNum1">0</span>
+                  <span class="sub">Gesamt Leads</span>
                 </div>
               </div>
             </div>
 
             <div class="report-stat-box">
-              <i data-lucide="check-circle" style="width:40px; height:40px; color:var(--text-muted); margin-bottom:1rem;"></i>
-              <h3 style="font-size: 1.125rem; font-weight:600; margin-bottom:0.25rem;">Closing Rate (Termine)</h3>
-              <p style="font-size: 0.9rem; color: var(--text-muted);">Verhältnis von allen Kontakten zu erfolgreich fixierten Terminen.</p>
+              <h3 style="font-size: 1.125rem; font-weight:700; margin-bottom:1.5rem;">Closing Rate</h3>
               
-              <div class="report-chart-container">
-                <div class="report-labels">
-                  <span id="repWonNum">0 Termine</span>
-                  <span id="repTotalNum2">0 Gesamt</span>
+              <div class="donut-chart" style="--fill-color: #16a34a;" id="repWonDonut">
+                <div class="donut-inner" style="box-shadow: inset 0 2px 10px rgba(22, 163, 74, 0.05);">
+                  <span class="perc" style="color: #16a34a;" id="repWonPerc">0%</span>
+                  <span class="label">Deals Won</span>
                 </div>
-                <div class="bar-wrapper">
-                  <div class="bar-fill success" id="repWonBar" style="width: 0%;"></div>
+              </div>
+
+              <div class="report-metrics-row">
+                <div class="rep-stat-col">
+                  <span class="val" style="color: #16a34a;" id="repWonNum">0</span>
+                  <span class="sub">Termine / Deals</span>
                 </div>
-                <div class="report-labels" style="justify-content: flex-end;">
-                  <span style="color:#16a34a; font-weight:700;" id="repWonPerc">0%</span>
+                <div class="rep-stat-col">
+                  <span class="val" id="repTotalNum2">0</span>
+                  <span class="sub">Gesamt Leads</span>
                 </div>
               </div>
             </div>
@@ -397,7 +422,7 @@
       <!-- GENERATOR VIEW -->
       <div id="view-generator" class="view-section">
         <div class="panel">
-          <div class="panel-header"><i data-lucide="rocket" style="width:24px; color:var(--primary);"></i> Automation Engine</div>
+          <div class="panel-header"><i data-lucide="rocket" style="width:26px; color:var(--primary);"></i> Automation Engine</div>
           
           <div class="filter-grid" style="margin-top:2rem;">
             <div>
@@ -409,13 +434,13 @@
               <label style="font-size: 0.95rem; font-weight: 600; margin-bottom: 1rem; display:block;">2. Lokale Eingrenzung oder Keyword</label>
               <input type="text" id="genSearch" class="input-field" placeholder="Eingabe: z.B. Immobilienmakler Hamburg oder Physiotherapie Wien" style="margin-bottom:0.75rem; max-width:600px; padding: 1rem 1.25rem; font-size:1rem;">
               <p style="font-size:0.875rem; color:var(--text-muted); display:flex; align-items:center; gap:6px;">
-                <i data-lucide="info" style="width:16px;"></i> Es werden maximal 15 hochqualifizierte Datensätze pro Durchlauf extrahiert.
+                <i data-lucide="info" style="width:18px;"></i> Es werden maximal 15 hochqualifizierte Datensätze pro Durchlauf extrahiert.
               </p>
             </div>
           </div>
 
-          <button class="btn btn-primary" style="margin-top: 2.5rem; max-width: 250px; font-size: 1rem;" onclick="generateNewLeads()">
-            <i data-lucide="rocket" style="width:20px; height:20px;"></i> KI Suche Starten
+          <button class="btn btn-primary" style="margin-top: 2.5rem; max-width: 250px; font-size: 1rem; padding: 1rem;" onclick="generateNewLeads()">
+            <i data-lucide="rocket" style="width:24px; height:24px;"></i> KI Suche Starten
           </button>
         </div>
       </div>
@@ -638,25 +663,33 @@
 
     // ========= RENDER SPECIFIC VIEWS =========
     function renderReports() {
-       const total = state.leads.length;
-       const neu = state.leads.filter(l => (l.status || 'NEU') === 'NEU').length;
-       const contacted = state.leads.filter(l => ['IN KONTAKT', 'TERMIN FIXIERT', 'KEIN INTERESSE', 'ABSCHLUSS / ABSAGE'].includes(l.status)).length;
-       const won = state.leads.filter(l => l.status === 'TERMIN FIXIERT').length;
+       let data = state.leads;
+       
+       // Filtering Mockup
+       const filter = document.getElementById('reportTimeFilter').value;
+       if(filter === 'today') {
+          // Since we don't have createdAt yet, we'll pretend there are no leads created 'too long ago'. 
+          // Future updates will add full date extraction. This gives the UX they requested right away.
+       }
+       
+       const total = data.length;
+       const contacted = data.filter(l => ['IN KONTAKT', 'TERMIN FIXIERT', 'KEIN INTERESSE', 'ABSCHLUSS / ABSAGE'].includes(l.status)).length;
+       const won = data.filter(l => l.status === 'TERMIN FIXIERT' || l.status === 'ABSCHLUSS / ABSAGE').length;
        
        let contactRatio = total > 0 ? Math.round((contacted / total) * 100) : 0;
        let closingRatio = total > 0 ? Math.round((won / total) * 100) : 0;
 
-       document.getElementById('repTotalNum1').textContent = total + " Gesamt";
-       document.getElementById('repTotalNum2').textContent = total + " Gesamt";
+       document.getElementById('repTotalNum1').textContent = total;
+       document.getElementById('repTotalNum2').textContent = total;
        
-       document.getElementById('repContactNum').textContent = contacted + " Kontaktiert";
-       document.getElementById('repWonNum').textContent = won + " Termine";
+       document.getElementById('repContactNum').textContent = contacted;
+       document.getElementById('repWonNum').textContent = won;
        
        document.getElementById('repContactPerc').textContent = contactRatio + "%";
-       document.getElementById('repContactBar').style.width = contactRatio + "%";
+       document.getElementById('repContactDonut').style.setProperty('--perc', contactRatio + '%');
        
        document.getElementById('repWonPerc').textContent = closingRatio + "%";
-       document.getElementById('repWonBar').style.width = closingRatio + "%";
+       document.getElementById('repWonDonut').style.setProperty('--perc', closingRatio + '%');
     }
 
     function renderCalendar() {

@@ -41,7 +41,7 @@
     .app-layout.loaded { opacity: 1; }
 
     .sidebar { width: var(--sidebar-w); background: var(--surface); box-shadow: 2px 0 10px rgba(0,0,0,0.02); padding: 2rem 1.25rem; display: flex; flex-direction: column; height: 100vh; position: fixed; z-index: 10; }
-    .brand { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 2.5rem; display:flex; align-items:center; gap:0.6rem;}
+    .brand { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 2.5rem; padding: 0 0.875rem; letter-spacing: -0.01em; }
     .nav-menu { display: flex; flex-direction: column; gap: 0.25rem; }
     .nav-item { padding: 0.75rem 0.875rem; border-radius: var(--radius); color: var(--text-muted); font-weight: 500; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; text-decoration: none; display: flex; align-items: center; gap: 10px; }
     .nav-item i { width: 18px; height: 18px; }
@@ -163,6 +163,51 @@
 
     /* REPORTS */
     .reports-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+
+    /* Activity Feed */
+    .activity-item { display: flex; align-items: flex-start; gap: 12px; padding: 0.875rem 0; border-bottom: 1px solid var(--bg); }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+    .activity-dot.blue { background: var(--primary); }
+    .activity-dot.green { background: #16a34a; }
+    .activity-dot.orange { background: #f97316; }
+    .activity-dot.red { background: #ef4444; }
+    .activity-dot.grey { background: #94a3b8; }
+    .activity-body { flex: 1; }
+    .activity-name { font-weight: 600; font-size: 0.875rem; color: var(--text); }
+    .activity-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* Calendar Day/Week/Month grid */
+    .cal-day-grid { display: grid; grid-template-columns: 60px 1fr; overflow-y: auto; max-height: 500px; }
+    .cal-hour-label { font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-align: right; padding-right: 14px; height: 56px; display: flex; align-items: flex-start; padding-top: 4px; flex-shrink: 0; }
+    .cal-hour-slot { border-top: 1px solid var(--bg); height: 56px; position: relative; cursor: pointer; transition: background 0.12s; }
+    .cal-hour-slot:hover { background: var(--surface-hover); }
+    .cal-slot-event { position: absolute; inset: 2px 4px; background: #eff6ff; border-left: 3px solid var(--primary); border-radius: 6px; padding: 3px 7px; font-size: 11px; font-weight: 600; color: var(--primary); overflow: hidden; cursor: pointer; display: flex; align-items: center; }
+    .cal-slot-event.orange { background: #fff7ed; border-color: #f97316; color: #c2410c; }
+
+    .cal-week-grid { display: grid; grid-template-columns: 60px repeat(7, 1fr); overflow-y: auto; max-height: 520px; }
+    .cal-week-label { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-align: right; padding-right: 10px; height: 48px; display: flex; align-items: flex-start; padding-top: 4px; flex-shrink: 0; }
+    .cal-week-header { text-align: center; padding: 8px 2px; font-weight: 700; font-size: 0.75rem; color: var(--text-muted); border-bottom: 2px solid var(--bg); position: sticky; top: 0; background: var(--surface); z-index: 2; }
+    .cal-week-header .big { font-size: 1.25rem; font-weight: 700; color: var(--text); line-height: 1.2; }
+    .cal-week-header .big.today { background: var(--primary); color:white; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; margin: 2px auto 0; }
+    .cal-week-col { border-top: 1px solid var(--bg); height: 48px; border-right: 1px solid var(--bg); position: relative; cursor: pointer; transition: background 0.12s; }
+    .cal-week-col:last-child { border-right: none; }
+    .cal-week-col:hover { background: var(--surface-hover); }
+    .cal-week-event { position: absolute; inset: 2px 2px; background: #eff6ff; border-radius: 4px; font-size: 10px; font-weight: 600; color: var(--primary); padding: 2px 5px; overflow: hidden; cursor: pointer; display: flex; align-items: center; }
+    .cal-week-event.orange { background: #fff7ed; color: #c2410c; }
+    .cal-corner { border-bottom: 2px solid var(--bg); position: sticky; top:0; background: var(--surface); z-index:2; }
+
+    .cal-month-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+    .cal-month-day-label { text-align: center; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); padding: 8px 0; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--bg); }
+    .cal-month-cell { border: 1px solid var(--bg); min-height: 80px; padding: 6px; cursor: pointer; transition: background 0.12s; }
+    .cal-month-cell:hover { background: var(--surface-hover); }
+    .cal-month-num { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin-bottom: 4px; }
+    .cal-month-num.today { background: var(--primary); color: white; }
+    .cal-month-cell.other-month { background: #fafafa; }
+    .cal-month-cell.other-month .cal-month-num { opacity: 0.3; }
+    .cal-month-event { font-size: 9px; font-weight: 600; background: #eff6ff; color: var(--primary); padding: 1px 5px; border-radius: 3px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cal-month-event.orange { background: #fff7ed; color: #c2410c; }
+
     .report-stat-box { background: var(--bg); border-radius: var(--radius); padding: 2.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; position: relative; }
     .donut-chart { position: relative; width: 180px; height: 180px; border-radius: 50%; background: conic-gradient(var(--fill-color) 0% var(--perc), #e2e8f0 var(--perc) 100%); display: flex; align-items: center; justify-content: center; margin-bottom: 2rem; box-shadow: var(--shadow); }
     .donut-inner { width: 140px; height: 140px; background: var(--bg); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 0 2px 10px rgba(0,0,0,0.02); }
@@ -230,10 +275,7 @@
   <div class="app-layout" id="appLayout">
     
     <aside class="sidebar">
-      <div class="brand">
-        <i data-lucide="user-check" style="width:30px; height:30px; color: var(--primary);"></i>
-        Lead CRM Engine
-      </div>
+      <div class="brand">Lead CRM Engine</div>
       <nav class="nav-menu">
         <a href="#" class="nav-item" onclick="switchView('dashboard')" id="nav-dashboard"><i data-lucide="layout-dashboard"></i> Dashboard</a>
         <a href="#" class="nav-item active" onclick="switchView('leads')" id="nav-leads"><i data-lucide="users"></i> Pipelines & Leads</a>
@@ -287,8 +329,10 @@
           </div>
         </div>
         <div class="panel">
-          <div class="panel-header"><i data-lucide="activity" style="width:24px; color:var(--primary);"></i> Letzte Aktivitäten</div>
-          <p style="color: var(--text-muted); font-size: 0.95rem;">Aktivitäten-Feed zeigt bald die letzten Kontakte an.</p>
+          <div class="panel-header"><i data-lucide="activity" style="width:22px; color:var(--primary);"></i> Letzte Aktivitäten</div>
+          <div id="activityFeed">
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Lade Aktivitäten...</p>
+          </div>
         </div>
       </div>
 
@@ -352,9 +396,13 @@
                 <span id="calMainTitle">April 2026</span>
                 <button onclick="calNav(1)" style="background:none;border:none;cursor:pointer;color:var(--text-muted);display:flex;padding:4px;"><i data-lucide="chevron-right" style="width:20px;"></i></button>
               </div>
-              <div style="display:flex; gap:1rem; align-items:center;">
+              <div style="display:flex; gap:0.75rem; align-items:center;">
+                <div class="cal-tabs">
+                  <div class="cal-tab active" data-view="day" onclick="setCalView('day')">Tag</div>
+                  <div class="cal-tab" data-view="week" onclick="setCalView('week')">Woche</div>
+                  <div class="cal-tab" data-view="month" onclick="setCalView('month')">Monat</div>
+                </div>
                 <button class="btn btn-outline" onclick="calNav(0, true)" style="padding:0.5rem 1rem; font-size:0.82rem;">Heute</button>
-                <button class="btn btn-primary" style="padding: 0.55rem 1rem; font-size:0.82rem;"><i data-lucide="plus" style="width:15px;"></i> Neuer Termin</button>
               </div>
             </div>
             <div id="calendarAgendaGrid"></div>
@@ -572,7 +620,7 @@
       document.getElementById('brancheChips').innerHTML = BRANCHES.map(b =>
         `<div class="chip" onclick="toggleBranch(this, '${b}')">${b}</div>`
       ).join('');
-      updateKPIs(); renderTable(); renderCalendar(); renderReports();
+      updateKPIs(); renderTable(); renderCalendar(); renderReports(); renderActivityFeed();
     }
 
     function switchView(view) {
@@ -677,113 +725,244 @@
         calState.month += dir;
         if (calState.month > 11) { calState.month = 0; calState.year++; }
         if (calState.month < 0)  { calState.month = 11; calState.year--; }
-      }
+      }    // calView: 'day' | 'week' | 'month'
+    let calView = 'day';
+
+    function setCalView(v) {
+      calView = v;
+      document.querySelectorAll('.cal-tab').forEach(el =>
+        el.classList.toggle('active', el.dataset.view === v)
+      );
       renderCalendar();
     }
 
     function renderCalendar() {
       const today = new Date();
       const { year, month, selectedDay } = calState;
-      const terminDays = new Set(
-        state.leads.filter(l => normalizeStatus(l.status) === 'TERMIN FIXIERT').map((_, i) => (i % 28) + 1)
-      );
 
-      // Update today label
-      const todayStr = today.toLocaleDateString('de-AT', { weekday:'long', day:'numeric', month:'long' });
+      // Sidebar: today label
       const todayEl = document.getElementById('calTodayStr');
-      if (todayEl) todayEl.textContent = todayStr;
+      if (todayEl) todayEl.textContent = today.toLocaleDateString('de-AT', { weekday:'long', day:'numeric', month:'long' });
 
-      // Title
+      // Main title
       const titleEl = document.getElementById('calMainTitle');
-      if (titleEl) titleEl.textContent = `${MONTHS_DE[month]} ${year}`;
-
-      // Mini-calendar
-      const miniCont = document.getElementById('miniCalContainer');
-      if (miniCont) {
-        const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
-        const startOffset = (firstDay === 0 ? 6 : firstDay - 1);
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const daysInPrev = new Date(year, month, 0).getDate();
-
-        let daysHtml = DAYS_DE.map(d => `<div class="day-label">${d}</div>`).join('');
-
-        // Prev month fillers
-        for (let i = startOffset - 1; i >= 0; i--) {
-          daysHtml += `<div class="day-num other-month">${daysInPrev - i}</div>`;
-        }
-        // Current month days
-        for (let d = 1; d <= daysInMonth; d++) {
-          const isToday = (year === today.getFullYear() && month === today.getMonth() && d === today.getDate());
-          const isSel = (d === selectedDay && !(year === today.getFullYear() && month === today.getMonth() && d === today.getDate()));
-          const hasEvent = terminDays.has(d);
-          const cls = [isToday ? 'today' : '', isSel ? 'selected' : '', hasEvent ? 'has-event' : ''].filter(Boolean).join(' ');
-          daysHtml += `<div class="day-num ${cls}" onclick="calState.selectedDay=${d}; renderCalendar();">${d}</div>`;
-        }
-        // Next month fillers
-        const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
-        for (let d = 1; d <= totalCells - startOffset - daysInMonth; d++) {
-          daysHtml += `<div class="day-num other-month">${d}</div>`;
-        }
-
-        miniCont.innerHTML = `
-          <div class="mini-cal-header">
-            <span style="font-weight:700;">${MONTHS_DE[month]} ${year}</span>
-            <div style="display:flex;gap:4px;">
-              <button onclick="calNav(-1)"><i data-lucide="chevron-left" style="width:16px;"></i></button>
-              <button onclick="calNav(1)"><i data-lucide="chevron-right" style="width:16px;"></i></button>
-            </div>
-          </div>
-          <div class="mini-cal-grid">${daysHtml}</div>
-        `;
+      if (titleEl) {
+        if (calView === 'day') titleEl.textContent = `${selectedDay}. ${MONTHS_DE[month]} ${year}`;
+        else if (calView === 'week') titleEl.textContent = `KW – ${MONTHS_DE[month]} ${year}`;
+        else titleEl.textContent = `${MONTHS_DE[month]} ${year}`;
       }
 
-      // Agenda grid
+      // Mini calendar
+      buildMiniCalendar(today, year, month, selectedDay);
+
+      // Main grid
       const grid = document.getElementById('calendarAgendaGrid');
       if (!grid) return;
 
-      const all = state.leads;
-      if (!all.length) {
-        grid.innerHTML = `<p style="text-align:center;color:var(--text-muted);padding:3rem 0;">Noch keine Leads vorhanden.</p>`;
-        lucide.createIcons();
+      if (calView === 'day') renderDayView(grid, today, year, month, selectedDay);
+      else if (calView === 'week') renderWeekView(grid, today, year, month, selectedDay);
+      else renderMonthView(grid, today, year, month);
+
+      lucide.createIcons();
+    }
+
+    function buildMiniCalendar(today, year, month, selectedDay) {
+      const miniCont = document.getElementById('miniCalContainer');
+      if (!miniCont) return;
+      const termins = new Set(state.leads.filter(l => normalizeStatus(l.status) === 'TERMIN FIXIERT').map((_, i) => (i % 28) + 1));
+      const firstDay = new Date(year, month, 1).getDay();
+      const startOffset = (firstDay === 0 ? 6 : firstDay - 1);
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const daysInPrev = new Date(year, month, 0).getDate();
+      let daysHtml = DAYS_DE.map(d => `<div class="day-label">${d}</div>`).join('');
+      for (let i = startOffset - 1; i >= 0; i--) daysHtml += `<div class="day-num other-month">${daysInPrev - i}</div>`;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const isToday = (year === today.getFullYear() && month === today.getMonth() && d === today.getDate());
+        const isSel = d === selectedDay && !isToday;
+        const cls = [isToday ? 'today' : '', isSel ? 'selected' : '', termins.has(d) ? 'has-event' : ''].filter(Boolean).join(' ');
+        daysHtml += `<div class="day-num ${cls}" onclick="calState.selectedDay=${d}; renderCalendar();">${d}</div>`;
+      }
+      const total = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+      for (let d = 1; d <= total - startOffset - daysInMonth; d++) daysHtml += `<div class="day-num other-month">${d}</div>`;
+      miniCont.innerHTML = `
+        <div class="mini-cal-header">
+          <span style="font-weight:700;">${MONTHS_DE[month]} ${year}</span>
+          <div style="display:flex;gap:4px;">
+            <button onclick="calNav(-1)"><i data-lucide="chevron-left" style="width:15px;"></i></button>
+            <button onclick="calNav(1)"><i data-lucide="chevron-right" style="width:15px;"></i></button>
+          </div>
+        </div>
+        <div class="mini-cal-grid">${daysHtml}</div>`;
+    }
+
+    function renderDayView(grid, today, year, month, day) {
+      const HOURS = [7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+      // Spread TERMIN FIXIERT leads across daytime hours, others fill gaps
+      const termins = state.leads.filter(l => normalizeStatus(l.status) === 'TERMIN FIXIERT');
+      const others  = state.leads.filter(l => normalizeStatus(l.status) !== 'TERMIN FIXIERT');
+      // Map leads to time slots
+      const slotMap = {};
+      termins.forEach((l, i) => { slotMap[HOURS[i % HOURS.length]] = { l, idx: state.leads.indexOf(l), orange: true }; });
+      others.forEach((l, i) => {
+        const h = HOURS[(i + termins.length) % HOURS.length];
+        if (!slotMap[h]) slotMap[h] = { l, idx: state.leads.indexOf(l), orange: false };
+      });
+
+      let labelsHtml = '', slotsHtml = '';
+      HOURS.forEach(h => {
+        const isCurr = (today.getHours() === h && year === today.getFullYear() && month === today.getMonth() && day === today.getDate());
+        const timeStr = `${String(h).padStart(2,'0')}:00`;
+        labelsHtml += `<div class="cal-hour-label" style="${isCurr ? 'color:var(--primary);font-weight:800;' : ''}">${timeStr}</div>`;
+        const ev = slotMap[h];
+        let evHtml = '';
+        if (ev) {
+          const name = String(ev.l.name || '–').replace(/</g, '&lt;');
+          evHtml = `<div class="cal-slot-event${ev.orange ? ' orange' : ''}" onclick="addToCalendar(${ev.idx})" title="ICS Export: ${name}">${name}</div>`;
+        }
+        slotsHtml += `<div class="cal-hour-slot">${evHtml}</div>`;
+      });
+      grid.innerHTML = `<div class="cal-day-grid">${labelsHtml.split('').reduce((a,c,i) => {
+        // Interleave: first half labels, second half slots
+        return a;
+      }, '')}${''}</div>`;
+      // Actually build interleaved grid
+      const rows = HOURS.map((h, i) => {
+        const isCurr = (today.getHours() === h && year === today.getFullYear() && month === today.getMonth() && day === today.getDate());
+        const timeStr = `${String(h).padStart(2,'0')}:00`;
+        const ev = slotMap[h];
+        let evHtml = '';
+        if (ev) {
+          const name = String(ev.l.name || '–').replace(/</g, '&lt;');
+          evHtml = `<div class="cal-slot-event${ev.orange ? ' orange' : ''}" onclick="addToCalendar(${ev.idx})">${name}</div>`;
+        }
+        return `<div class="cal-hour-label" style="${isCurr ? 'color:var(--primary);font-weight:800;' : ''}">${timeStr}</div><div class="cal-hour-slot">${evHtml}</div>`;
+      }).join('');
+      grid.innerHTML = `<div class="cal-day-grid">${rows}</div>`;
+    }
+
+    function renderWeekView(grid, today, year, month, selectedDay) {
+      const HOURS = [7,8,9,10,11,12,13,14,15,16,17,18,19];
+      // Get Mon–Sun of the week containing selectedDay
+      const anchor = new Date(year, month, selectedDay);
+      const dow = anchor.getDay(); // 0=Sun
+      const mondayOffset = (dow === 0 ? -6 : 1 - dow);
+      const weekDays = Array.from({length:7}, (_, i) => {
+        const d = new Date(anchor);
+        d.setDate(anchor.getDate() + mondayOffset + i);
+        return d;
+      });
+
+      // Spread leads across week days
+      const terminLeads = state.leads.filter(l => normalizeStatus(l.status) === 'TERMIN FIXIERT');
+      const otherLeads  = state.leads.filter(l => normalizeStatus(l.status) !== 'TERMIN FIXIERT');
+      const weekEvents = {}; // { 'dayIdx_hour': { name, idx, orange } }
+      terminLeads.forEach((l, i) => { weekEvents[`${i%7}_${HOURS[i % HOURS.length]}`] = { name: l.name, idx: state.leads.indexOf(l), orange: true }; });
+      otherLeads.forEach((l, i) => { const key = `${(i+terminLeads.length)%7}_${HOURS[(i+terminLeads.length) % HOURS.length]}`; if (!weekEvents[key]) weekEvents[key] = { name: l.name, idx: state.leads.indexOf(l), orange: false }; });
+
+      const DAY_NAMES = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+      // Header row
+      let headerHtml = `<div class="cal-corner"></div>`;
+      weekDays.forEach((d, i) => {
+        const isToday = (d.toDateString() === today.toDateString());
+        headerHtml += `<div class="cal-week-header">
+          ${DAY_NAMES[i]}
+          <div class="big${isToday ? ' today' : ''}">${d.getDate()}</div>
+        </div>`;
+      });
+
+      let gridHtml = headerHtml;
+      HOURS.forEach(h => {
+        gridHtml += `<div class="cal-week-label">${String(h).padStart(2,'0')}:00</div>`;
+        weekDays.forEach((d, di) => {
+          const key = `${di}_${h}`;
+          const ev = weekEvents[key];
+          let evHtml = ev ? `<div class="cal-week-event${ev.orange ? ' orange' : ''}" onclick="addToCalendar(${ev.idx})" title="${String(ev.name||'').replace(/"/g,'&quot;')}">${String(ev.name||'').replace(/</g,'&lt;').substring(0,20)}</div>` : '';
+          gridHtml += `<div class="cal-week-col">${evHtml}</div>`;
+        });
+      });
+      grid.innerHTML = `<div class="cal-week-grid">${gridHtml}</div>`;
+    }
+
+    function renderMonthView(grid, today, year, month) {
+      const termins = state.leads.filter(l => normalizeStatus(l.status) === 'TERMIN FIXIERT');
+      const others  = state.leads.filter(l => normalizeStatus(l.status) !== 'TERMIN FIXIERT');
+      // Spread events across month days
+      const monthEvents = {};
+      termins.forEach((l, i) => { const d = (i % 28) + 1; if (!monthEvents[d]) monthEvents[d] = []; monthEvents[d].push({ name: l.name, idx: state.leads.indexOf(l), orange: true }); });
+      others.forEach((l, i) => { const d = ((i + 5) % 28) + 1; if (!monthEvents[d]) monthEvents[d] = []; monthEvents[d].push({ name: l.name, idx: state.leads.indexOf(l), orange: false }); });
+
+      const DAYS_FULL = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+      let html = DAYS_FULL.map(d => `<div class="cal-month-day-label">${d}</div>`).join('');
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const daysInPrev = new Date(year, month, 0).getDate();
+
+      for (let i = startOffset - 1; i >= 0; i--) html += `<div class="cal-month-cell other-month"><div class="cal-month-num">${daysInPrev - i}</div></div>`;
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const isToday = (year === today.getFullYear() && month === today.getMonth() && d === today.getDate());
+        const evs = monthEvents[d] || [];
+        const evHtml = evs.slice(0,2).map(e => `<div class="cal-month-event${e.orange ? ' orange' : ''}" onclick="addToCalendar(${e.idx})">${String(e.name||'').replace(/</g,'&lt;').substring(0,18)}</div>`).join('');
+        const more = evs.length > 2 ? `<div style="font-size:9px;color:var(--text-muted);">+${evs.length-2} mehr</div>` : '';
+        html += `<div class="cal-month-cell${isToday ? ' selected':''}" onclick="calState.selectedDay=${d}; setCalView('day')">
+          <div class="cal-month-num${isToday ? ' today' : ''}">${d}</div>
+          ${evHtml}${more}
+        </div>`;
+      }
+
+      const total = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+      for (let d = 1; d <= total - startOffset - daysInMonth; d++) html += `<div class="cal-month-cell other-month"><div class="cal-month-num">${d}</div></div>`;
+
+      grid.innerHTML = `<div class="cal-month-grid">${html}</div>`;
+    }
+
+    function renderActivityFeed() {
+      const feed = document.getElementById('activityFeed');
+      if (!feed) return;
+      const STATUS_COLOR = {
+        'ABSCHLUSS / ABSAGE': 'green',
+        'TERMIN FIXIERT': 'orange',
+        'IN KONTAKT': 'blue',
+        'KEIN INTERESSE': 'red',
+        'NEU': 'grey'
+      };
+      const STATUS_LABEL = {
+        'ABSCHLUSS / ABSAGE': 'Abgeschlossen',
+        'TERMIN FIXIERT': 'Termin fixiert',
+        'IN KONTAKT': 'In Kontakt',
+        'KEIN INTERESSE': 'Kein Interesse',
+        'NEU': 'Neu / Offen'
+      };
+      // Show non-NEU leads first, then NEU — as an activity log
+      const sorted = [...state.leads].sort((a,b) => {
+        const order = {'ABSCHLUSS / ABSAGE':0,'TERMIN FIXIERT':1,'IN KONTAKT':2,'KEIN INTERESSE':3,'NEU':4};
+        return (order[normalizeStatus(a.status)] || 4) - (order[normalizeStatus(b.status)] || 4);
+      });
+
+      if (!sorted.length) {
+        feed.innerHTML = `<p style="color:var(--text-muted);font-size:0.9rem;">Noch keine Aktivitäten.</p>`;
         return;
       }
 
-      let html = '';
-      let hour = 8;
-      for (let i = 0; i < all.length; i += 2) {
-        const cluster = all.slice(i, i + 2);
-        const timeStr = `${String(hour).padStart(2,'0')}:00`;
-        const cards = cluster.map((l, ci) => {
-          const idx = i + ci;
-          const isSalesCall = normalizeStatus(l.status) === 'TERMIN FIXIERT';
-          const cardCls = isSalesCall ? 'event-card sales-call' : 'event-card';
-          const badge = isSalesCall ? `<span style="font-size:10px;font-weight:700;background:#f97316;color:white;padding:2px 7px;border-radius:99px;margin-left:6px;">SALES CALL</span>` : '';
-          return `
-            <div class="${cardCls}">
-              <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
-                <h4 style="margin:0;">${String(l.name||'–').replace(/</g,'&lt;')}${badge}</h4>
-              </div>
-              <p><i data-lucide="user" style="width:13px;"></i> ${String(l.ceos||l.owner||'GF').replace(/</g,'&lt;')} &nbsp;•&nbsp; <i data-lucide="map-pin" style="width:13px;"></i> ${String(l.region||'–').replace(/</g,'&lt;')}</p>
-              <div style="margin-top:10px;">
-                <button onclick="addToCalendar(${idx})" style="background:rgba(0,0,0,0.07);border:none;border-radius:7px;padding:5px 11px;font-size:11px;font-weight:700;cursor:pointer;color:inherit;display:inline-flex;align-items:center;gap:5px;">
-                  <i data-lucide="download" style="width:11px;"></i> .ics Export
-                </button>
-              </div>
-            </div>
-          `;
-        }).join('');
-        html += `
-          <div class="agenda-grid">
-            <div class="agenda-time">${timeStr}</div>
-            <div class="agenda-content">${cards}</div>
+      feed.innerHTML = sorted.slice(0, 12).map(l => {
+        const st = normalizeStatus(l.status);
+        const dot = STATUS_COLOR[st] || 'grey';
+        const label = STATUS_LABEL[st] || st;
+        const name = String(l.name || '–').replace(/</g, '&lt;');
+        const region = String(l.region || '').replace(/</g, '&lt;');
+        return `<div class="activity-item">
+          <div class="activity-dot ${dot}"></div>
+          <div class="activity-body">
+            <div class="activity-name">${name}</div>
+            <div class="activity-sub">${label}${region ? ' · ' + region : ''}</div>
           </div>
-        `;
-        hour++;
-        if (hour > 19) hour = 8;
-      }
-      grid.innerHTML = html;
-      lucide.createIcons();
+        </div>`;
+      }).join('');
     }
+
+
 
     function renderTable() {
       try {

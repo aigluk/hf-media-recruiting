@@ -418,7 +418,11 @@
         <div class="panel" style="padding: 1.5rem 0;">
           <div class="header" style="margin-bottom: 0; padding: 0 2.5rem 1.5rem 2.5rem;">
             <h2 style="font-size: 1.125rem; margin:0; color:var(--text); font-weight:700;">Listenansicht (<span id="resultsCount">0</span>)</h2>
-            <div style="display:flex; gap:1rem;">
+            <div style="display:flex; gap:1rem; align-items:center;">
+               <select id="branchFilter" class="input-field" style="margin:0; width: 220px; padding: 0.65rem 1rem;" onchange="renderTable()">
+                 <option value="">Alle Branchen</option>
+                 <script>document.write(BRANCHES.map(b => `<option value="${b}">${b}</option>`).join(''))</script>
+               </select>
                <input type="text" id="tableSearch" class="input-field" style="margin:0; width: 280px; padding: 0.65rem 1rem;" placeholder="Firma, Inhaber, Ort..." onkeyup="renderTable()">
             </div>
           </div>
@@ -433,7 +437,7 @@
                   <th>Ort</th>
                   <th>CRM Status</th>
                   <th style="width: 20%;">Deal-Notizen</th>
-                  <th style="min-width: 170px; text-align:right; padding-right:2.5rem;">Aktionen</th>
+                  <th style="min-width: 220px; text-align:right; padding-right:2.5rem;">Aktionen</th>
                 </tr>
               </thead>
               <tbody id="leadsTableBody"></tbody>
@@ -553,7 +557,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h3 id="msgTitle" style="font-size: 1.25rem; font-weight: 700;">Outreach Pitch</h3>
-        <button style="background:none;border:none; cursor:pointer; color:var(--text-muted);" onclick="closeModal()"><i data-lucide="x"></i></button>
+        <button style="background:none;border:none; cursor:pointer; color:var(--text-muted);" onclick="closeModal('msgModal')"><i data-lucide="x"></i></button>
       </div>
       <div class="modal-body">
         <div class="template-tabs" id="msgTabs"></div>
@@ -1049,10 +1053,16 @@
     function renderTable() {
       try {
         const q = (document.getElementById('tableSearch').value || '').toLowerCase().trim();
+        const bf = document.getElementById('branchFilter');
+        const b = bf ? bf.value.toLowerCase() : '';
         // Filter by current pipeline tab (normalized status)
         let filtered = state.leads
           .map((l, idx) => ({ l, idx }))
           .filter(({ l }) => normalizeStatus(l.status) === state.activeTab);
+
+        if (b) {
+          filtered = filtered.filter(({ l }) => String(l.industry||'').toLowerCase() === b || String(l.branche||'').toLowerCase() === b);
+        }
 
         if (q) {
           filtered = filtered.filter(({ l }) =>
@@ -1096,13 +1106,13 @@
               </select>
             </td>
             <td><input type="text" class="note-input" value="${note}" placeholder="Notiz..." onchange="saveLeadField(${idx},'note',this.value)"></td>
-            <td style="padding-right:1.5rem;">
+            <td style="padding-right:1.5rem; white-space:nowrap;">
               <div class="action-group" style="justify-content:flex-end;">
                 <button class="action-icon info" onclick="showLeadDetail(${idx})" title="Details anzeigen"><i data-lucide="info"></i></button>
                 <button class="action-icon cal" onclick="addToCalendar(${idx})" title=".ics Termin"><i data-lucide="calendar"></i></button>
                 ${tn ? `<a href="tel:${tn}" class="action-icon" title="Anrufen"><i data-lucide="phone"></i></a>` : ''}
                 ${em ? `<a href="mailto:${em}" class="action-icon" title="E-Mail"><i data-lucide="mail"></i></a>` : ''}
-                <button class="action-icon dm" onclick="openModal(${idx})"><i data-lucide="send" style="width:13px;margin-right:5px;"></i> Pitch</button>
+                <button class="action-icon dm" onclick="openPitchModal(${idx})"><i data-lucide="send" style="width:13px;margin-right:5px;"></i> Pitch</button>
                 <button class="action-icon" onclick="deleteLead(${idx})" title="Lead löschen" style="color:#ef4444;"><i data-lucide="trash-2" style="width:15px;"></i></button>
 
               </div>
@@ -1134,9 +1144,8 @@
       hideLoader();
     }
 
-    function closeModal() { document.getElementById('msgModal').classList.remove('open'); }
 
-    async function openModal(idx) {
+    async function openPitchModal(idx) {
       const lead = window.__leads[idx];
       if (!lead) return;
       state.activeLead = lead;
@@ -1266,6 +1275,9 @@
       const l = window.__leads ? window.__leads[idx] : (state.leads[idx] || null);
       if (!l) return;
       document.getElementById('leadModalTitle').textContent = String(l.name || '–');
+      const webStr = l.website && l.website !== '–' && l.website !== '' 
+        ? `<a href="${l.website.startsWith('http') ? l.website : 'http://'+l.website}" target="_blank" style="color:var(--primary);text-decoration:underline;">${l.website}</a>` 
+        : '–';
       const fields = [
         ['Ansprechperson', l.ceos || l.owner || '–'],
         ['Branche', l.industry || l.branche || '–'],
@@ -1273,7 +1285,7 @@
         ['Adresse', l.address || l.adresse || '–'],
         ['Telefon', l.phone || l.tel || '–'],
         ['E-Mail', l.email || '–'],
-        ['Website', l.website || '–'],
+        ['Website', webStr],
         ['CRM Status', l.status || '–'],
         ['LinkedIn', l.linkedin || '–'],
         ['Notizen', l.notes || l.note || l.description || '–'],
@@ -1282,7 +1294,7 @@
       grid.innerHTML = fields.map(([label, val]) => `
         <div class="modal-field">
           <label>${label}</label>
-          <div class="val">${String(val).replace(/</g,'&lt;')}</div>
+          <div class="val">${String(val).includes('<a') ? val : String(val).replace(/</g,'&lt;')}</div>
         </div>`).join('');
       const actions = document.getElementById('leadModalActions');
       const phone = (l.phone || l.tel || '').replace(/[^\d+]/g,'');

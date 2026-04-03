@@ -212,3 +212,7 @@ window.__leads = state.leads; // globaler Index-Zugriff für onclick-Handler
 | 2026-04-03 | Modals: Lead-Detail, Status-Liste, Neuer Termin |
 | 2026-04-03 | Aktivitäts-Feed: Echte Lead-Daten, sortiert nach Status |
 | 2026-04-03 | Action Icons: Overflow-Fix (kein Clipping beim Hover) |
+| 2026-04-03 | Dynamic Branch Filter: Populates from current lead data |
+| 2026-04-03 | Deal Note Modal: Pop-up for larger text editing |
+| 2026-04-03 | Website Link: Clickable in detail popup |
+| 2026-04-03 | Pitch Modal: Fixed collision with universal modal system |

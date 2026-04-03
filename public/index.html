@@ -421,7 +421,6 @@
             <div style="display:flex; gap:1rem; align-items:center;">
                <select id="branchFilter" class="input-field" style="margin:0; width: 220px; padding: 0.65rem 1rem;" onchange="renderTable()">
                  <option value="">Alle Branchen</option>
-                 <script>document.write(BRANCHES.map(b => `<option value="${b}">${b}</option>`).join(''))</script>
                </select>
                <input type="text" id="tableSearch" class="input-field" style="margin:0; width: 280px; padding: 0.65rem 1rem;" placeholder="Firma, Inhaber, Ort..." onkeyup="renderTable()">
             </div>
@@ -694,6 +693,7 @@
     }
 
     function initUI() {
+      updateBranchFilterOptions();
       document.getElementById('pipelineTabs').innerHTML = PIPELINES.map(p =>
         `<div class="pipeline-tab ${p.id === state.activeTab ? 'active' : ''}" onclick="setTab('${p.id}')">${p.label}</div>`
       ).join('');
@@ -1048,7 +1048,19 @@
       }).join('');
     }
 
-
+    function updateBranchFilterOptions() {
+      const bf = document.getElementById('branchFilter');
+      if (!bf) return;
+      const currentVal = bf.value;
+      const branches = new Set();
+      state.leads.forEach(l => {
+        const b = (l.industry || l.branche || '').trim();
+        if (b) branches.add(b);
+      });
+      const sorted = Array.from(branches).sort();
+      bf.innerHTML = '<option value="">Alle Branchen</option>' + sorted.map(b => `<option value="${b}">${b}</option>`).join('');
+      bf.value = currentVal;
+    }
 
     function renderTable() {
       try {
@@ -1105,7 +1117,11 @@
                 ${opts}
               </select>
             </td>
-            <td><input type="text" class="note-input" value="${note}" placeholder="Notiz..." onchange="saveLeadField(${idx},'note',this.value)"></td>
+            <td>
+              <div class="note-input" style="cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px; border:1px solid transparent; padding: 0.5rem;" onclick="openNoteModal(${idx})" title="Notizen bearbeiten">
+                ${note || '<span style="color:var(--text-muted);">Notiz...</span>'}
+              </div>
+            </td>
             <td style="padding-right:1.5rem; white-space:nowrap;">
               <div class="action-group" style="justify-content:flex-end;">
                 <button class="action-icon info" onclick="showLeadDetail(${idx})" title="Details anzeigen"><i data-lucide="info"></i></button>
@@ -1261,11 +1277,44 @@
     </div>
   </div>
 
+  <div class="modal" id="noteModal">
+    <div class="modal-content" style="max-width: 450px;">
+      <div class="modal-header">
+        <h3 id="noteModalTitle" style="font-size: 1.25rem; font-weight: 700;">Deal Notizen</h3>
+        <button style="background:none;border:none; cursor:pointer;" onclick="closeModal('noteModal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <textarea id="noteModalText" rows="6" placeholder="Wichtige Infos zum Deal..." style="width:100%; padding:0.75rem; border:1px solid var(--border); border-radius:8px; resize:vertical; font-family:inherit;"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('noteModal')">Abbrechen</button>
+        <button class="btn btn-primary" onclick="saveNoteFromModal()"><i data-lucide="save" style="width:18px;"></i> Speichern</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     function closeModal(id) {
       const el = document.getElementById(id);
       if (el) el.classList.remove('open');
     }
+
+    let activeNoteIdx = -1;
+    function openNoteModal(idx) {
+      activeNoteIdx = idx;
+      const l = window.__leads ? window.__leads[idx] : (state.leads[idx] || null);
+      if (!l) return;
+      document.getElementById('noteModalTitle').textContent = `Notizen: ${String(l.name||'').replace(/</g,'&lt;')}`;
+      document.getElementById('noteModalText').value = String(l.note || l.notes || '').replace(/&quot;/g,'"').replace(/&lt;/g,'<');
+      openModal('noteModal');
+    }
+    function saveNoteFromModal() {
+      if (activeNoteIdx < 0) return;
+      const val = document.getElementById('noteModalText').value;
+      saveLeadField(activeNoteIdx, 'note', val);
+      closeModal('noteModal');
+    }
+
     function openModal(id) {
       const el = document.getElementById(id);
       if (el) { el.classList.add('open'); lucide.createIcons(); }

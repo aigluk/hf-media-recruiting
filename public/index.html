@@ -17,7 +17,7 @@
       --primary-hover: #1d4ed8;
       --secondary: #e2e8f0;
       --danger: #ef4444;
-      --sidebar-w: 260px;
+      --sidebar-w: 220px;
       --radius: 12px;
       --font: 'Inter', -apple-system, sans-serif;
       --shadow: 0 4px 20px -2px rgba(0,0,0,0.05);
@@ -40,15 +40,15 @@
     .app-layout { display: flex; min-height: 100vh; overflow: hidden; opacity: 0; transition: opacity 0.3s; }
     .app-layout.loaded { opacity: 1; }
 
-    .sidebar { width: var(--sidebar-w); background: var(--surface); box-shadow: 2px 0 10px rgba(0,0,0,0.02); padding: 2.5rem 1.5rem; display: flex; flex-direction: column; height: 100vh; position: fixed; z-index: 10; }
-    .brand { font-size: 1.25rem; font-weight: 700; color: var(--text); margin-bottom: 3rem; display:flex; align-items:center; gap:0.75rem;}
-    .nav-menu { display: flex; flex-direction: column; gap: 0.35rem; }
-    .nav-item { padding: 0.875rem 1rem; border-radius: var(--radius); color: var(--text-muted); font-weight: 500; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; text-decoration: none; display: flex; align-items: center; gap: 12px; }
-    .nav-item i { width: 20px; height: 20px; }
+    .sidebar { width: var(--sidebar-w); background: var(--surface); box-shadow: 2px 0 10px rgba(0,0,0,0.02); padding: 2rem 1.25rem; display: flex; flex-direction: column; height: 100vh; position: fixed; z-index: 10; }
+    .brand { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 2.5rem; display:flex; align-items:center; gap:0.6rem;}
+    .nav-menu { display: flex; flex-direction: column; gap: 0.25rem; }
+    .nav-item { padding: 0.75rem 0.875rem; border-radius: var(--radius); color: var(--text-muted); font-weight: 500; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+    .nav-item i { width: 18px; height: 18px; }
     .nav-item:hover { background: var(--surface-hover); color: var(--text); }
     .nav-item.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(37,99,235,0.2); }
 
-    .main-content { flex: 1; margin-left: var(--sidebar-w); padding: 2.5rem 3.5rem; overflow-y: auto; height: 100vh; }
+    .main-content { flex: 1; margin-left: var(--sidebar-w); padding: 2rem 2.5rem; overflow-y: auto; height: 100vh; }
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; }
     .header h1 { font-size: 2rem; font-weight: 700; color: var(--text); }
     .header-actions { display: flex; gap: 1rem; }
@@ -65,21 +65,20 @@
     .panel { background: var(--surface); border-radius: 16px; padding: 2.5rem; margin-bottom: 2rem; box-shadow: var(--shadow); }
     .panel-header { font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--text); display:flex; align-items:center; gap:10px; }
 
-    /* TABLE */
-    .table-container { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; text-align: left; }
-    th { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; padding: 1rem 1rem; border-bottom: 1px solid var(--bg); }
-    td { padding: 1.25rem 1rem; font-size: 0.9rem; vertical-align: middle; border-bottom: 1px solid var(--bg); transition: background 0.2s; white-space: nowrap; }
+    /* TABLE — compact single-row layout */
+    .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; text-align: left; min-width: 700px; }
+    th { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; padding: 0.75rem 0.75rem; border-bottom: 1px solid var(--bg); white-space: nowrap; letter-spacing: 0.05em; }
+    td { padding: 0.75rem 0.75rem; font-size: 0.875rem; vertical-align: middle; border-bottom: 1px solid var(--bg); transition: background 0.15s; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+    td.td-wrap { white-space: normal; }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: var(--surface-hover); }
-    tr:hover td:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
-    tr:hover td:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
-    .td-name { font-weight: 700; color: var(--text); font-size: 0.95rem; }
-    .td-sub { font-size: 0.8rem; color: var(--text-muted); display:flex; align-items:center; gap:6px; font-weight:500;}
-    .note-input { width: 100%; min-width: 150px; padding: 0.75rem; border: none; background: transparent; border-radius: var(--radius); font-size: 0.9rem; outline: none; transition: background 0.2s; color: var(--text); }
+    .td-name { font-weight: 700; color: var(--text); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+    .td-sub { font-size: 0.8rem; color: var(--text-muted); display:flex; align-items:center; gap:5px; font-weight:500; overflow:hidden; text-overflow:ellipsis; max-width:130px; }
+    .note-input { width: 100%; min-width: 100px; max-width: 150px; padding: 0.4rem 0.6rem; border: none; background: transparent; border-radius: 8px; font-size: 0.82rem; outline: none; transition: background 0.2s; color: var(--text); }
     .note-input:hover, .note-input:focus { background: var(--bg); }
 
-    .status-select { appearance: none; padding: 0.5rem 1.25rem; border-radius: 99px; font-size: 0.75rem; font-weight: 700; border: none; cursor: pointer; text-align: center; outline: none; transition: all 0.2s; }
+    .status-select { appearance: none; padding: 0.35rem 0.9rem; border-radius: 99px; font-size: 0.7rem; font-weight: 700; border: none; cursor: pointer; text-align: center; outline: none; transition: all 0.2s; white-space: nowrap; }
     .status-select:hover { opacity: 0.8; }
     .st-neu { background: #f1f5f9; color: #475569; }
     .st-inkontakt { background: #eff6ff; color: #2563eb; }
@@ -87,72 +86,80 @@
     .st-keininteresse { background: #fef2f2; color: #dc2626; }
     .st-abschluss { background: #f0fdf4; color: #059669; }
 
-    .pipeline-tabs { display: flex; gap: 0.75rem; margin-bottom: 2rem; overflow-x: auto; }
-    .pipeline-tab { padding: 0.8rem 1.5rem; font-weight: 600; font-size: 0.9rem; color: var(--text-muted); background: transparent; border-radius: 99px; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+    .pipeline-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 4px; }
+    .pipeline-tab { padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.82rem; color: var(--text-muted); background: transparent; border-radius: 99px; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
     .pipeline-tab:hover { background: var(--surface-hover); color: var(--text); }
     .pipeline-tab.active { background: var(--text); color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
 
-    .action-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-    .action-icon { width: 36px; height: 36px; border-radius: var(--radius); display: inline-flex; align-items: center; justify-content: center; border: none; background: var(--bg); color: var(--text-muted); cursor: pointer; transition: all 0.2s; text-decoration: none; }
+    /* Action buttons: always in a single horizontal row */
+    .action-group { display: flex; gap: 6px; flex-wrap: nowrap; align-items: center; justify-content: flex-end; }
+    .action-icon { width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; border: none; background: var(--bg); color: var(--text-muted); cursor: pointer; transition: all 0.2s; text-decoration: none; flex-shrink: 0; }
     .action-icon:hover { color: var(--primary); background: #e2e8f0; }
-    .action-icon.dm { background: var(--primary); color: white; width: auto; padding: 0 14px; font-weight: 600; font-size: 13px; }
-    .action-icon.dm:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 10px rgba(37,99,235,0.2); }
-    .action-icon.cal { background: #16a34a; color: white; width: auto; padding: 0 14px; font-weight: 600; font-size: 13px; }
-    .action-icon.cal:hover { background: #15803d; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(22, 163, 74, 0.2); }
+    .action-icon svg { width: 15px; height: 15px; }
+    .action-icon.dm { background: var(--primary); color: white; width: auto; padding: 0 12px; font-weight: 600; font-size: 12px; height: 32px; }
+    .action-icon.dm:hover { background: var(--primary-hover); box-shadow: 0 3px 8px rgba(37,99,235,0.25); }
+    .action-icon.cal { background: var(--bg); color: var(--text-muted); }
+    .action-icon.cal:hover { background: #e2e8f0; color: var(--text); }
+    .action-icon.del { color: #ef4444; }
+    .action-icon.del:hover { background: #fef2f2; color: #dc2626; }
 
     .quick-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-    .chip { padding: 0.6rem 1.25rem; background: var(--bg); border: none; border-radius: 99px; font-size: 0.9rem; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: all 0.2s; user-select: none; }
+    .chip { padding: 0.5rem 1rem; background: var(--bg); border: none; border-radius: 99px; font-size: 0.875rem; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: all 0.2s; user-select: none; }
     .chip:hover { background: #e2e8f0; color: var(--text); }
     .chip.active { background: var(--text); color: white; }
 
-    /* SPECIFIC VIEWS: CALENDAR UI (New Beautiful Layout) */
-    .cal-wrapper { display: flex; gap: 2rem; align-items: flex-start; }
-    .cal-sidebar { width: 320px; flex-shrink: 0; background: var(--surface); border-radius: 16px; padding: 2rem; box-shadow: var(--shadow); }
+    /* CALENDAR — mono design, orange only for final sales call */
+    .cal-wrapper { display: flex; gap: 1.5rem; align-items: flex-start; }
+    .cal-sidebar { width: 280px; flex-shrink: 0; background: var(--surface); border-radius: 16px; padding: 1.5rem; box-shadow: var(--shadow); }
     
-    .mini-cal-header { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 1.125rem; margin-bottom: 1.5rem;}
-    .mini-cal-header .arrows { display: flex; gap: 8px; color: var(--text-muted); }
-    .mini-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center; font-size: 0.85rem; }
-    .mini-cal-grid .day-label { color: var(--text-muted); font-size: 0.75rem; font-weight: 600; margin-bottom: 8px; text-transform: uppercase;}
-    .mini-cal-grid .date { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 600; cursor: pointer; margin: auto; transition: 0.2s;}
-    .mini-cal-grid .date:hover { background: var(--bg); }
-    .mini-cal-grid .date.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(37,99,235,0.3);}
-    .mini-cal-grid .date.secondary { background: #e0e7ff; color: var(--primary); }
+    .mini-cal-header { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 1rem; margin-bottom: 1.25rem;}
+    .mini-cal-header button { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 4px; border-radius: 6px; display:flex; align-items:center; transition:0.2s; }
+    .mini-cal-header button:hover { background: var(--bg); color: var(--text); }
+    .mini-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-size: 0.82rem; }
+    .mini-cal-grid .day-label { color: var(--text-muted); font-size: 0.7rem; font-weight: 700; padding-bottom: 8px; text-transform: uppercase; letter-spacing: 0.04em;}
+    .mini-cal-grid .day-num { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 500; cursor: pointer; margin: auto; transition: 0.15s; color: var(--text); font-size: 0.82rem; }
+    .mini-cal-grid .day-num:hover { background: var(--bg); }
+    .mini-cal-grid .day-num.today { background: var(--primary); color: white; font-weight: 700; }
+    .mini-cal-grid .day-num.selected { background: #e0e7ff; color: var(--primary); font-weight: 700; }
+    .mini-cal-grid .day-num.other-month { color: #cbd5e1; }
+    .mini-cal-grid .day-num.has-event::after { content: ''; display: block; width: 4px; height: 4px; background: #f97316; border-radius: 50%; margin: 1px auto 0; }
 
-    .cal-reminder-box { background: #0f766e; color: white; padding: 1.5rem; border-radius: 16px; margin-top: 2rem; position: relative; overflow: hidden; }
-    .cal-reminder-box h4 { font-size: 0.85rem; opacity: 0.8; margin-bottom: 4px; font-weight: 500;}
-    .cal-reminder-box h3 { font-size: 1.125rem; margin-bottom: 1rem; }
-    .cal-reminder-box span { font-size: 0.85rem; display: flex; align-items: center; gap: 6px; font-weight:500;}
+    .cal-reminder-box { background: var(--text); color: white; padding: 1.25rem; border-radius: 14px; margin-top: 1.5rem; }
+    .cal-reminder-box h4 { font-size: 0.75rem; opacity: 0.6; margin-bottom: 3px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+    .cal-reminder-box h3 { font-size: 1rem; margin-bottom: 0.5rem; font-weight: 700; }
+    .cal-reminder-box span { font-size: 0.8rem; display: flex; align-items: center; gap: 6px; opacity: 0.7; }
 
-    .cal-filters { margin-top: 2.5rem; }
-    .cal-filters h4 { font-size: 1.125rem; font-weight: 700; margin-bottom: 1.25rem; }
-    .cal-filter-item { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 0.95rem; color: var(--text-muted); cursor: pointer; font-weight: 500;}
-    .cal-filter-item input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); }
+    .cal-filters { margin-top: 1.5rem; }
+    .cal-filters h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 1rem; }
+    .cal-filter-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 0.875rem; color: var(--text-muted); cursor: pointer; font-weight: 500;}
+    .cal-filter-item input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary); }
 
-    .cal-main { flex: 1; min-width: 0; background: var(--surface); border-radius: 16px; padding: 2.5rem; box-shadow: var(--shadow); }
-    .cal-main-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; }
-    .cal-main-title { font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 12px; }
-    .cal-tabs { display: flex; background: var(--bg); border-radius: 99px; padding: 4px; }
-    .cal-tab { padding: 6px 16px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); border-radius: 99px; cursor: pointer; }
-    .cal-tab.active { background: white; color: var(--text); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .cal-main { flex: 1; min-width: 0; background: var(--surface); border-radius: 16px; padding: 2rem; box-shadow: var(--shadow); }
+    .cal-main-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .cal-main-title { font-size: 1.375rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+    .cal-tabs { display: flex; background: var(--bg); border-radius: 99px; padding: 3px; }
+    .cal-tab { padding: 5px 14px; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); border-radius: 99px; cursor: pointer; }
+    .cal-tab.active { background: white; color: var(--text); box-shadow: 0 2px 5px rgba(0,0,0,0.06); }
 
-    .agenda-grid { display: grid; grid-template-columns: 80px 1fr; gap: 1rem; }
-    .agenda-time { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); padding-top: 1rem; text-align: right; padding-right: 1.5rem; border-right: 2px solid var(--bg); }
-    .agenda-content { padding-left: 1rem; padding-bottom: 2rem; position: relative; display: flex; gap: 1rem; flex-wrap: wrap;}
+    .agenda-grid { display: grid; grid-template-columns: 70px 1fr; margin-bottom: 0; }
+    .agenda-time { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); padding-top: 1rem; text-align: right; padding-right: 1.25rem; border-right: 2px solid var(--bg); }
+    .agenda-content { padding-left: 1rem; padding-bottom: 1.5rem; position: relative; display: flex; gap: 0.75rem; flex-wrap: wrap; }
     
+    /* Default event card: neutral grey. Orange only if TERMIN FIXIERT (sales call) */
     .event-card { 
-      padding: 1.25rem; border-radius: 14px; min-width: 250px; flex: 1; transition: transform 0.2s; 
-      box-shadow: 0 4px 15px rgba(0,0,0,0.03); cursor: pointer;
+      padding: 1rem 1.25rem; border-radius: 12px; min-width: 220px; flex: 1;
+      background: var(--bg); color: var(--text); 
+      border: 1px solid #e2e8f0;
+      transition: box-shadow 0.2s, transform 0.15s; 
+      cursor: pointer;
     }
-    .event-card:hover { transform: translateY(-2px); }
-    .event-card h4 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
-    .event-card p { font-size: 0.85rem; display: flex; align-items: center; gap: 6px; opacity: 0.8; font-weight: 500;}
-
-    /* Color variations for events */
-    .bg-pink { background: #fce7f3; color: #831843; }
-    .bg-purple { background: #f3e8ff; color: #581c87; }
-    .bg-blue { background: #e0f2fe; color: #075985; }
-    .bg-orange { background: #ffedd5; color: #9a3412; }
-    .bg-green { background: #dcfce7; color: #14532d; }
+    .event-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+    .event-card h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 5px; color: var(--text); }
+    .event-card p { font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+    /* Orange highlight for final sales calls (TERMIN FIXIERT) */
+    .event-card.sales-call { background: #fff7ed; border-color: #fed7aa; color: #9a3412; }
+    .event-card.sales-call h4 { color: #c2410c; }
+    .event-card.sales-call p { color: #ea580c; }
 
     /* REPORTS */
     .reports-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
@@ -181,6 +188,29 @@
     .loading-overlay.show { display: flex; }
     .spinner { border: 4px solid var(--secondary); border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* ── Responsive ── */
+    @media (max-width: 1100px) {
+      .main-content { padding: 1.5rem 1.5rem; }
+      .metrics-grid { grid-template-columns: repeat(3, 1fr); }
+      .cal-wrapper { flex-direction: column; }
+      .cal-sidebar { width: 100%; }
+    }
+    @media (max-width: 900px) {
+      :root { --sidebar-w: 0px; }
+      .sidebar { transform: translateX(-100%); }
+      .main-content { margin-left: 0; padding: 1.25rem; }
+      .header h1 { font-size: 1.4rem; }
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+      .reports-layout { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .header-actions { width: 100%; }
+      .btn { padding: 0.75rem 1rem; font-size: 0.8rem; }
+      .metrics-grid { grid-template-columns: 1fr 1fr; }
+      .pipeline-tabs { flex-wrap: nowrap; }
+    }
   </style>
 </head>
 <body>
@@ -293,53 +323,23 @@
         </div>
       </div>
 
-      <!-- CALENDAR VIEW (NEW ADVANCED DESIGN) -->
+      <!-- CALENDAR VIEW -->
       <div id="view-calendar" class="view-section">
-        
         <div class="cal-wrapper">
-          
-          <!-- LEFT SIDEBAR -->
+          <!-- LEFT SIDEBAR: JS rendered -->
           <div class="cal-sidebar">
-            <div class="mini-cal">
-              <div class="mini-cal-header">
-                Juni 2026
-                <div class="arrows">
-                  <i data-lucide="chevron-left" style="width:18px; cursor:pointer;"></i> 
-                  <i data-lucide="chevron-right" style="width:18px; cursor:pointer;"></i>
-                </div>
-              </div>
-              <div class="mini-cal-grid">
-                <div class="day-label">M</div><div class="day-label">D</div><div class="day-label">M</div><div class="day-label">D</div><div class="day-label">F</div><div class="day-label">S</div><div class="day-label">S</div>
-                <!-- Mockup Days -->
-                <div class="date" style="color:var(--text-muted); opacity:0.5;">28</div><div class="date" style="color:var(--text-muted); opacity:0.5;">29</div><div class="date" style="color:var(--text-muted); opacity:0.5;">30</div><div class="date" style="color:var(--text-muted); opacity:0.5;">31</div>
-                <div class="date">1</div><div class="date">2</div><div class="date">3</div><div class="date">4</div><div class="date">5</div><div class="date">6</div><div class="date">7</div>
-                <div class="date">8</div><div class="date">9</div><div class="date">10</div><div class="date">11</div><div class="date">12</div><div class="date">13</div><div class="date secondary">14</div>
-                <div class="date">15</div><div class="date">16</div><div class="date active">17</div><div class="date">18</div><div class="date">19</div><div class="date">20</div><div class="date">21</div>
-                <div class="date">22</div><div class="date">23</div><div class="date">24</div><div class="date">25</div><div class="date">26</div><div class="date">27</div><div class="date">28</div>
-                <div class="date">29</div><div class="date">30</div><div class="date" style="color:var(--text-muted); opacity:0.5;">1</div><div class="date" style="color:var(--text-muted); opacity:0.5;">2</div><div class="date" style="color:var(--text-muted); opacity:0.5;">3</div><div class="date" style="color:var(--text-muted); opacity:0.5;">4</div><div class="date" style="color:var(--text-muted); opacity:0.5;">5</div>
-              </div>
+            <div id="miniCalContainer"></div>
+            <div class="cal-reminder-box" id="calReminderBox">
+              <h4>Heute</h4>
+              <h3 id="calTodayStr">Laden...</h3>
+              <span><i data-lucide="calendar" style="width:13px;height:13px;"></i> Tippe auf einen Lead-Termin</span>
             </div>
-
-            <div class="cal-reminder-box">
-              <h4>Systemhinweis</h4>
-              <h3>Lead Follow-up</h3>
-              <span><i data-lucide="bell" style="width:14px;height:14px;"></i> Alle "TERMIN FIXIERT" Leads erscheinen rechts.</span>
-            </div>
-
             <div class="cal-filters">
               <h4>Filter</h4>
-              <label class="cal-filter-item">
-                <input type="checkbox" checked> Fixierte Termine
-              </label>
-              <label class="cal-filter-item">
-                <input type="checkbox"> Persönliche Events
-              </label>
-              <label class="cal-filter-item">
-                <input type="checkbox"> Deadlines
-              </label>
-
-              <button class="btn btn-outline" style="width:100%; justify-content:center; margin-top:2rem;">
-                <i data-lucide="link" style="width:18px;"></i> Kalender verknüpfen
+              <label class="cal-filter-item"><input type="checkbox" checked id="filterTermin"> Termin Fixiert</label>
+              <label class="cal-filter-item"><input type="checkbox" checked id="filterAll"> Alle Leads</label>
+              <button class="btn btn-outline" style="width:100%; justify-content:center; margin-top:1.5rem;" onclick="showToast('Verbinde per .ICS Export: Outlook, Apple oder Google Kalender.','#2563eb')">
+                <i data-lucide="link" style="width:16px;"></i> Kalender verbinden
               </button>
             </div>
           </div>
@@ -348,25 +348,17 @@
           <div class="cal-main">
             <div class="cal-main-header">
               <div class="cal-main-title">
-                <i data-lucide="chevron-left" style="width:20px; cursor:pointer; color:var(--text-muted);"></i>
-                Juni 2026
-                <i data-lucide="chevron-right" style="width:20px; cursor:pointer; color:var(--text-muted);"></i>
+                <button onclick="calNav(-1)" style="background:none;border:none;cursor:pointer;color:var(--text-muted);display:flex;padding:4px;"><i data-lucide="chevron-left" style="width:20px;"></i></button>
+                <span id="calMainTitle">April 2026</span>
+                <button onclick="calNav(1)" style="background:none;border:none;cursor:pointer;color:var(--text-muted);display:flex;padding:4px;"><i data-lucide="chevron-right" style="width:20px;"></i></button>
               </div>
-              <div style="display:flex; gap:1.5rem; align-items:center;">
-                <div class="cal-tabs">
-                  <div class="cal-tab">Daily</div>
-                  <div class="cal-tab active">Weekly</div>
-                  <div class="cal-tab">Monthly</div>
-                </div>
-                <button class="btn btn-primary" style="padding: 0.65rem 1.25rem;"><i data-lucide="plus" style="width:16px;"></i> Create Event</button>
+              <div style="display:flex; gap:1rem; align-items:center;">
+                <button class="btn btn-outline" onclick="calNav(0, true)" style="padding:0.5rem 1rem; font-size:0.82rem;">Heute</button>
+                <button class="btn btn-primary" style="padding: 0.55rem 1rem; font-size:0.82rem;"><i data-lucide="plus" style="width:15px;"></i> Neuer Termin</button>
               </div>
             </div>
-
-            <div class="agenda-timeline" id="calendarAgendaGrid">
-              <!-- JS rendered cards -->
-            </div>
+            <div id="calendarAgendaGrid"></div>
           </div>
-
         </div>
       </div>
 
@@ -665,33 +657,116 @@
       document.getElementById('repWonDonut').style.setProperty('--perc', closingRatio+'%');
     }
 
+    // ── Calendar State ──
+    let calState = {
+      year: new Date().getFullYear(),
+      month: new Date().getMonth(), // 0-indexed
+      selectedDay: new Date().getDate()
+    };
+
+    const MONTHS_DE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+    const DAYS_DE = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+
+    function calNav(dir, resetToToday = false) {
+      if (resetToToday) {
+        const now = new Date();
+        calState.year = now.getFullYear();
+        calState.month = now.getMonth();
+        calState.selectedDay = now.getDate();
+      } else {
+        calState.month += dir;
+        if (calState.month > 11) { calState.month = 0; calState.year++; }
+        if (calState.month < 0)  { calState.month = 11; calState.year--; }
+      }
+      renderCalendar();
+    }
+
     function renderCalendar() {
+      const today = new Date();
+      const { year, month, selectedDay } = calState;
+      const terminDays = new Set(
+        state.leads.filter(l => normalizeStatus(l.status) === 'TERMIN FIXIERT').map((_, i) => (i % 28) + 1)
+      );
+
+      // Update today label
+      const todayStr = today.toLocaleDateString('de-AT', { weekday:'long', day:'numeric', month:'long' });
+      const todayEl = document.getElementById('calTodayStr');
+      if (todayEl) todayEl.textContent = todayStr;
+
+      // Title
+      const titleEl = document.getElementById('calMainTitle');
+      if (titleEl) titleEl.textContent = `${MONTHS_DE[month]} ${year}`;
+
+      // Mini-calendar
+      const miniCont = document.getElementById('miniCalContainer');
+      if (miniCont) {
+        const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+        const startOffset = (firstDay === 0 ? 6 : firstDay - 1);
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const daysInPrev = new Date(year, month, 0).getDate();
+
+        let daysHtml = DAYS_DE.map(d => `<div class="day-label">${d}</div>`).join('');
+
+        // Prev month fillers
+        for (let i = startOffset - 1; i >= 0; i--) {
+          daysHtml += `<div class="day-num other-month">${daysInPrev - i}</div>`;
+        }
+        // Current month days
+        for (let d = 1; d <= daysInMonth; d++) {
+          const isToday = (year === today.getFullYear() && month === today.getMonth() && d === today.getDate());
+          const isSel = (d === selectedDay && !(year === today.getFullYear() && month === today.getMonth() && d === today.getDate()));
+          const hasEvent = terminDays.has(d);
+          const cls = [isToday ? 'today' : '', isSel ? 'selected' : '', hasEvent ? 'has-event' : ''].filter(Boolean).join(' ');
+          daysHtml += `<div class="day-num ${cls}" onclick="calState.selectedDay=${d}; renderCalendar();">${d}</div>`;
+        }
+        // Next month fillers
+        const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+        for (let d = 1; d <= totalCells - startOffset - daysInMonth; d++) {
+          daysHtml += `<div class="day-num other-month">${d}</div>`;
+        }
+
+        miniCont.innerHTML = `
+          <div class="mini-cal-header">
+            <span style="font-weight:700;">${MONTHS_DE[month]} ${year}</span>
+            <div style="display:flex;gap:4px;">
+              <button onclick="calNav(-1)"><i data-lucide="chevron-left" style="width:16px;"></i></button>
+              <button onclick="calNav(1)"><i data-lucide="chevron-right" style="width:16px;"></i></button>
+            </div>
+          </div>
+          <div class="mini-cal-grid">${daysHtml}</div>
+        `;
+      }
+
+      // Agenda grid
       const grid = document.getElementById('calendarAgendaGrid');
-      // Show ALL leads in calendar, not just TERMIN FIXIERT ones
+      if (!grid) return;
+
       const all = state.leads;
       if (!all.length) {
-        grid.innerHTML = `<p style="text-align:center;color:var(--text-muted);padding:3rem;">Noch keine Leads in der Datenbank.</p>`;
+        grid.innerHTML = `<p style="text-align:center;color:var(--text-muted);padding:3rem 0;">Noch keine Leads vorhanden.</p>`;
+        lucide.createIcons();
         return;
       }
+
       let html = '';
-      let currentHour = 9;
+      let hour = 8;
       for (let i = 0; i < all.length; i += 2) {
-        const cluster = all.slice(i, i+2);
-        const timeStr = `${String(currentHour).padStart(2,'0')}:00`;
-        const cardsHtml = cluster.map((l, ci) => {
+        const cluster = all.slice(i, i + 2);
+        const timeStr = `${String(hour).padStart(2,'0')}:00`;
+        const cards = cluster.map((l, ci) => {
           const idx = i + ci;
-          const cColor = CARD_COLORS[idx % CARD_COLORS.length];
-          const st = normalizeStatus(l.status);
-          const badge = st === 'TERMIN FIXIERT' ? '<span style="background:rgba(255,255,255,0.4);padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;margin-left:8px;">📅 TERMIN</span>' : '';
+          const isSalesCall = normalizeStatus(l.status) === 'TERMIN FIXIERT';
+          const cardCls = isSalesCall ? 'event-card sales-call' : 'event-card';
+          const badge = isSalesCall ? `<span style="font-size:10px;font-weight:700;background:#f97316;color:white;padding:2px 7px;border-radius:99px;margin-left:6px;">SALES CALL</span>` : '';
           return `
-            <div class="event-card ${cColor}" style="cursor:pointer;">
-              <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                <h4>${l.name||'–'}${badge}</h4>
+            <div class="${cardCls}">
+              <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
+                <h4 style="margin:0;">${String(l.name||'–').replace(/</g,'&lt;')}${badge}</h4>
               </div>
-              <p><i data-lucide="user" style="width:13px;"></i> ${l.ceos||l.owner||'GF'} &nbsp;•&nbsp; <i data-lucide="map-pin" style="width:13px;"></i> ${l.region||'–'}</p>
-              <div style="margin-top:12px;">
-                <button onclick="addToCalendar(${idx})" style="background:rgba(0,0,0,0.12);border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;color:inherit;">
-                  <i data-lucide="download" style="width:12px;"></i> .ics Termin
+              <p><i data-lucide="user" style="width:13px;"></i> ${String(l.ceos||l.owner||'GF').replace(/</g,'&lt;')} &nbsp;•&nbsp; <i data-lucide="map-pin" style="width:13px;"></i> ${String(l.region||'–').replace(/</g,'&lt;')}</p>
+              <div style="margin-top:10px;">
+                <button onclick="addToCalendar(${idx})" style="background:rgba(0,0,0,0.07);border:none;border-radius:7px;padding:5px 11px;font-size:11px;font-weight:700;cursor:pointer;color:inherit;display:inline-flex;align-items:center;gap:5px;">
+                  <i data-lucide="download" style="width:11px;"></i> .ics Export
                 </button>
               </div>
             </div>
@@ -700,11 +775,11 @@
         html += `
           <div class="agenda-grid">
             <div class="agenda-time">${timeStr}</div>
-            <div class="agenda-content">${cardsHtml}</div>
+            <div class="agenda-content">${cards}</div>
           </div>
         `;
-        currentHour++;
-        if (currentHour > 20) currentHour = 9; // wrap around
+        hour++;
+        if (hour > 19) hour = 8;
       }
       grid.innerHTML = html;
       lucide.createIcons();

@@ -460,11 +460,24 @@
       { id: 'KEIN INTERESSE', label: 'KEIN INTERESSE', color: 'st-keininteresse' },
       { id: 'ABSCHLUSS / ABSAGE', label: 'ABSCHLUSS / ABSAGE', color: 'st-abschluss' }
     ];
-    const BRANCHES = ['Metalltechnik', 'Hotellerie', 'Gesundheit/Pflege', 'Handel', 'Industrie', 'Gastronomie', 'Wellness/Spa', 'Handwerk', 'Tourismus', 'Logistik', 'IT/Software', 'Finanzen/Versicherung', 'Immobilien'];
+    const VALID_STATUSES = new Set(PIPELINES.map(p => p.id));
+    const BRANCHES = ['Metalltechnik','Hotellerie','Gesundheit/Pflege','Handel','Industrie','Gastronomie','Wellness/Spa','Handwerk','Tourismus','Logistik','IT/Software','Finanzen/Versicherung','Immobilien'];
+    const CARD_COLORS = ['bg-pink','bg-blue','bg-purple','bg-orange','bg-green'];
 
-    const CARD_COLORS = ['bg-pink', 'bg-blue', 'bg-purple', 'bg-orange', 'bg-green'];
+    let state = {
+      token: localStorage.getItem('crm_token') || '',
+      leads: [],
+      activeTab: 'NEU',
+      activeBranches: [],
+      currentMsgTemplates: [],
+      currentMsgIdx: 0,
+      activeLead: null,
+      selectedLeads: new Set()
+    };
 
-    let state = { token: localStorage.getItem('crm_token') || '', leads: [], activeTab: 'NEU', activeBranches: [], currentMsgTemplates: [], currentMsgIdx: 0, activeLead: null };
+    // Safe: store leads in a global map so onclick can use integer index
+    window.__leads = [];
+    function getLead(idx) { return window.__leads[idx]; }
 
     window.onload = () => { if (state.token) syncDatabase(); };
 
@@ -477,8 +490,25 @@
       syncDatabase();
     }
     function logout() { localStorage.removeItem('crm_token'); location.reload(); }
-    function showLoader(text) { document.getElementById('loadText').textContent = text; document.getElementById('loader').classList.add('show'); }
+    function showLoader(t) { document.getElementById('loadText').textContent = t; document.getElementById('loader').classList.add('show'); }
     function hideLoader() { document.getElementById('loader').classList.remove('show'); }
+    function showToast(msg, color = '#ef4444') {
+      const t = document.createElement('div');
+      t.style.cssText = `position:fixed;bottom:2rem;right:2rem;background:${color};color:white;padding:1rem 1.5rem;border-radius:12px;font-weight:600;z-index:9999;box-shadow:0 10px 40px rgba(0,0,0,0.2);max-width:350px`;
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 5000);
+    }
+
+    // Normalize a status string – return canonical pipeline ID or 'NEU'
+    function normalizeStatus(s) {
+      if (!s) return 'NEU';
+      const trimmed = String(s).trim().toUpperCase();
+      for (const p of PIPELINES) {
+        if (p.id === trimmed || p.label === trimmed) return p.id;
+      }
+      return 'NEU';
+    }
 
     async function syncDatabase() {
       showLoader('Lade zentrale Cloud-Datenbank...');
@@ -489,42 +519,67 @@
           document.getElementById('authError').style.display = 'block'; hideLoader(); return;
         }
         let data;
-        try { data = await res.json(); } catch(e) { throw new Error(`HTTP ${res.status}: Keine gültige Datenbank-Antwort.`); }
+        try { data = await res.json(); }
+        catch(e) { throw new Error(`HTTP ${res.status}: Kein gültiger Response`); }
         if (data.error) throw new Error(data.error);
-        state.leads = Array.isArray(data.leads) ? data.leads : [];
+        // Normalize statuses on load so filter always works
+        state.leads = (Array.isArray(data.leads) ? data.leads : []).map(l => ({
+          ...l,
+          status: normalizeStatus(l.status)
+        }));
+        window.__leads = state.leads;
         document.getElementById('authOverlay').style.display = 'none';
         document.getElementById('appLayout').classList.add('loaded');
         initUI();
       } catch (err) {
         console.error('syncDatabase error:', err);
-        // Show app anyway, but log the error prominently
         document.getElementById('authOverlay').style.display = 'none';
         document.getElementById('appLayout').classList.add('loaded');
-        state.leads = [];
+        state.leads = []; window.__leads = [];
         initUI();
-        // Show a non-blocking toast rather than blocking alert
-        const toast = document.createElement('div');
-        toast.style.cssText = 'position:fixed;bottom:2rem;right:2rem;background:#ef4444;color:white;padding:1rem 1.5rem;border-radius:12px;font-weight:600;z-index:9999;box-shadow:0 10px 40px rgba(0,0,0,0.2)';
-        toast.textContent = 'DB Fehler: ' + err.message;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 6000);
+        showToast('DB Fehler: ' + err.message);
       }
       hideLoader();
     }
 
-    async function saveLeadField(key, field, value) {
-      const lead = state.leads.find(l => btoa(unescape(encodeURIComponent((l.name||'') + '|' + (l.region||'')))) === key);
-      if(!lead) return;
-      lead[field] = value;
+    async function saveLeadField(idx, field, value) {
+      const lead = window.__leads[idx];
+      if (!lead) return;
+      lead[field] = field === 'status' ? normalizeStatus(value) : value;
       updateKPIs();
-      if(field === 'status') { renderTable(); renderCalendar(); renderReports(); }
-      try { await fetch('/api/leads', { method: 'POST', headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ leads: [lead] }) });
-      } catch(e) {}
+      if (field === 'status') { renderTable(); renderCalendar(); renderReports(); }
+      try {
+        await fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leads: [lead] })
+        });
+      } catch(e) { console.warn('Save failed', e); }
+    }
+
+    async function deleteLead(idx) {
+      if (!confirm('Lead wirklich löschen?')) return;
+      state.leads.splice(idx, 1);
+      window.__leads = state.leads;
+      // Push full updated array to server
+      try {
+        await fetch('/api/leads/replace', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leads: state.leads })
+        });
+      } catch(e) { console.warn('Delete push failed', e); }
+      updateKPIs(); renderTable(); renderCalendar(); renderReports();
+      showToast('Lead gelöscht', '#16a34a');
     }
 
     function initUI() {
-      document.getElementById('pipelineTabs').innerHTML = PIPELINES.map(p => `<div class="pipeline-tab ${p.id === state.activeTab ? 'active' : ''}" onclick="setTab('${p.id}')">${p.label}</div>`).join('');
-      document.getElementById('brancheChips').innerHTML = BRANCHES.map(b => `<div class="chip" onclick="toggleBranch(this, '${b}')">${b}</div>`).join('');
+      document.getElementById('pipelineTabs').innerHTML = PIPELINES.map(p =>
+        `<div class="pipeline-tab ${p.id === state.activeTab ? 'active' : ''}" onclick="setTab('${p.id}')">${p.label}</div>`
+      ).join('');
+      document.getElementById('brancheChips').innerHTML = BRANCHES.map(b =>
+        `<div class="chip" onclick="toggleBranch(this, '${b}')">${b}</div>`
+      ).join('');
       updateKPIs(); renderTable(); renderCalendar(); renderReports();
     }
 
@@ -533,7 +588,7 @@
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       document.getElementById(`view-${view}`).classList.add('active');
       document.getElementById(`nav-${view === 'generator' ? 'leads' : view}`).classList.add('active');
-      const titles = { dashboard: 'Dashboard', leads: 'Pipelines & Leads', generator: 'Neukunden Engine', calendar: 'Kalender & Termine', reports: 'Zentrale Reports' };
+      const titles = { dashboard:'Dashboard', leads:'Pipelines & Leads', generator:'Neukunden Engine', calendar:'Kalender & Termine', reports:'Zentrale Reports' };
       document.getElementById('pageTitle').textContent = titles[view];
       if(view === 'calendar') renderCalendar();
       if(view === 'reports') renderReports();
@@ -541,17 +596,23 @@
 
     function setTab(tabId) {
       state.activeTab = tabId;
-      document.querySelectorAll('.pipeline-tab').forEach(el => el.classList.toggle('active', el.textContent === PIPELINES.find(p=>p.id===tabId).label));
+      document.querySelectorAll('.pipeline-tab').forEach(el =>
+        el.classList.toggle('active', el.textContent === PIPELINES.find(p=>p.id===tabId).label)
+      );
       renderTable();
     }
-    function toggleBranch(el, branch) { el.classList.toggle('active'); const idx = state.activeBranches.indexOf(branch); if(idx > -1) state.activeBranches.splice(idx, 1); else state.activeBranches.push(branch); }
+    function toggleBranch(el, branch) {
+      el.classList.toggle('active');
+      const idx = state.activeBranches.indexOf(branch);
+      if(idx > -1) state.activeBranches.splice(idx, 1);
+      else state.activeBranches.push(branch);
+    }
 
     function updateKPIs() {
-      const counts = { 'NEU': 0, 'IN KONTAKT': 0, 'TERMIN FIXIERT': 0, 'ABSCHLUSS / ABSAGE': 0, 'KEIN INTERESSE': 0 };
+      const counts = { 'NEU':0,'IN KONTAKT':0,'TERMIN FIXIERT':0,'ABSCHLUSS / ABSAGE':0,'KEIN INTERESSE':0 };
       state.leads.forEach(l => {
-        const s = (l.status || 'NEU').trim();
-        if (counts[s] !== undefined) counts[s]++;
-        else counts['NEU']++; // fallback for legacy/unknown statuses
+        const s = normalizeStatus(l.status);
+        counts[s] = (counts[s] || 0) + 1;
       });
       document.getElementById('kpi-new').textContent = counts['NEU'];
       document.getElementById('kpi-contact').textContent = counts['IN KONTAKT'];
@@ -560,110 +621,161 @@
       document.getElementById('kpi-total').textContent = state.leads.length + ' Leads gespeichert';
     }
 
-    function addToCalendar(leadJson) {
-      const lead = JSON.parse(leadJson);
-      const now = new Date(); now.setDate(now.getDate() + 1); now.setHours(10, 0, 0, 0); const end = new Date(now); end.setHours(11, 0, 0, 0);
-      const formatICSDate = (d) => { return d.toISOString().replace(/-|:/g, '').split('.')[0] + 'Z'; };
-      const icsData = [
-        "BEGIN:VCALENDAR", "VERSION:2.0", "BEGIN:VEVENT",
-        `DTSTART:${formatICSDate(now)}`, `DTEND:${formatICSDate(end)}`, `SUMMARY:Termin mit ${lead.name} (${lead.ceos || 'GF'})`,
-        `DESCRIPTION:Branche: ${lead.industry}\\nOrt: ${lead.region}\\nCRM Notiz: ${lead.note || '-'}`,
-        `LOCATION:${lead.region}`, "END:VEVENT", "END:VCALENDAR"
-      ].join("\r\n");
-      const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' });
-      const a = document.createElement('a'); a.href = window.URL.createObjectURL(blob); a.download = `Termin_${lead.name.replace(/\\s+/g, '_')}.ics`; a.click();
+    // .ICS calendar export for Outlook / Apple / Google
+    function addToCalendar(idx) {
+      const lead = window.__leads[idx];
+      if (!lead) return;
+      const now = new Date();
+      now.setDate(now.getDate() + 1);
+      now.setHours(10, 0, 0, 0);
+      const end = new Date(now);
+      end.setHours(11, 0, 0, 0);
+      const fmt = d => d.toISOString().replace(/-|:/g,'').split('.')[0]+'Z';
+      const ics = [
+        'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//HF Media CRM//DE','BEGIN:VEVENT',
+        `UID:${Date.now()}@hfmedia`,
+        `DTSTAMP:${fmt(new Date())}`,
+        `DTSTART:${fmt(now)}`,`DTEND:${fmt(end)}`,
+        `SUMMARY:Termin: ${lead.name} (${lead.ceos || 'GF'})`,
+        `DESCRIPTION:Branche: ${lead.industry || '-'}\nOrt: ${lead.region || '-'}\nNotiz: ${lead.note || '-'}`,
+        `LOCATION:${lead.region || ''}`,
+        'END:VEVENT','END:VCALENDAR'
+      ].join('\r\n');
+      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Termin_${(lead.name||'Lead').replace(/[^a-zA-Z0-9]/g,'_')}.ics`;
+      a.click();
+      showToast('Kalendereintrag heruntergeladen! Doppelklick zum Import.', '#16a34a');
     }
 
     function renderReports() {
-       const total = state.leads.length;
-       const contacted = state.leads.filter(l => ['IN KONTAKT', 'TERMIN FIXIERT', 'KEIN INTERESSE', 'ABSCHLUSS / ABSAGE'].includes(l.status)).length;
-       const won = state.leads.filter(l => l.status === 'TERMIN FIXIERT' || l.status === 'ABSCHLUSS / ABSAGE').length;
-       const contactRatio = total > 0 ? Math.round((contacted / total) * 100) : 0;
-       const closingRatio = total > 0 ? Math.round((won / total) * 100) : 0;
-       document.getElementById('repTotalNum1').textContent = total; document.getElementById('repTotalNum2').textContent = total;
-       document.getElementById('repContactNum').textContent = contacted; document.getElementById('repWonNum').textContent = won;
-       document.getElementById('repContactPerc').textContent = contactRatio + "%"; document.getElementById('repContactDonut').style.setProperty('--perc', contactRatio + '%');
-       document.getElementById('repWonPerc').textContent = closingRatio + "%"; document.getElementById('repWonDonut').style.setProperty('--perc', closingRatio + '%');
+      const total = state.leads.length;
+      const contacted = state.leads.filter(l => ['IN KONTAKT','TERMIN FIXIERT','KEIN INTERESSE','ABSCHLUSS / ABSAGE'].includes(normalizeStatus(l.status))).length;
+      const won = state.leads.filter(l => ['TERMIN FIXIERT','ABSCHLUSS / ABSAGE'].includes(normalizeStatus(l.status))).length;
+      const contactRatio = total > 0 ? Math.round((contacted/total)*100) : 0;
+      const closingRatio = total > 0 ? Math.round((won/total)*100) : 0;
+      document.getElementById('repTotalNum1').textContent = total;
+      document.getElementById('repTotalNum2').textContent = total;
+      document.getElementById('repContactNum').textContent = contacted;
+      document.getElementById('repWonNum').textContent = won;
+      document.getElementById('repContactPerc').textContent = contactRatio+'%';
+      document.getElementById('repContactDonut').style.setProperty('--perc', contactRatio+'%');
+      document.getElementById('repWonPerc').textContent = closingRatio+'%';
+      document.getElementById('repWonDonut').style.setProperty('--perc', closingRatio+'%');
     }
 
     function renderCalendar() {
       const grid = document.getElementById('calendarAgendaGrid');
-      const termins = state.leads.filter(l => l.status === 'TERMIN FIXIERT');
-      
-      if(termins.length === 0) {
-        grid.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:0.95rem; padding: 3rem;">Aktuell sind keine fixierten Termine vorhanden.</p>`;
+      // Show ALL leads in calendar, not just TERMIN FIXIERT ones
+      const all = state.leads;
+      if (!all.length) {
+        grid.innerHTML = `<p style="text-align:center;color:var(--text-muted);padding:3rem;">Noch keine Leads in der Datenbank.</p>`;
         return;
       }
-      
-      let html = "";
-      // Mocking hours 09:00, 10:00, etc. distributing the termins nicely.
+      let html = '';
       let currentHour = 9;
-      for (let i = 0; i < termins.length; i += 2) {
-         let cluster = termins.slice(i, i+2);
-         let timeStr = `${currentHour < 10 ? '0' : ''}${currentHour}:00 AM`;
-         
-         let cardsHtml = cluster.map((l, idx) => {
-           let cColor = CARD_COLORS[(i + idx) % CARD_COLORS.length];
-           return `
-             <div class="event-card ${cColor}" onclick='addToCalendar(${JSON.stringify(l).replace(/'/g, "&apos;")})'>
-               <h4>${l.name}</h4>
-               <p><i data-lucide="clock" style="width:14px;"></i> ${timeStr} • ${l.ceos||'GF'} • ${l.region}</p>
-             </div>
-           `;
-         }).join('');
-
-         html += `
-           <div class="agenda-grid">
-             <div class="agenda-time">${timeStr}</div>
-             <div class="agenda-content">${cardsHtml}</div>
-           </div>
-         `;
-         currentHour++;
+      for (let i = 0; i < all.length; i += 2) {
+        const cluster = all.slice(i, i+2);
+        const timeStr = `${String(currentHour).padStart(2,'0')}:00`;
+        const cardsHtml = cluster.map((l, ci) => {
+          const idx = i + ci;
+          const cColor = CARD_COLORS[idx % CARD_COLORS.length];
+          const st = normalizeStatus(l.status);
+          const badge = st === 'TERMIN FIXIERT' ? '<span style="background:rgba(255,255,255,0.4);padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;margin-left:8px;">📅 TERMIN</span>' : '';
+          return `
+            <div class="event-card ${cColor}" style="cursor:pointer;">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <h4>${l.name||'–'}${badge}</h4>
+              </div>
+              <p><i data-lucide="user" style="width:13px;"></i> ${l.ceos||l.owner||'GF'} &nbsp;•&nbsp; <i data-lucide="map-pin" style="width:13px;"></i> ${l.region||'–'}</p>
+              <div style="margin-top:12px;">
+                <button onclick="addToCalendar(${idx})" style="background:rgba(0,0,0,0.12);border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;color:inherit;">
+                  <i data-lucide="download" style="width:12px;"></i> .ics Termin
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+        html += `
+          <div class="agenda-grid">
+            <div class="agenda-time">${timeStr}</div>
+            <div class="agenda-content">${cardsHtml}</div>
+          </div>
+        `;
+        currentHour++;
+        if (currentHour > 20) currentHour = 9; // wrap around
       }
-      
       grid.innerHTML = html;
       lucide.createIcons();
     }
 
     function renderTable() {
-      const q = document.getElementById('tableSearch').value.toLowerCase();
-      let filtered = state.leads.filter(l => (l.status || 'NEU') === state.activeTab);
-      if(q) filtered = filtered.filter(l => (l.name||'').toLowerCase().includes(q) || (l.ceos||l.owner||'').toLowerCase().includes(q) || (l.region||'').toLowerCase().includes(q));
+      try {
+        const q = (document.getElementById('tableSearch').value || '').toLowerCase().trim();
+        // Filter by current pipeline tab (normalized status)
+        let filtered = state.leads
+          .map((l, idx) => ({ l, idx }))
+          .filter(({ l }) => normalizeStatus(l.status) === state.activeTab);
 
-      document.getElementById('resultsCount').textContent = filtered.length;
-      const tbody = document.getElementById('leadsTableBody');
-      if(!filtered.length) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 4rem; color: var(--text-muted); font-size: 0.95rem;">Aktuell keine Datensätze in der <b>"${state.activeTab}"</b> Pipeline vorhanden.</td></tr>`;
-        lucide.createIcons(); return;
+        if (q) {
+          filtered = filtered.filter(({ l }) =>
+            String(l.name||'').toLowerCase().includes(q) ||
+            String(l.ceos||l.owner||'').toLowerCase().includes(q) ||
+            String(l.region||'').toLowerCase().includes(q) ||
+            String(l.industry||'').toLowerCase().includes(q)
+          );
+        }
+
+        document.getElementById('resultsCount').textContent = filtered.length;
+        const tbody = document.getElementById('leadsTableBody');
+
+        if (!filtered.length) {
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:4rem;color:var(--text-muted);font-size:0.95rem;">Aktuell keine Datensätze in der <b>"${state.activeTab}"</b> Pipeline vorhanden.</td></tr>`;
+          lucide.createIcons();
+          return;
+        }
+
+        tbody.innerHTML = filtered.map(({ l, idx }) => {
+          const status = normalizeStatus(l.status);
+          const stCls = PIPELINES.find(p => p.id === status)?.color || 'st-neu';
+          const opts = PIPELINES.map(p => `<option value="${p.id}" ${p.id === status ? 'selected':''}>${p.label}</option>`).join('');
+          const em = l.email_ceo || l.email_general || (l.emails ? String(l.emails).split(',')[0].trim() : '');
+          const tn = l.phone || '';
+          const note = String(l.note || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+          const name = String(l.name || '–').replace(/</g, '&lt;');
+          const owner = String(l.ceos || l.owner || '–').replace(/</g, '&lt;');
+          const branch = String(l.industry || '–').replace(/</g, '&lt;');
+          const city = String(l.region || '–').replace(/</g, '&lt;');
+
+          return `
+          <tr>
+            <td style="padding-left:2rem;"><div class="td-name">${name}</div></td>
+            <td><div class="td-sub"><i data-lucide="user" style="width:13px;"></i>&nbsp;${owner}</div></td>
+            <td><span style="font-size:12px;font-weight:600;">${branch}</span></td>
+            <td><span style="font-size:12.5px;font-weight:500;color:var(--text-muted);">${city}</span></td>
+            <td>
+              <select class="status-select ${stCls}" onchange="this.className='status-select '+PIPELINES.find(p=>p.id===this.value).color; saveLeadField(${idx},'status',this.value)">
+                ${opts}
+              </select>
+            </td>
+            <td><input type="text" class="note-input" value="${note}" placeholder="Notiz..." onchange="saveLeadField(${idx},'note',this.value)"></td>
+            <td style="padding-right:1.5rem;">
+              <div class="action-group" style="justify-content:flex-end;">
+                <button class="action-icon cal" onclick="addToCalendar(${idx})" title=".ics Termin"><i data-lucide="calendar"></i></button>
+                ${tn ? `<a href="tel:${tn}" class="action-icon" title="Anrufen"><i data-lucide="phone"></i></a>` : ''}
+                ${em ? `<a href="mailto:${em}" class="action-icon" title="E-Mail"><i data-lucide="mail"></i></a>` : ''}
+                <button class="action-icon dm" onclick="openModal(${idx})"><i data-lucide="send" style="width:13px;margin-right:5px;"></i> Pitch</button>
+                <button class="action-icon" onclick="deleteLead(${idx})" title="Lead löschen" style="color:#ef4444;"><i data-lucide="trash-2" style="width:15px;"></i></button>
+              </div>
+            </td>
+          </tr>`;
+        }).join('');
+        lucide.createIcons();
+      } catch(err) {
+        console.error('renderTable crash:', err);
+        document.getElementById('leadsTableBody').innerHTML = `<tr><td colspan="8" style="color:red;padding:2rem;">Tabelle konnte nicht geladen werden: ${err.message}</td></tr>`;
       }
-
-      tbody.innerHTML = filtered.map(l => {
-        const k = btoa(unescape(encodeURIComponent((l.name||'') + '|' + (l.region||''))));
-        const stCls = PIPELINES.find(p => p.id === (l.status||'NEU'))?.color || '';
-        let opts = PIPELINES.map(p => `<option value="${p.id}" ${p.id === (l.status||'NEU') ? 'selected':''}>${p.label}</option>`).join('');
-        const em = l.email_ceo || l.email_general || (l.emails ? l.emails.split(',')[0].trim() : '');
-        const tn = l.phone || '';
-
-        return `
-        <tr>
-          <td style="padding-left:2.5rem;"><div class="td-name">${l.name}</div></td>
-          <td><div class="td-sub"><i data-lucide="user" style="width:14px;"></i> ${l.ceos || l.owner || '-'}</div></td>
-          <td><div class="td-name" style="font-size:12.5px; font-weight:600;">${l.industry}</div></td>
-          <td><div class="td-sub" style="font-weight:600;" title="${l.region}">${l.region}</div></td>
-          <td><select class="status-select ${stCls}" onchange="this.className='status-select '+PIPELINES.find(p=>p.id===this.value).color; saveLeadField('${k}', 'status', this.value)">${opts}</select></td>
-          <td><input type="text" class="note-input" value="${(l.note||'').replace(/"/g, '&quot;')}" placeholder="Notiz..." onchange="saveLeadField('${k}', 'note', this.value)"></td>
-          <td style="padding-right:2.5rem;">
-            <div class="action-group" style="justify-content: flex-end;">
-              <button class="action-icon cal" onclick='addToCalendar(${JSON.stringify(l).replace(/'/g, "&apos;")})' title="Booking"><i data-lucide="calendar"></i></button>
-              ${tn ? `<a href="tel:${tn}" class="action-icon"><i data-lucide="phone"></i></a>` : ''}
-              ${em ? `<a href="mailto:${em}" class="action-icon"><i data-lucide="mail"></i></a>` : ''}
-              <button class="action-icon dm" onclick='openModal(${JSON.stringify(l).replace(/'/g, "&apos;")})'><i data-lucide="send" style="width:14px;margin-right:6px;"></i> Pitch</button>
-            </div>
-          </td>
-        </tr>
-        `;
-      }).join('');
-      lucide.createIcons();
     }
 
     async function generateNewLeads() {
@@ -671,43 +783,74 @@
       showLoader('Lead Engine durchsucht Web...');
       try {
         const body = { branches: state.activeBranches.join(', '), custom: document.getElementById('genSearch').value };
-        const res = await fetch('/api/generate', { method: 'POST', headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const res = await fetch('/api/generate', { method:'POST', headers:{'Authorization':`Bearer ${state.token}`,'Content-Type':'application/json'}, body: JSON.stringify(body) });
         const data = await res.json();
         if(!res.ok) throw new Error(data.error || 'Serverfehler');
         if(!data.leads || data.leads.length === 0) throw new Error('Keine Datensätze gefunden.');
-        const dbRes = await fetch('/api/leads', { method: 'POST', headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ leads: data.leads }) });
+        const dbRes = await fetch('/api/leads', { method:'POST', headers:{'Authorization':`Bearer ${state.token}`,'Content-Type':'application/json'}, body: JSON.stringify({ leads: data.leads }) });
         if(!dbRes.ok) throw new Error('Vercel DB Fehler.');
-        await syncDatabase(); switchView('leads'); setTab('NEU');
+        await syncDatabase();
+        switchView('leads');
+        setTab('NEU');
       } catch(e) { alert('Engine Abbruch: ' + e.message); }
       hideLoader();
     }
 
     function closeModal() { document.getElementById('msgModal').classList.remove('open'); }
-    async function openModal(lead) {
-      state.activeLead = lead; document.getElementById('msgTitle').textContent = `Outreach: ${lead.name}`; document.getElementById('msgBox').value = "Claude AI generiert..."; document.getElementById('msgModal').classList.add('open');
+
+    async function openModal(idx) {
+      const lead = window.__leads[idx];
+      if (!lead) return;
+      state.activeLead = lead;
+      document.getElementById('msgTitle').textContent = `Outreach: ${lead.name}`;
+      document.getElementById('msgBox').value = 'Claude AI generiert...';
+      document.getElementById('msgModal').classList.add('open');
       try {
-        const res = await fetch('/api/regenerate', { method: 'POST', headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'initial', lead }) });
-        const data = await res.json(); if(!res.ok) throw new Error(data.error);
-        const match = data.content[0].text.match(/\{[\s\S]*\}/); const tpl = JSON.parse(match[0]); state.currentMsgTemplates = [tpl.template_1, tpl.template_2, tpl.template_3];
-        document.getElementById('msgTabs').innerHTML = state.currentMsgTemplates.map((_, i) => `<button class="tpl-tab ${i===0?'active':''}" onclick="setMsgTab(${i})">Strategie 0${i+1}</button>`).join(''); setMsgTab(0);
-      } catch(e) { document.getElementById('msgBox').value = "CRM Fehler: " + e.message; }
+        const res = await fetch('/api/regenerate', { method:'POST', headers:{'Authorization':`Bearer ${state.token}`,'Content-Type':'application/json'}, body: JSON.stringify({ type:'initial', lead }) });
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.error);
+        const match = data.content[0].text.match(/\{[\s\S]*\}/);
+        const tpl = JSON.parse(match[0]);
+        state.currentMsgTemplates = [tpl.template_1, tpl.template_2, tpl.template_3];
+        document.getElementById('msgTabs').innerHTML = state.currentMsgTemplates.map((_,i) =>
+          `<button class="tpl-tab ${i===0?'active':''}" onclick="setMsgTab(${i})">Strategie 0${i+1}</button>`
+        ).join('');
+        setMsgTab(0);
+      } catch(e) { document.getElementById('msgBox').value = 'Fehler: ' + e.message; }
     }
-    function setMsgTab(i) { state.currentMsgIdx = i; document.querySelectorAll('.tpl-tab').forEach((el, idx) => el.classList.toggle('active', i===idx)); document.getElementById('msgBox').value = state.currentMsgTemplates[i]; }
+
+    function setMsgTab(i) {
+      state.currentMsgIdx = i;
+      document.querySelectorAll('.tpl-tab').forEach((el,idx) => el.classList.toggle('active', i===idx));
+      document.getElementById('msgBox').value = state.currentMsgTemplates[i];
+    }
     async function regenerateMessage() {
-      const box = document.getElementById('msgBox'); box.style.opacity = '0.5';
+      const box = document.getElementById('msgBox');
+      box.style.opacity = '0.5';
       try {
-        const res = await fetch('/api/regenerate', { method: 'POST', headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'regenerate', lead: state.activeLead, currentMessage: box.value }) });
-        const data = await res.json(); if(!res.ok) throw new Error(data.error);
-        const newMsg = data.content[0].text.trim(); state.currentMsgTemplates[state.currentMsgIdx] = newMsg; box.value = newMsg;
+        const res = await fetch('/api/regenerate', { method:'POST', headers:{'Authorization':`Bearer ${state.token}`,'Content-Type':'application/json'}, body: JSON.stringify({ type:'regenerate', lead:state.activeLead, currentMessage:box.value }) });
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.error);
+        const newMsg = data.content[0].text.trim();
+        state.currentMsgTemplates[state.currentMsgIdx] = newMsg;
+        box.value = newMsg;
       } catch(e) { alert('AI Fehler: ' + e.message); }
       box.style.opacity = '1';
     }
     function copyMessage() { navigator.clipboard.writeText(document.getElementById('msgBox').value); closeModal(); }
+
     function exportCSV() {
-      if(!state.leads.length) return alert('Leer!');
-      let csv = 'Name,Branche,Region,Telefon,E-Mail,Geschäftsführer,Status,Notizen\n';
-      state.leads.forEach(l => { const mail = l.email_general || l.email_ceo || l.emails || ''; csv += `"${(l.name||'').replace(/"/g,'""')}","${(l.industry||'').replace(/"/g,'""')}","${(l.region||'').replace(/"/g,'""')}","${l.phone||''}","${mail}","${(l.ceos||l.owner||'').replace(/"/g,'""')}","${l.status||'NEU'}","${(l.note||'').replace(/"/g,'""')}"\n`; });
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `crm_export_${Date.now()}.csv`; a.click();
+      if(!state.leads.length) return alert('Keine Leads!');
+      let csv = 'Name,Branche,Region,Telefon,E-Mail,CEO,Status,Notizen\n';
+      state.leads.forEach(l => {
+        const mail = l.email_general||l.email_ceo||l.emails||'';
+        csv += `"${(l.name||'').replace(/"/g,'""')}","${(l.industry||'').replace(/"/g,'""')}","${(l.region||'').replace(/"/g,'""')}","${l.phone||''}","${mail}","${(l.ceos||l.owner||'').replace(/"/g,'""')}","${l.status||'NEU'}","${(l.note||'').replace(/"/g,'""')}"\n`;
+      });
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `crm_export_${Date.now()}.csv`;
+      a.click();
     }
   </script>
 </body>

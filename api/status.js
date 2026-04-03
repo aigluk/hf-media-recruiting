@@ -1,4 +1,9 @@
-import { kv } from '@vercel/kv';
+import { createClient } from '@vercel/kv';
+
+const url = process.env.KV_REST_API_URL || process.env.KV_UPSTASH_REDIS_REST_URL || process.env.UPSTASH_REDIS_REST_URL || process.env.KV_URL;
+const token = process.env.KV_REST_API_TOKEN || process.env.KV_UPSTASH_REDIS_REST_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_TOKEN;
+
+const kv = createClient({ url: url, token: token });
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();

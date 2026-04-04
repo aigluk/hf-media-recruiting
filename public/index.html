@@ -431,13 +431,21 @@
           </div>
 
           <!-- Cloud Sync -->
-          <div class="metric-card" style="cursor: pointer; background: var(--primary); color:white;" onclick="syncDatabase()">
-            <div class="metric-title" style="color:rgba(255,255,255,0.7);">Cloud-Datenbank</div>
-            <div class="metric-value" style="font-size: 1.25rem; font-weight: 600; margin-top: 12px; display:flex; align-items:center; gap:8px; color:white;">
-              <i data-lucide="server" style="color: white; width: 22px; height: 22px;"></i> Vercel KV Sync
+          <div class="kpi-card" style="background:var(--primary); color:white; cursor:pointer; position:relative; overflow:hidden;" onclick="syncDatabase()">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <i data-lucide="database" style="color:rgba(255,255,255,0.8); margin-bottom:1rem;"></i>
+              <div class="metric-title" style="color:rgba(255,255,255,0.7);">Cloud-Datenbank</div>
+              <div class="metric-value" style="font-size:1.5rem; display:flex; align-items:center; gap:8px;">
+                <i data-lucide="layers" style="width:20px;"></i> Vercel KV Sync
+              </div>
+              <div class="metric-label" style="color:rgba(255,255,255,0.6); margin-top:0.5rem;"><span id="cloudLeadCount">0</span> Leads gespeichert</div>
             </div>
-            <div style="color:rgba(255,255,255,0.6); font-size:0.75rem; margin-top:6px;" id="kpi-total">0 Leads gespeichert</div>
+            <div style="position:absolute; top:1.5rem; right:1.5rem; opacity:0.3;">
+              <i data-lucide="refresh-cw" style="width:32px; height:32px;"></i>
+            </div>
           </div>
+        </div>
         </div>
         <div class="panel">
           <div class="panel-header"><i data-lucide="activity" style="width:22px; color:var(--primary);"></i> Letzte Aktivitäten</div>
@@ -1953,30 +1961,81 @@
     }
 
     function mapImportedData(rows) {
-      return rows.map(row => {
-        const find = (keys) => {
-          for (let k in row) {
-            const keyL = k.toLowerCase().trim();
-            if (keys.some(key => keyL === key || keyL.includes(key))) return String(row[k]).trim();
-          }
-          return '';
-        };
+      if (!rows.length) return [];
+      
+      const keys = Object.keys(rows[0]);
+      const profiles = keys.map(key => ({
+        key,
+        score: { name: 0, ceo: 0, industry: 0, region: 0, phone: 0, email: 0, website: 0 },
+        isNumeric: true,
+        isIdLike: false
+      }));
 
-        const firstColVal = Object.values(row)[0] || '';
-
-        return {
-          name: find(['firma', 'company', 'name', 'unternehmen', 'lead', 'business', 'kunde']) || String(firstColVal).trim() || 'Unbekannt',
-          ceos: find(['inhaber', 'ceo', 'ansprechperson', 'person', 'geschäftsführer', 'owner', 'kontakt']),
-          industry: find(['branche', 'industry', 'fokus', 'kategorie']),
-          region: find(['ort', 'stadt', 'region', 'city', 'plz', 'adresse', 'location']),
-          phone: find(['tel', 'phone', 'mobil', 'telefon', 'handy']),
-          email: find(['mail', 'email', 'kontakt', 'e-mail']),
-          website: find(['web', 'site', 'url', 'homepage', 'link']),
-          status: 'NEU',
-          createdAt: new Date().toISOString(),
-          source: 'import'
-        };
+      // 1. Header Profile
+      profiles.forEach(p => {
+        const k = p.key.toLowerCase().trim();
+        if (['firma','company','name','unternehmen','lead','business','kunde'].some(x => k.includes(x))) p.score.name += 100;
+        if (['inhaber','ceo','ansprechperson','person','owner','kontakt'].some(x => k.includes(x))) p.score.ceo += 80;
+        if (['branche','industry','kategorie','fokus'].some(x => k.includes(x))) p.score.industry += 80;
+        if (['ort','stadt','region','city','plz','adresse','location'].some(x => k.includes(x))) p.score.region += 80;
+        if (['tel','phone','mobil','handy','telefon'].some(x => k.includes(x))) p.score.phone += 80;
+        if (['mail','email','e-mail','kontakt'].some(x => k.includes(x))) p.score.email += 80;
+        if (['web','site','url','homepage','link'].some(x => k.includes(x))) p.score.website += 80;
+        if (['id','index','nr','no.','pos'].some(x => k === x || k.includes(x))) p.isIdLike = true;
       });
+
+      // 2. Content Profile (Sample 20 rows)
+      rows.slice(0, 20).forEach(row => {
+        profiles.forEach(p => {
+          const val = String(row[p.key] || '').trim();
+          if (!val) return;
+          if (isNaN(val.replace(/[+\-\s]/g,''))) p.isNumeric = false;
+          
+          if (val.includes('@') && val.includes('.')) p.score.email += 30;
+          if (val.match(/^\+?\d[\d\s\-]{7,}$/)) p.score.phone += 30;
+          if (val.match(/^https?:\/\//) || val.includes('.de') || val.includes('.com')) p.score.website += 30;
+          if (val.match(/^\d{4,5}$/)) p.score.region += 15;
+          if (val.match(/(gmbh|ag|ug|e\.v\.|ltd|inc|holding)/i)) p.score.name += 50;
+          if (val.length > 3 && val.length < 50 && !p.isNumeric) p.score.name += 5;
+        });
+      });
+
+      // 3. Selection
+      const getBest = (field) => {
+        let top = { key: null, val: -50 };
+        profiles.forEach(p => {
+          let s = p.score[field];
+          if (field === 'name') {
+            if (p.isIdLike) s -= 300;
+            if (p.isNumeric && !p.key.toLowerCase().includes('tel')) s -= 200;
+          }
+          if (s > top.val) top = { key: p.key, val: s };
+        });
+        return top.key;
+      };
+
+      const finalMap = {
+        name: getBest('name') || keys[0],
+        ceos: getBest('ceo'),
+        industry: getBest('industry'),
+        region: getBest('region'),
+        phone: getBest('phone'),
+        email: getBest('email'),
+        website: getBest('website')
+      };
+
+      return rows.map(row => ({
+        name: String(row[finalMap.name] || 'Unbekannt').trim(),
+        ceos: String(row[finalMap.ceos] || '').trim(),
+        industry: String(row[finalMap.industry] || '').trim(),
+        region: String(row[finalMap.region] || '').trim(),
+        phone: String(row[finalMap.phone] || '').trim(),
+        email: String(row[finalMap.email] || '').trim(),
+        website: String(row[finalMap.website] || '').trim(),
+        status: 'NEU',
+        createdAt: new Date().toISOString(),
+        source: 'import'
+      }));
     }
 
     function checkDuplicates() {

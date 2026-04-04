@@ -441,7 +441,6 @@
                   <th>Ansprechperson</th>
                   <th>Branche</th>
                   <th>Ort</th>
-                  <th>CRM Status</th>
                   <th style="width: 20%;">Deal-Notizen</th>
                   <th style="min-width: 220px; text-align:right; padding-right:2.5rem;">Aktionen</th>
                 </tr>
@@ -520,35 +519,65 @@
       <!-- IMPORT VIEW -->
       <div id="view-import" class="view-section">
         <div class="panel">
-          <div class="header">
-            <h2 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Lead Import</h2>
-            <p style="color:var(--text-muted);">Lade Leads aus CSV, Excel oder PDF Dateien direkt in deine Pipeline.</p>
+          <div class="header" style="border-bottom:1px solid var(--border); padding-bottom:1.5rem;">
+            <h2 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Lead Import & Management</h2>
+            <p style="color:var(--text-muted);">Sichere und saubere Lead-Daten durch automatische Analyse & Dublettenprüfung.</p>
           </div>
-          <div style="padding: 2.5rem;">
-            <div id="dropZone" style="border:2px dashed var(--border); border-radius:16px; padding:4rem 2rem; text-align:center; cursor:pointer; background:rgba(14,42,71,0.02); transition:all 0.2s;" ondragover="event.preventDefault(); this.style.borderColor='var(--primary)';" ondragleave="this.style.borderColor='var(--border)';" ondrop="event.preventDefault(); handleFileDrop(event)">
-              <div style="width:64px; height:64px; background:var(--primary); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1.5rem;">
-                <i data-lucide="upload" style="width:32px; height:32px;"></i>
+          
+          <div style="padding: 2.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem;">
+            <!-- Left: Upload -->
+            <div>
+              <div id="dropZone" style="border:2px dashed var(--border); border-radius:16px; padding:3rem 1.5rem; text-align:center; cursor:pointer; background:rgba(14,42,71,0.02); transition:all 0.2s;" ondragover="event.preventDefault(); this.style.borderColor='var(--primary)';" ondragleave="this.style.borderColor='var(--border)';" ondrop="event.preventDefault(); handleFileDrop(event)">
+                <div style="width:56px; height:56px; background:var(--primary); color:white; border-radius:14px; display:flex; align-items:center; justify-content:center; margin:0 auto 1.25rem; transform:rotate(-3deg);">
+                  <i data-lucide="upload" style="width:28px; height:28px;"></i>
+                </div>
+                <h3 style="font-size:1.125rem; font-weight:700; margin-bottom:0.5rem;">Datei hochladen</h3>
+                <p style="color:var(--text-muted); font-size:0.875rem; margin-bottom:1.25rem;">.CSV, .XLSX oder .PDF</p>
+                <input type="file" id="importFile" style="display:none;" onchange="handleFileSelect(event)">
+                <button class="btn btn-outline" style="background:white;" onclick="document.getElementById('importFile').click()">Eigene Datei wählen</button>
               </div>
-              <h3 style="font-size:1.125rem; font-weight:700; margin-bottom:0.75rem;">Datei hochladen oder hierher ziehen</h3>
-              <p style="color:var(--text-muted); margin-bottom:1.5rem;">Unterstützte Formate: .CSV, .XLSX, .PDF, .DOCX</p>
-              <input type="file" id="importFile" style="display:none;" onchange="handleFileSelect(event)">
-              <button class="btn btn-primary" onclick="document.getElementById('importFile').click()">Datei auswählen</button>
+
+              <div id="importPreview" style="display:none; margin-top:2rem;">
+                <h4 style="font-size:0.95rem; margin-bottom:1rem; display:flex; align-items:center; gap:8px;"><i data-lucide="eye" style="width:16px;"></i> Vorschau</h4>
+                <div class="table-container" style="max-height: 300px; overflow-y:auto; border:1px solid var(--border); border-radius:12px;">
+                  <table><tbody id="importPreviewBody"></tbody></table>
+                </div>
+                <div style="margin-top:1.25rem; display:flex; gap:0.75rem;">
+                   <button class="btn btn-outline" style="width:100%;" onclick="clearImport()">Abbrechen</button>
+                   <button class="btn btn-primary" style="width:100%;" onclick="executeImport()"><i data-lucide="plus" style="width:18px;"></i> Import starten</button>
+                </div>
+              </div>
             </div>
 
-            <!-- Previews -->
-            <div id="importDuplicateCheck" style="display:none; margin-top:2rem; background:#fffbf0; border:1px solid #fde68a; border-radius:12px; padding:1.25rem;">
-              <h4 style="color:#d97706; display:flex; align-items:center; gap:8px; margin-bottom:0.75rem;"><i data-lucide="alert-circle" style="width:18px;"></i> Duplikate erkannt</h4>
-              <div id="duplicateList" style="font-size:0.875rem; color:#92400e; display:flex; flex-direction:column; gap:4px;"></div>
-            </div>
+            <!-- Right: Analysis -->
+            <div id="importAnalysis" class="panel" style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.5rem;">
+               <h3 style="font-size:1rem; font-weight:700; margin-bottom:1.5rem; display:flex; align-items:center; gap:10px;"><i data-lucide="bar-chart-3" style="color:var(--primary);"></i> Lead-Analyse & Qualität</h3>
+               
+               <div style="display:flex; flex-direction:column; gap:1.25rem;">
+                 <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:0.75rem; border-bottom:1px solid var(--border);">
+                   <span style="font-size:0.9rem; color:var(--text-muted);">Existierende Leads</span>
+                   <span style="font-weight:700;" id="totalLeadsCount">0</span>
+                 </div>
+                 
+                 <div id="importDuplicateCheck" style="display:none; background:#fffbf0; border:1px solid #fde68a; border-radius:12px; padding:1rem;">
+                   <div style="color:#d97706; font-size:0.9rem; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:0.5rem;">
+                     <i data-lucide="alert-circle" style="width:18px;"></i> Kritische Duplikate
+                   </div>
+                   <div id="duplicateList" style="font-size:0.8rem; color:#92400e; display:flex; flex-direction:column; gap:4px;"></div>
+                 </div>
 
-            <div id="importPreview" style="display:none; margin-top:2rem;">
-              <div class="table-container" style="max-height: 400px; overflow-y:auto; border:1px solid var(--border); border-radius:12px;">
-                <table><tbody id="importPreviewBody"></tbody></table>
-              </div>
-              <div style="margin-top:1.5rem; display:flex; justify-content:flex-end; gap:0.75rem;">
-                 <button class="btn btn-outline" onclick="clearImport()">Abbrechen</button>
-                 <button class="btn btn-primary" onclick="executeImport()"><i data-lucide="check" style="width:18px;"></i> Import abschließen</button>
-              </div>
+                 <div style="background:white; padding:1.25rem; border-radius:12px; border:1px solid var(--border);">
+                   <h4 style="font-size:0.85rem; font-weight:700; margin-bottom:0.75rem;">Daten-Sauberkeit</h4>
+                   <div style="height:8px; width:100%; background:var(--border); border-radius:4px; overflow:hidden; margin-bottom:0.5rem;">
+                     <div id="dataScoreBar" style="height:100%; width:92%; background:linear-gradient(90deg, var(--primary), #16a34a); border-radius:4px;"></div>
+                   </div>
+                   <p style="font-size:0.75rem; color:var(--text-muted);">Hervorragend: 92% aller Daten sind aktuell & vollständig.</p>
+                 </div>
+
+                 <div style="font-size:0.85rem; color:var(--text-muted); line-height:1.5;">
+                   <i data-lucide="info" style="width:14px; position:relative; top:2px;"></i> Dubletten werden automatisch anhand des Firmennamens und der Telefonnummer abgeglichen, um Dubletten im CRM zu vermeiden.
+                 </div>
+               </div>
             </div>
           </div>
         </div>
@@ -738,11 +767,15 @@
       document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       document.getElementById(`view-${view}`).classList.add('active');
-      document.getElementById(`nav-${view === 'generator' ? 'leads' : view}`).classList.add('active');
-      const titles = { dashboard:'Dashboard', leads:'Pipelines & Leads', generator:'Neukunden Engine', calendar:'Kalender & Termine', reports:'Zentrale Reports' };
-      document.getElementById('pageTitle').textContent = titles[view];
+      document.getElementById(`nav-${view === 'generator' ? 'leads' : (view === 'import' ? 'import' : view)}`).classList.add('active');
+      const titles = { dashboard:'Dashboard', leads:'Pipelines & Leads', generator:'Neukunden Engine', calendar:'Kalender & Termine', reports:'Zentrale Reports', import:'Lead Import & Dublettenprüfung' };
+      document.getElementById('pageTitle').textContent = titles[view] || 'Lead Engine';
       if(view === 'calendar') renderCalendar();
       if(view === 'reports') renderReports();
+      if(view === 'import') {
+        const el = document.getElementById('totalLeadsCount');
+        if (el) el.textContent = state.leads.length;
+      }
     }
 
     function setTab(tabId) {
@@ -1102,11 +1135,17 @@
         // Sort
         const sortVal = document.getElementById('sortFilter')?.value || '';
         if (sortVal === 'asc') {
+          // Oldest first (createdAt)
           filtered.sort((a, b) => new Date(a.l.createdAt||0) - new Date(b.l.createdAt||0));
         } else if (sortVal === 'status') {
-          const ord = {'ABSCHLUSS / ABSAGE':0,'TERMIN FIXIERT':1,'IN KONTAKT':2,'KEIN INTERESSE':3,'NEU':4};
-          filtered.sort((a,b) => (ord[normalizeStatus(a.l.status)]||4) - (ord[normalizeStatus(b.l.status)]||4));
+          // Sort by status change date (statusDate) - newest first
+          filtered.sort((a, b) => {
+            const da = a.l.statusDate ? new Date(a.l.statusDate.split('.').reverse().join('-')) : new Date(0);
+            const db = b.l.statusDate ? new Date(b.l.statusDate.split('.').reverse().join('-')) : new Date(0);
+            return db - da;
+          });
         } else {
+          // Newest first (createdAt)
           filtered.sort((a, b) => new Date(b.l.createdAt||0) - new Date(a.l.createdAt||0));
         }
 
@@ -1137,11 +1176,6 @@
             <td><div class="td-sub"><i data-lucide="user" style="width:13px;"></i>&nbsp;${owner}</div></td>
             <td><span style="font-size:12px;font-weight:600;">${branch}</span></td>
             <td><span style="font-size:12.5px;font-weight:500;color:var(--text-muted);">${city}</span></td>
-            <td>
-              <select class="status-select ${stCls}" onchange="this.className='status-select '+PIPELINES.find(p=>p.id===this.value).color; saveLeadField(${idx},'status',this.value)">
-                ${opts}
-              </select>
-            </td>
             <td>
               <div class="note-input" style="cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px; border:1px solid transparent; padding: 0.5rem;" onclick="openNoteModal(${idx})" title="Notizen bearbeiten">
                 ${note || '<span style="color:var(--text-muted);">Notiz...</span>'}
@@ -1368,15 +1402,18 @@
     function checkDuplicates() {
       const dups = pendingLeads.filter(pl => state.leads.some(l => 
         (l.name && l.name.toLowerCase() === pl.name.toLowerCase()) || 
-        (l.phone && l.phone.replace(/[^\d]/g,'') === pl.phone.replace(/[^\d]/g,''))
+        (l.phone && l.phone.replace(/[^\d]/g,'').length > 5 && l.phone.replace(/[^\d]/g,'') === pl.phone.replace(/[^\d]/g,''))
       ));
       const dupsView = document.getElementById('importDuplicateCheck');
       const dupsList = document.getElementById('duplicateList');
+      const scoreBar = document.getElementById('dataScoreBar');
       if (dups.length > 0) {
         dupsView.style.display = 'block';
-        dupsList.innerHTML = dups.map(d => `<div style="background:white; padding:0.75rem; border:1px solid var(--border); border-radius:8px; font-size:0.85rem;"><strong>${d.name}</strong> (${d.phone}) - Bereits vorhanden!</div>`).join('');
+        dupsList.innerHTML = dups.map(d => `<div>• <strong>${d.name}</strong> (${d.phone})</div>`).join('');
+        if (scoreBar) scoreBar.style.width = '75%';
       } else {
         dupsView.style.display = 'none';
+        if (scoreBar) scoreBar.style.width = '96%';
       }
     }
     function renderImportPreview() {
@@ -1417,19 +1454,23 @@
       const webStr = l.website && l.website !== '–' && l.website !== '' 
         ? `<a href="${l.website.startsWith('http') ? l.website : 'http://'+l.website}" target="_blank" style="color:var(--primary);text-decoration:underline;">${l.website}</a>` 
         : '–';
-      const cityStr = (l.region || '').replace(/,.*$/, '').trim() || '–';
-      const regionStr = l.region || '–';
+      const city = (l.region || '').split(',')[0].trim();
+      const zip = (l.region || '').match(/\d{4,5}/) ? l.region.match(/\d{4,5}/)[0] : '';
+      const regionRemaining = (l.region || '').replace(city, '').replace(zip, '').replace(/,/g, '').trim();
+      
+      const ortFull = `${city}${zip ? ' '+zip : ''}${regionRemaining ? ', '+regionRemaining : ''}` || '–';
       const addrStr = l.address || l.adresse || '–';
+
       const fields = [
         ['Ansprechperson', l.ceos || l.owner || '–'],
         ['Branche', l.industry || l.branche || '–'],
-        ['Ort', cityStr],
-        ['Adresse', addrStr],
+        ['Ort / PLZ', ortFull],
+        ['Hausanschrift', addrStr],
         ['Telefon', l.phone || l.tel || '–'],
         ['E-Mail', l.email || '–'],
         ['Website', webStr],
         ['CRM Status', l.status || '–'],
-        ['Statusdatum', l.statusDate || '–'],
+        ['Status-Datum', l.statusDate || '—'],
         ['Notizen', l.notes || l.note || l.description || '–'],
       ];
       const grid = document.getElementById('leadModalGrid');

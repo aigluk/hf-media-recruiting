@@ -130,6 +130,17 @@
     .action-icon.cal { background: var(--bg); color: var(--text-muted); }
     .action-icon.cal:hover { background: #dee5ee; color: var(--primary); }
     .action-icon.del { color: #ef4444; }
+
+    /* Bar Chart Styles */
+    .bar-chart-container { display: flex; align-items: flex-end; gap: 8px; height: 180px; width: 100%; padding-top: 20px; }
+    .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; position: relative; }
+    .bar-stack { width: 100%; display: flex; flex-direction: column; gap: 2px; justify-content: flex-end; height: 100%; }
+    .bar-item { width: 100%; border-radius: 4px; transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1); min-height: 2px; position: relative; cursor: pointer; }
+    .bar-item.leads { background: var(--secondary); opacity: 0.6; }
+    .bar-item.won { background: var(--primary); }
+    .bar-item:hover { transform: scaleX(1.05); filter: brightness(1.1); }
+    .bar-tooltip { position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: var(--text); color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 10; }
+    .bar-group:hover .bar-tooltip { opacity: 1; }
     .action-icon.del:hover { background: #fef2f2; color: #dc2626; }
     .action-icon.info { background: #eef2f7; color: var(--primary); }
     .action-icon.info:hover { background: #dce6f0; }
@@ -326,6 +337,7 @@
         <a href="#" class="nav-item" onclick="switchView('calendar')" id="nav-calendar"><i data-lucide="calendar"></i> Kalender</a>
         <a href="#" class="nav-item" onclick="switchView('reports')" id="nav-reports"><i data-lucide="pie-chart"></i> Reports</a>
         <a href="#" class="nav-item" onclick="switchView('import')" id="nav-import"><i data-lucide="upload"></i> Lead Import</a>
+        <a href="#" class="nav-item" onclick="switchView('metasync')" id="nav-metasync"><i data-lucide="refresh-cw"></i> Meta Sync</a>
       </nav>
       <div style="margin-top: auto;">
         <button class="btn btn-outline" style="width:100%; justify-content:center;" onclick="logout()"><i data-lucide="log-out" style="width:18px;height:18px;"></i> Abmelden</button>
@@ -514,11 +526,17 @@
             <div style="display:flex; align-items:center; gap:10px;">
               <i data-lucide="pie-chart" style="width:26px; color:var(--primary);"></i> Analytics & Pipeline Performance
             </div>
-            <select id="reportTimeFilter" class="input-field" style="width:auto; margin:0; padding:0.5rem 2.2rem 0.5rem 1rem; border-radius: 99px; font-weight:600;" onchange="renderReports()">
-               <option value="all">Gesamt (All-Time)</option>
-               <option value="today">Neu (Heute)</option>
-               <option value="month">Dieser Monat</option>
-            </select>
+            <div style="display:flex; gap:8px;">
+              <select id="reportYearFilter" class="input-field" style="width:auto; margin:0; padding:0.5rem 2.2rem 0.5rem 1rem; border-radius: 99px; font-weight:600;" onchange="renderReports()">
+                 <option value="2026">2026</option>
+                 <option value="2025">2025</option>
+              </select>
+              <select id="reportTimeFilter" class="input-field" style="width:auto; margin:0; padding:0.5rem 2.2rem 0.5rem 1rem; border-radius: 99px; font-weight:600;" onchange="renderReports()">
+                 <option value="all">Gesamt (All-Time)</option>
+                 <option value="today">Neu (Heute)</option>
+                 <option value="month">Dieser Monat</option>
+              </select>
+            </div>
           </div>
           <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem;">Visualisierung deiner Vertriebserfolge basierend auf den generierten Datensätzen.</p>
           
@@ -541,6 +559,67 @@
               <div class="report-metrics-row">
                 <div class="rep-stat-col"><span class="val" style="color: #16a34a;" id="repWonNum">0</span><span class="sub">Termine / Deals</span></div>
                 <div class="rep-stat-col"><span class="val" id="repTotalNum2">0</span><span class="sub">Gesamt Leads</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Annual Bar Chart -->
+          <div class="report-bar-chart-card" style="margin-top:2.5rem; border-top:1px solid var(--border); padding-top:2.5rem;">
+            <h3 style="font-size: 1.125rem; font-weight:700; margin-bottom:0.5rem;">Jahres-Performance</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 2rem;">Monatliche Entwicklung der Leads vs. Abschlüsse.</p>
+            <div class="bar-chart-container" id="annualBarChart">
+              <!-- Bars injected by JS -->
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:10px; color:var(--text-muted); font-size:0.75rem; font-weight:600;">
+               <span style="flex:1;text-align:center;">Jan</span><span style="flex:1;text-align:center;">Feb</span><span style="flex:1;text-align:center;">Mär</span><span style="flex:1;text-align:center;">Apr</span><span style="flex:1;text-align:center;">Mai</span><span style="flex:1;text-align:center;">Jun</span><span style="flex:1;text-align:center;">Jul</span><span style="flex:1;text-align:center;">Aug</span><span style="flex:1;text-align:center;">Sep</span><span style="flex:1;text-align:center;">Okt</span><span style="flex:1;text-align:center;">Nov</span><span style="flex:1;text-align:center;">Dez</span>
+            </div>
+            <div style="display:flex; gap:20px; justify-content:center; margin-top:25px;">
+              <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:600;"><div style="width:10px;height:10px;background:var(--secondary);opacity:0.6;border-radius:2px;"></div> Leads Gesamt</div>
+              <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:600;"><div style="width:10px;height:10px;background:var(--primary);border-radius:2px;"></div> Termine / Abschlüsse</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- META SYNC VIEW -->
+      <div id="view-metasync" class="view-section">
+        <div class="panel">
+          <div class="header" style="border-bottom:1px solid var(--border); padding-bottom:1.5rem; display:flex; flex-direction:column; align-items:flex-start; text-align:left;">
+            <h2 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Meta Business Analytics & Sync</h2>
+            <p style="color:var(--text-muted); margin:0;">Verbinde deinen Instagram & Facebook Account für automatisches Lead-Tracking.</p>
+          </div>
+          
+          <div class="metrics-grid" style="margin-top:2.5rem;">
+            <div class="metric-card" style="background:linear-gradient(135deg, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D);">
+              <div class="metric-value" style="color:white; font-size:1.1rem; display:flex; align-items:center; gap:8px;">
+                <i data-lucide="instagram"></i> Instagram Verbunden
+              </div>
+              <div style="color:white; opacity:0.8; font-size:0.8rem; margin-top:4px;">@hf_media_agency · Aktiv</div>
+            </div>
+            <div class="metric-card" style="cursor:pointer;" onclick="showToast('Meta Sync gestartet...', '#0E2A47')">
+              <div class="metric-title">Sync Status</div>
+              <div style="font-size: 1.25rem; font-weight: 600; margin-top: 12px; display:flex; align-items:center; gap:8px; color:var(--text);"><i data-lucide="check-circle" style="color:#16a34a;"></i> Aktiv</div>
+              <div class="metric-sub" style="margin-top:4px;">Letzter Sync: Gerade eben</div>
+            </div>
+          </div>
+
+          <div class="reports-layout" style="margin-top:2.5rem;">
+            <div class="report-stat-box">
+              <h3 style="font-size: 1.125rem; font-weight:700; margin-bottom:1.5rem;">Zielgruppen-Alter</h3>
+              <div style="display:flex; flex-direction:column; gap:16px;">
+                <div><div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px; font-weight:600;"><span>18-24</span><span>12%</span></div><div style="height:8px; background:#f1f5f9; border-radius:4px; overflow:hidden;"><div style="width:12%; height:100%; background:var(--primary);"></div></div></div>
+                <div><div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px; font-weight:600;"><span>25-34</span><span>45%</span></div><div style="height:8px; background:#f1f5f9; border-radius:4px; overflow:hidden;"><div style="width:45%; height:100%; background:var(--primary);"></div></div></div>
+                <div><div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px; font-weight:600;"><span>35-44</span><span>28%</span></div><div style="height:8px; background:#f1f5f9; border-radius:4px; overflow:hidden;"><div style="width:28%; height:100%; background:var(--primary);"></div></div></div>
+                <div><div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px; font-weight:600;"><span>45+</span><span>15%</span></div><div style="height:8px; background:#f1f5f9; border-radius:4px; overflow:hidden;"><div style="width:15%; height:100%; background:var(--primary);"></div></div></div>
+              </div>
+            </div>
+            <div class="report-stat-box">
+              <h3 style="font-size: 1.125rem; font-weight:700; margin-bottom:1.5rem;">Top Lead Regionen</h3>
+              <div style="display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f1f5f9;"><div style="display:flex; align-items:center; gap:8px;"><i data-lucide="map-pin" style="width:14px; color:var(--primary);"></i> <span style="font-weight:600;font-size:0.9rem;">Oberösterreich</span></div><span>62%</span></div>
+                <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f1f5f9;"><div style="display:flex; align-items:center; gap:8px;"><i data-lucide="map-pin" style="width:14px; color:var(--primary);"></i> <span style="font-weight:600;font-size:0.9rem;">Wien</span></div><span>18%</span></div>
+                <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f1f5f9;"><div style="display:flex; align-items:center; gap:8px;"><i data-lucide="map-pin" style="width:14px; color:var(--primary);"></i> <span style="font-weight:600;font-size:0.9rem;">Niederösterreich</span></div><span>10%</span></div>
+                <div style="display:flex; justify-content:space-between; padding:10px 0;"><div style="display:flex; align-items:center; gap:8px;"><i data-lucide="globe" style="width:14px; color:var(--primary);"></i> <span style="font-weight:600;font-size:0.9rem;">Sonstige</span></div><span>10%</span></div>
               </div>
             </div>
           </div>
@@ -818,7 +897,7 @@
       const vEl = document.getElementById(`view-${view}`);
       if (vEl) vEl.classList.add('active');
       
-      const nKey = view === 'generator' ? 'leads' : (view === 'import' ? 'import' : view);
+      const nKey = (view === 'generator' ? 'leads' : (view === 'metasync' ? 'metasync' : (view === 'import' ? 'import' : view)));
       const nEl = document.getElementById(`nav-${nKey}`);
       if (nEl) nEl.classList.add('active');
 
@@ -828,7 +907,7 @@
         if (side) side.classList.remove('open');
       }
 
-      const titles = { dashboard:'Dashboard', leads:'Pipelines & Leads', generator:'Neukunden Engine', calendar:'Kalender & Termine', reports:'Zentrale Reports', import:'Lead Import & Dublettenprüfung' };
+      const titles = { dashboard:'Dashboard', leads:'Pipelines & Leads', generator:'Neukunden Engine', calendar:'Kalender & Termine', reports:'Zentrale Reports', import:'Lead Import & Dublettenprüfung', metasync:'Meta Business Analytics' };
       const titleEl = document.getElementById('pageTitle');
       if (titleEl) titleEl.textContent = titles[view] || 'Lead Engine';
       
@@ -838,6 +917,7 @@
         const el = document.getElementById('totalLeadsCount');
         if (el) el.textContent = state.leads.length;
       }
+      lucide.createIcons();
     }
 
     function setTab(tabId) {
@@ -925,6 +1005,43 @@
       if (d1) d1.style.setProperty('--perc', contactRatio+'%');
       const d2 = document.getElementById('repWonDonut');
       if (d2) d2.style.setProperty('--perc', closingRatio+'%');
+
+      // Jahres-Performance Bar Chart
+      const year = parseInt(document.getElementById('reportYearFilter').value);
+      const monthlyData = Array(12).fill(0).map(() => ({ total: 0, won: 0 }));
+      state.leads.forEach(l => {
+        // Fallback: if createdAt is missing (legacy), try statusDate or ignore
+        let d = l.createdAt ? new Date(l.createdAt) : null;
+        if (!d && l.statusDate && l.statusDate.includes('.')) {
+          const parts = l.statusDate.split('.');
+          if (parts.length === 3) d = new Date(parts[2], parts[1]-1, parts[0]);
+        }
+        
+        if (d && d.getFullYear() === year) {
+          const m = d.getMonth();
+          monthlyData[m].total++;
+          const st = normalizeStatus(l.status);
+          if (['TERMIN FIXIERT','ABSCHLUSS / ABSAGE'].includes(st)) monthlyData[m].won++;
+        }
+      });
+
+      const maxVal = Math.max(...monthlyData.map(m => m.total), 1);
+      const barCont = document.getElementById('annualBarChart');
+      if (barCont) {
+        barCont.innerHTML = monthlyData.map((data, i) => {
+          const h1 = Math.max(2, (data.total / maxVal) * 100);
+          const h2 = Math.max(2, (data.won / maxVal) * 100);
+          return `
+            <div class="bar-group">
+              <div class="bar-stack">
+                <div class="bar-item leads" style="height:${h1}%"></div>
+                <div class="bar-item won" style="height:${h2}%"></div>
+              </div>
+              <div class="bar-tooltip">${data.total} Leads / ${data.won} Erfolge</div>
+            </div>
+          `;
+        }).join('');
+      }
     }
 
     // ── Calendar State ──

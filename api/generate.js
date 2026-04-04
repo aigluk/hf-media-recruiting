@@ -35,6 +35,34 @@ async function fetchUrl(url, ms = 2500) {
   } catch { return null; }
 }
 
+// ── OpenData Firmenbuch lookup ──
+async function lookupFirmenbuch(companyName, apiKey) {
+  if (!apiKey || !companyName) return null;
+  try {
+    const params = new URLSearchParams({ 'company-name': companyName, 'country': 'at', 'limit': '3' });
+    const credentials = Buffer.from(`${apiKey}:`).toString('base64');
+    const r = await fetch(`http://api.opendata.host/1.0/registered-companies/find?${params}`, {
+      headers: { 'Authorization': `Basic ${credentials}`, 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(3000)
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    if (!data.companies || data.companies.length === 0) return null;
+    const c = data.companies[0];
+    const addr = c.address || {};
+    const street = [addr.street, addr.house_number].filter(Boolean).join(' ');
+    const fullAddress = [street, addr.zip, addr.city].filter(Boolean).join(', ');
+    const ceo = (c.officers || []).find(o => /(geschäftsführer|gf|ceo|inhaber|vorstand)/i.test(o.role || ''));
+    return {
+      address: fullAddress || null,
+      city: addr.city || null,
+      zip: addr.zip || null,
+      ceo: ceo ? `${ceo.first_name || ''} ${ceo.last_name || ''}`.trim() : null,
+      legalForm: c.legal_form || null
+    };
+  } catch { return null; }
+}
+
 // ── Scrape CEO from impressum page ──
 async function scrapeCeoFromImprint(websiteUrl) {
   if (!websiteUrl) return null;
@@ -135,6 +163,7 @@ export default async function handler(req, res) {
 
   const outscraperKey = process.env.OUTSCRAPER_API_KEY;
   const claudeKey = process.env.ANTHROPIC_API_KEY;
+  const opendataKey = process.env.OPENDATA_HOST_API_KEY;
   if (!outscraperKey) return res.status(500).json({ error: 'Outscraper API Key fehlt.' });
   if (!claudeKey) return res.status(500).json({ error: 'Anthropic API Key fehlt.' });
 
@@ -261,20 +290,34 @@ export default async function handler(req, res) {
       };
     });
 
-  // ── STEP 2 + 3 in parallel: Impressum scraping AND Claude CEO lookup simultaneously ──
+  // ── STEP 2 + 3 + 4 in parallel: Firmenbuch + Impressum scraping + Claude ──
   const [ceoMap] = await Promise.all([
     // Claude batch lookup
     lookupCeosWithClaude(baseleads, claudeKey),
-    // Impressum scraping for all leads with websites (runs in parallel with Claude)
+    // Impressum scraping for all leads with websites
     Promise.all(baseleads.map(async (lead) => {
       if (lead.website) {
         const ceo = await scrapeCeoFromImprint(lead.website);
-        if (ceo) lead.ceos = ceo; // Write directly, scraped data is preferred
+        if (ceo) lead.ceos = ceo;
       }
+    })),
+    // Firmenbuch lookup — overrides address + CEO with official data
+    Promise.all(baseleads.map(async (lead) => {
+      const fb = await lookupFirmenbuch(lead.name, opendataKey);
+      if (!fb) return;
+      if (fb.address) {
+        lead.region = fb.address;
+        lead.firmenbuch_address = fb.address;
+      }
+      if (fb.ceo && fb.ceo.split(/\s+/).length >= 2) {
+        lead.ceos = fb.ceo;
+        lead.firmenbuch_ceo = true;
+      }
+      if (fb.legalForm) lead.legalForm = fb.legalForm;
     }))
   ]);
 
-  // Apply Claude results only where scraping found nothing
+  // Apply Claude results only where Firmenbuch + scraping found nothing
   baseleads.forEach((lead, i) => {
     const claudeData = ceoMap[String(i + 1)];
     if (claudeData) {
@@ -318,7 +361,7 @@ export default async function handler(req, res) {
   const ceoCount = baseleads.filter(l => l.ceos).length;
   return res.status(200).json({
     leads: baseleads,
-    source: 'Google Maps (Outscraper) + Impressum Scraping + Claude',
+    source: 'Google Maps (Outscraper) + Firmenbuch (opendata.host) + Impressum Scraping + Claude',
     query,
     total: baseleads.length,
     ceoFound: ceoCount

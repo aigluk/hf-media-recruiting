@@ -114,9 +114,9 @@
     .st-abschluss { background: #f0fdf4; color: #059669; }
 
     .pipeline-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 4px; }
-    .pipeline-tab { padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.82rem; color: var(--text-muted); background: transparent; border-radius: 99px; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+    .pipeline-tab { padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.82rem; color: var(--text-muted); background: transparent; border-radius: 99px; cursor: pointer; transition: all 0.2s; flex-shrink: 0; border: 2px solid transparent; }
     .pipeline-tab:hover { background: var(--secondary); color: var(--text); }
-    .pipeline-tab.active { background: white; color: var(--primary); border: 2px solid var(--primary); box-shadow: none; }
+    .pipeline-tab.active { background: var(--primary); color: white; border: 2px solid var(--primary); box-shadow: none; }
 
     /* Action buttons: always in a single horizontal row, no icon clipping */
     .action-group { display: flex; gap: 6px; flex-wrap: nowrap; align-items: center; justify-content: flex-end; }

@@ -299,6 +299,14 @@
       .pipeline-tab { padding: 0.5rem 1rem; font-size: 0.75rem; }
     }
 
+    .checkbox-container { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; cursor: pointer; position: relative; }
+    .checkbox-container input { opacity: 0; cursor: pointer; height: 0; width: 0; }
+    .checkmark { height: 18px; width: 18px; background-color: var(--bg); border: 2px solid var(--secondary); border-radius: 50%; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+    .checkbox-container:hover input ~ .checkmark { background-color: #dee5ee; }
+    .checkbox-container input:checked ~ .checkmark { background-color: var(--primary); border-color: var(--primary); }
+    .checkmark:after { content: ""; display: none; width: 8px; height: 8px; background: white; border-radius: 50%; }
+    .checkbox-container input:checked ~ .checkmark:after { display: block; }
+
     @media (max-width: 600px) {
       .metrics-grid { grid-template-columns: 1fr; }
       .header { flex-direction: column; align-items: flex-start; gap: 1.25rem; }
@@ -457,11 +465,22 @@
             </div>
           </div>
           
-          <div class="table-container">
+            <div id="bulkActions" style="display:none; align-items:center; gap:1rem; padding: 1rem 2.5rem; background: rgba(239, 68, 68, 0.05); border-bottom: 1px solid rgba(239, 68, 68, 0.1);">
+               <span style="font-size:0.875rem; font-weight:600; color:var(--danger);" id="selectedCountText">0 Leads ausgewählt</span>
+               <button class="btn btn-outline" style="padding:0.5rem 1rem; font-size:0.75rem; border-color:var(--danger); color:var(--danger);" onclick="deleteSelectedLeads()">
+                 <i data-lucide="trash-2" style="width:14px;height:14px;"></i> Auswahl löschen
+               </button>
+            </div>
             <table>
               <thead>
                 <tr>
-                  <th style="padding-left:2.5rem;">Firmenname</th>
+                  <th style="width:50px; padding-left:2.5rem;">
+                    <label class="checkbox-container">
+                      <input type="checkbox" id="selectAllLeads" onclick="toggleAllLeads(this.checked)">
+                      <span class="checkmark"></span>
+                    </label>
+                  </th>
+                  <th>Firmenname</th>
                   <th>Ansprechperson</th>
                   <th>Branche</th>
                   <th>Ort</th>
@@ -980,6 +999,8 @@
 
     function setTab(tabId) {
       state.activeTab = tabId;
+      state.selectedLeads.clear();
+      updateBulkActionsUI();
       document.querySelectorAll('.pipeline-tab').forEach(el =>
         el.classList.toggle('active', el.textContent === PIPELINES.find(p=>p.id===tabId).label)
       );
@@ -1516,6 +1537,99 @@
       bf.value = currentVal;
     }
 
+    function toggleLeadSelection(idx) {
+      if (state.selectedLeads.has(idx)) state.selectedLeads.delete(idx);
+      else state.selectedLeads.add(idx);
+      updateBulkActionsUI();
+    }
+
+    function toggleAllLeads(checked) {
+      const q = (document.getElementById('tableSearch').value || '').toLowerCase().trim();
+      const bf = document.getElementById('branchFilter');
+      const b = bf ? bf.value.toLowerCase() : '';
+      
+      const visibleLeads = state.leads
+        .map((l, idx) => ({ l, idx }))
+        .filter(({ l }) => normalizeStatus(l.status) === state.activeTab &&
+          (!b || String(l.industry||'').toLowerCase() === b || String(l.branche||'').toLowerCase() === b) &&
+          (!q || (String(l.name||'').toLowerCase().includes(q) || String(l.ceos||'').toLowerCase().includes(q) || String(l.region||'').toLowerCase().includes(q)))
+        );
+
+      if (checked) {
+        visibleLeads.forEach(({ idx }) => state.selectedLeads.add(idx));
+      } else {
+        visibleLeads.forEach(({ idx }) => state.selectedLeads.delete(idx));
+      }
+      renderTable();
+    }
+
+    function updateBulkActionsUI() {
+      const bar = document.getElementById('bulkActions');
+      const countText = document.getElementById('selectedCountText');
+      if (!bar || !countText) return;
+      
+      if (state.selectedLeads.size > 0) {
+        bar.style.display = 'flex';
+        countText.textContent = `${state.selectedLeads.size} Leads ausgewählt`;
+      } else {
+        bar.style.display = 'none';
+      }
+      lucide.createIcons();
+    }
+
+    async function deleteSelectedLeads() {
+      const count = state.selectedLeads.size;
+      if (!confirm(`${count} Leads wirklich löschen?`)) return;
+      
+      const indices = Array.from(state.selectedLeads).sort((a,b) => b-a);
+      indices.forEach(idx => state.leads.splice(idx, 1));
+      
+      state.selectedLeads.clear();
+      window.__leads = state.leads;
+      
+      try {
+        await fetch('/api/leads/replace', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leads: state.leads })
+        });
+      } catch(e) { console.warn('Bulk delete push failed', e); }
+      
+      updateKPIs(); renderTable(); renderCalendar(); renderReports();
+      updateBulkActionsUI();
+      showToast(`${count} Leads gelöscht`, '#16a34a');
+    }
+
+    async function deleteSelectedLeadsStatusModal() {
+      const count = state.selectedLeads.size;
+      if (!confirm(`${count} Leads wirklich löschen?`)) return;
+      
+      const indices = Array.from(state.selectedLeads).sort((a,b) => b-a);
+      indices.forEach(idx => state.leads.splice(idx, 1));
+      
+      state.selectedLeads.clear();
+      window.__leads = state.leads;
+      
+      try {
+        await fetch('/api/leads/replace', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leads: state.leads })
+        });
+      } catch(e) { console.warn('Bulk delete push failed', e); }
+      
+      updateKPIs(); renderTable(); renderCalendar(); renderReports();
+      closeModal('statusModal');
+      showToast(`${count} Leads gelöscht`, '#16a34a');
+    }
+
+    function toggleLeadSelectionModal(idx) {
+      if (state.selectedLeads.has(idx)) state.selectedLeads.delete(idx);
+      else state.selectedLeads.add(idx);
+      const btn = document.getElementById('statusBulkDeleteBtn');
+      if (btn) btn.style.display = state.selectedLeads.size > 0 ? 'inline-flex' : 'none';
+    }
+
     function renderTable() {
       try {
         const q = (document.getElementById('tableSearch').value || '').toLowerCase().trim();
@@ -1528,6 +1642,15 @@
 
         if (b) {
           filtered = filtered.filter(({ l }) => String(l.industry||'').toLowerCase() === b || String(l.branche||'').toLowerCase() === b);
+        }
+
+        if (q) {
+          filtered = filtered.filter(({ l }) => 
+            String(l.name||'').toLowerCase().includes(q) || 
+            String(l.ceos||'').toLowerCase().includes(q) || 
+            String(l.region||'').toLowerCase().includes(q) ||
+            String(l.industry||'').toLowerCase().includes(q)
+          );
         }
 
         // Sort
@@ -1558,6 +1681,7 @@
 
         tbody.innerHTML = filtered.map(({ l, idx }) => {
           const status = normalizeStatus(l.status);
+          const isSelected = state.selectedLeads.has(idx);
           const stCls = PIPELINES.find(p => p.id === status)?.color || 'st-neu';
           const opts = PIPELINES.map(p => `<option value="${p.id}" ${p.id === status ? 'selected':''}>${p.label}</option>`).join('');
           const em = l.email_ceo || l.email_general || (l.emails ? String(l.emails).split(',')[0].trim() : '');
@@ -1570,7 +1694,13 @@
 
           return `
           <tr>
-            <td style="padding-left:2rem;"><div class="td-name" onclick="showLeadDetail(${idx})" style="cursor:pointer; transition:color 0.15s;" onmouseover="this.style.color='var(--primary)';" onmouseout="this.style.color='';" title="Popup öffnen">${name}</div></td>
+            <td style="padding-left:2.5rem;">
+              <label class="checkbox-container">
+                <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleLeadSelection(${idx})">
+                <span class="checkmark"></span>
+              </label>
+            </td>
+            <td><div class="td-name" onclick="showLeadDetail(${idx})" style="cursor:pointer; transition:color 0.15s;" onmouseover="this.style.color='var(--primary)';" onmouseout="this.style.color='';" title="Popup öffnen">${name}</div></td>
             <td><div class="td-sub"><i data-lucide="user" style="width:13px;"></i>&nbsp;${owner}</div></td>
             <td><span style="font-size:12px;font-weight:600;">${branch}</span></td>
             <td><span style="font-size:12.5px;font-weight:500;color:var(--text-muted);">${city}</span></td>
@@ -1687,7 +1817,12 @@
   <div class="modal-overlay" id="statusModal" onclick="if(event.target===this)closeModal('statusModal')">
     <div class="modal-box">
       <button class="modal-close" onclick="closeModal('statusModal')"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
-      <div class="modal-title" id="statusModalTitle">Leads</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+        <div class="modal-title" id="statusModalTitle" style="margin:0;">Leads</div>
+        <button id="statusBulkDeleteBtn" class="btn btn-outline" style="display:none; padding:0.4rem 0.8rem; font-size:0.75rem; border-color:var(--danger); color:var(--danger);" onclick="deleteSelectedLeadsStatusModal()">
+          <i data-lucide="trash-2" style="width:14px;height:14px;"></i> Löschen
+        </button>
+      </div>
       <div class="lead-list-modal" id="statusModalList"></div>
     </div>
   </div>
@@ -1964,6 +2099,11 @@
     }
 
     function showStatusLeads(status) {
+      state.selectedLeads.clear();
+      updateBulkActionsUI();
+      const btn = document.getElementById('statusBulkDeleteBtn');
+      if (btn) btn.style.display = 'none';
+
       const filteredLeads = state.leads.filter(l => normalizeStatus(l.status) === normalizeStatus(status));
       const STATUS_LABEL = {'ABSCHLUSS / ABSAGE':'Abschlüsse','TERMIN FIXIERT':'Termin Fixiert','IN KONTAKT':'In Akquise','KEIN INTERESSE':'Kein Interesse','NEU':'Neue Leads'};
       document.getElementById('statusModalTitle').textContent = (STATUS_LABEL[normalizeStatus(status)] || status) + ' (' + filteredLeads.length + ')';
@@ -1973,8 +2113,12 @@
       } else {
         list.innerHTML = filteredLeads.map(l => {
           const idx = state.leads.indexOf(l);
-          return `<div class="lead-list-item" onclick="closeModal('statusModal'); setTimeout(()=>showLeadDetail(${idx}),220);">
-            <div>
+          return `<div class="lead-list-item" style="gap:12px;">
+            <label class="checkbox-container" onclick="event.stopPropagation()">
+              <input type="checkbox" onchange="toggleLeadSelectionModal(${idx})">
+              <span class="checkmark"></span>
+            </label>
+            <div onclick="closeModal('statusModal'); setTimeout(()=>showLeadDetail(${idx}),220);" style="flex:1; cursor:pointer;">
               <div style="font-weight:600;">${String(l.name||'–').replace(/</g,'&lt;')}</div>
               <div style="font-size:0.77rem;color:var(--text-muted);">${String(l.region||'').replace(/</g,'&lt;')}</div>
             </div>
@@ -1982,6 +2126,7 @@
           </div>`;
         }).join('');
       }
+      lucide.createIcons();
       openModal('statusModal');
     }
 

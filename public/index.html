@@ -1970,7 +1970,7 @@
       const keys = Object.keys(rows[0]);
       const profiles = keys.map(key => ({
         key,
-        score: { name: 0, ceo: 0, industry: 0, region: 0, phone: 0, email: 0, website: 0 },
+        score: { name: 0, ceo: 0, industry: 0, region: 0, phone: 0, email: 0, website: 0, job: 0 },
         isNumeric: true,
         isIdLike: false
       }));
@@ -1978,68 +1978,76 @@
       // 1. Header Profile
       profiles.forEach(p => {
         const k = p.key.toLowerCase().trim();
-        if (['firma','company','name','unternehmen','lead','business','kunde'].some(x => k.includes(x))) p.score.name += 100;
-        if (['inhaber','ceo','ansprechperson','person','owner','kontakt'].some(x => k.includes(x))) p.score.ceo += 80;
+        if (['firma','company','unternehmen','lead','business','kunde'].some(x => k === x || k.includes(x))) p.score.name += 120;
+        if (['inhaber','ceo','ansprechperson','person','owner','kontakt','vorname','nachname','name'].some(x => k.includes(x))) p.score.ceo += 80;
         if (['branche','industry','kategorie','fokus'].some(x => k.includes(x))) p.score.industry += 80;
         if (['ort','stadt','region','city','plz','adresse','location'].some(x => k.includes(x))) p.score.region += 80;
         if (['tel','phone','mobil','handy','telefon'].some(x => k.includes(x))) p.score.phone += 80;
         if (['mail','email','e-mail','kontakt'].some(x => k.includes(x))) p.score.email += 80;
         if (['web','site','url','homepage','link'].some(x => k.includes(x))) p.score.website += 80;
-        if (['id','index','nr','no.','pos'].some(x => k === x || k.includes(x))) p.isIdLike = true;
+        if (['position','job','titel','rolle','funktion'].some(x => k.includes(x))) p.score.job += 100;
+        if (['id','index','nr','no.','pos','zeile','row'].some(x => k === x || k.includes(x))) p.isIdLike = true;
       });
 
-      // 2. Content Profile (Sample 20 rows)
-      rows.slice(0, 20).forEach(row => {
+      // 2. Content Profile (Sample 30 rows)
+      rows.slice(0, 30).forEach(row => {
         profiles.forEach(p => {
           const val = String(row[p.key] || '').trim();
           if (!val) return;
           if (isNaN(val.replace(/[+\-\s]/g,''))) p.isNumeric = false;
           
-          if (val.includes('@') && val.includes('.')) p.score.email += 30;
-          if (val.match(/^\+?\d[\d\s\-]{7,}$/)) p.score.phone += 30;
+          if (val.includes('@') && val.includes('.')) p.score.email += 50;
+          if (val.match(/^\+?\d[\d\s\-]{7,}$/)) p.score.phone += 50;
           if (val.match(/^https?:\/\//) || val.includes('.de') || val.includes('.com')) p.score.website += 30;
-          if (val.match(/^\d{4,5}$/)) p.score.region += 15;
-          if (val.match(/(gmbh|ag|ug|e\.v\.|ltd|inc|holding)/i)) p.score.name += 50;
-          if (val.length > 3 && val.length < 50 && !p.isNumeric) p.score.name += 5;
+          if (val.match(/^\d{4,5}$/)) p.score.region += 20;
+          if (val.match(/(gmbh|ag|ug|e\.v\.|ltd|inc|holding|kg|ohg)/i)) p.score.name += 150;
+          if (val.match(/(direktor|leiter|ceo|manager|partner|chef|geschäftsführer|vertriebs|berater)/i)) p.score.job += 60;
+          if (val.length > 3 && val.length < 60 && !p.isNumeric) p.score.name += 5;
         });
       });
 
-      // 3. Selection
-      const getBest = (field) => {
-        let top = { key: null, val: -50 };
+      // 3. Selection Algorithm
+      const getBest = (field, exclude = []) => {
+        let top = { key: null, val: -200 };
         profiles.forEach(p => {
+          if (exclude.includes(p.key)) return;
           let s = p.score[field];
           if (field === 'name') {
-            if (p.isIdLike) s -= 300;
-            if (p.isNumeric && !p.key.toLowerCase().includes('tel')) s -= 200;
+            if (p.isIdLike) s -= 600;
+            if (p.score.job > 40) s -= 400; // Positions columns are not company names
+            if (p.isNumeric && !p.key.toLowerCase().includes('tel')) s -= 500;
           }
           if (s > top.val) top = { key: p.key, val: s };
         });
         return top.key;
       };
 
-      const finalMap = {
-        name: getBest('name') || keys[0],
-        ceos: getBest('ceo'),
-        industry: getBest('industry'),
-        region: getBest('region'),
-        phone: getBest('phone'),
-        email: getBest('email'),
-        website: getBest('website')
-      };
+      const nameCol = getBest('name');
+      const emailCol = getBest('email');
+      const phoneCol = getBest('phone');
+      const vornameCol = profiles.find(p => p.key.toLowerCase().includes('vorname'))?.key;
+      const nachnameCol = profiles.find(p => p.key.toLowerCase().includes('nachname'))?.key;
+      const personCol = getBest('ceo', [nameCol, emailCol, phoneCol]) || getBest('job', [nameCol, emailCol, phoneCol]);
 
-      return rows.map(row => ({
-        name: String(row[finalMap.name] || 'Unbekannt').trim(),
-        ceos: String(row[finalMap.ceos] || '').trim(),
-        industry: String(row[finalMap.industry] || '').trim(),
-        region: String(row[finalMap.region] || '').trim(),
-        phone: String(row[finalMap.phone] || '').trim(),
-        email: String(row[finalMap.email] || '').trim(),
-        website: String(row[finalMap.website] || '').trim(),
-        status: 'NEU',
-        createdAt: new Date().toISOString(),
-        source: 'import'
-      }));
+      return rows.map(row => {
+        let contact = String(row[personCol] || '').trim();
+        if (vornameCol && nachnameCol) {
+          contact = (String(row[vornameCol] || '') + ' ' + String(row[nachnameCol] || '')).trim();
+        }
+
+        return {
+          name: String(row[nameCol] || (contact && !contact.includes(' ') ? 'Privatperson' : 'Unbekannt')).trim(),
+          ceos: contact,
+          industry: String(row[getBest('industry')] || '').trim(),
+          region: String(row[getBest('region')] || '').trim(),
+          phone: String(row[phoneCol] || '').trim(),
+          email: String(row[emailCol] || '').trim(),
+          website: String(row[getBest('website')] || '').trim(),
+          status: 'NEU',
+          createdAt: new Date().toISOString(),
+          source: 'import'
+        };
+      }).filter(l => l.name !== 'position' && l.name !== 'Id'); // Final sanity filter
     }
 
     function checkDuplicates() {

@@ -1956,15 +1956,17 @@
       return rows.map(row => {
         const find = (keys) => {
           for (let k in row) {
-            const keyL = k.toLowerCase();
+            const keyL = k.toLowerCase().trim();
             if (keys.some(key => keyL === key || keyL.includes(key))) return String(row[k]).trim();
           }
           return '';
         };
 
+        const firstColVal = Object.values(row)[0] || '';
+
         return {
-          name: find(['firma', 'company', 'name', 'unternehmen']) || 'Unbekannt',
-          ceos: find(['inhaber', 'ceo', 'ansprechperson', 'person', 'geschäftsführer', 'owner']),
+          name: find(['firma', 'company', 'name', 'unternehmen', 'lead', 'business', 'kunde']) || String(firstColVal).trim() || 'Unbekannt',
+          ceos: find(['inhaber', 'ceo', 'ansprechperson', 'person', 'geschäftsführer', 'owner', 'kontakt']),
           industry: find(['branche', 'industry', 'fokus', 'kategorie']),
           region: find(['ort', 'stadt', 'region', 'city', 'plz', 'adresse', 'location']),
           phone: find(['tel', 'phone', 'mobil', 'telefon', 'handy']),

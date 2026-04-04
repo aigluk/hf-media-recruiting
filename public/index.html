@@ -583,102 +583,109 @@
 
       <!-- META SYNC VIEW (High Performance Dashboard) -->
       <div id="view-metasync" class="view-section">
-        <div class="panel">
-          <div class="header" style="border-bottom:1px solid var(--border); padding-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center;">
-            <div style="text-align:left;">
-              <h2 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Meta Business High-Performance Sync</h2>
-              <p style="color:var(--text-muted); margin:0;">Echtzeit-Synchronisierung von Facebook & Instagram Leads.</p>
-            </div>
-            <div style="display:flex; align-items:center; gap:12px;">
-               <div id="syncIndicator" style="display:flex; align-items:center; gap:8px; font-size:0.75rem; font-weight:700; color:#16a34a; background:rgba(22,163,74,0.1); padding:6px 12px; border-radius:99px;">
-                  <span class="pulse-dot" style="width:8px; height:8px; background:#16a34a; border-radius:50%;"></span> HIGH SPEED SYNC AKTIV
-               </div>
-               <button class="btn btn-primary" onclick="startSimulatedSync()" style="padding:0.6rem 1.25rem;"><i data-lucide="zap" style="width:16px;"></i> Jetzt Synchronisieren</button>
+        <!-- ONBOARDING -->
+        <div id="metaOnboarding" class="panel" style="display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:7rem 2rem;">
+           <div style="background:rgba(14,42,71,0.05); width:85px; height:85px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:2rem;">
+              <i data-lucide="refresh-cw" style="width:40px; height:40px; color:var(--primary);"></i>
+           </div>
+           <h2 style="font-size:1.85rem; margin-bottom:1rem; font-weight:800;">Meta Business Account verbinden</h2>
+           <p style="color:var(--text-muted); max-width:480px; margin-bottom:3rem; line-height:1.7; font-size:1rem;">Synchronisiere deine Facebook & Instagram Leads automatisch mit deiner Sales-Pipeline. Wähle Kampagnen aus und analysiere deine Performance in Echtzeit.</p>
+           <button class="btn btn-primary" onclick="connectMetaAccount()" style="padding:1.15rem 3rem; font-size:1.05rem; border-radius:14px; box-shadow: 0 10px 25px rgba(14,42,71,0.2);"><i data-lucide="zap" style="width:20px; height:20px;"></i> Jetzt mit Meta verbinden</button>
+        </div>
+
+        <!-- DASHBOARD (Hidden until connected) -->
+        <div id="metaDashboard" style="display:none;">
+          <div class="panel" style="padding: 1.5rem 2rem; margin-bottom: 2rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:20px; flex-wrap:wrap;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:10px; height:10px; background:#16a34a; border-radius:50%; box-shadow:0 0 10px rgba(22,163,74,0.5);"></div>
+                <span style="font-weight:700; font-size:0.9rem; color:var(--text);">Live Status: <span style="color:#16a34a;">Verbunden</span></span>
+              </div>
+              <div style="display:flex; gap:12px; flex:1; justify-content:flex-end; min-width:320px;">
+                <select class="input-field" style="width:auto; margin:0; padding:0.6rem 2.2rem 0.6rem 1rem; border-radius:12px; font-weight:700; font-size:0.85rem; border-color:var(--border);">
+                   <option>Ad Account: HF Media Agency</option>
+                </select>
+                <select id="metaCampaignSelect" class="input-field" style="width:auto; margin:0; padding:0.6rem 2.2rem 0.6rem 1rem; border-radius:12px; font-weight:700; font-size:0.85rem; border-color:var(--border);" onchange="updateMetaStats()">
+                   <option value="leads_gen_q2">Campaign: April Lead Gen Q2</option>
+                   <option value="retargeting_v1">Campaign: Retargeting Lookalike</option>
+                </select>
+                <button class="btn btn-primary" onclick="startSimulatedSync()" style="padding:0.6rem 1.5rem; border-radius:12px;"><i data-lucide="refresh-cw" style="width:18px; height:18px;"></i> Sync</button>
+              </div>
             </div>
           </div>
-          
+
           <!-- KPI Scorecard -->
-          <div class="metrics-grid" style="margin-top:2.5rem; grid-template-columns: repeat(5, 1fr);">
-            <div class="metric-card">
-              <div class="metric-title" style="font-size:0.7rem;">Meta Leads (Total)</div>
-              <div class="metric-value" id="metaTotalLeads" style="font-size:1.5rem;">1.284</div>
-              <div class="metric-sub" style="color:#16a34a;">+12% vs. Vormonnat</div>
+          <div class="metrics-grid" style="grid-template-columns: repeat(5, 1fr); margin-bottom:2.5rem;">
+            <div class="metric-card" style="border: 2px solid transparent; transition: border 0.3s;">
+              <div class="metric-title" style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;">Total Leads</div>
+              <div class="metric-value" id="metaTotalLeads" style="font-size:2rem; color:var(--primary);">0</div>
+              <div class="metric-sub" id="metaTotalSub">Warte auf Sync...</div>
             </div>
             <div class="metric-card">
-              <div class="metric-title" style="font-size:0.7rem;">Ø CPL (Kosten)</div>
-              <div class="metric-value" id="metaCPL" style="font-size:1.5rem;">€ 4,12</div>
-              <div class="metric-sub">Effizienz: Hoch</div>
+              <div class="metric-title" style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;">Ø CPL</div>
+              <div class="metric-value" id="metaCPL" style="font-size:2rem;">€ 0,00</div>
+              <div class="metric-sub">Kosten pro Lead</div>
             </div>
             <div class="metric-card">
-              <div class="metric-title" style="font-size:0.7rem;">Total Spend</div>
-              <div class="metric-value" id="metaSpend" style="font-size:1.5rem;">€ 5.290</div>
-              <div class="metric-sub">April Budget</div>
+              <div class="metric-title" style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;">Total Spend</div>
+              <div class="metric-value" id="metaSpend" style="font-size:2rem;">€ 0,00</div>
+              <div class="metric-sub" id="metaSpendSub">Monatsbudget</div>
             </div>
             <div class="metric-card">
-              <div class="metric-title" style="font-size:0.7rem;">Conv. % (CR)</div>
-              <div class="metric-value" id="metaCR" style="font-size:1.5rem;">9,4%</div>
-              <div class="metric-sub" style="color:#16a34a;">Optimiert</div>
+              <div class="metric-title" style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;">Conv. %</div>
+              <div class="metric-value" id="metaCR" style="font-size:2rem;">0.0%</div>
+              <div class="metric-sub">Conversion Rate</div>
             </div>
             <div class="metric-card">
-              <div class="metric-title" style="font-size:0.7rem;">Active Ads</div>
-              <div class="metric-value" id="metaAds" style="font-size:1.5rem;">12</div>
+              <div class="metric-title" style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;">Active Ads</div>
+              <div class="metric-value" id="metaAds" style="font-size:2rem;">0</div>
               <div class="metric-sub">Live Schaltung</div>
             </div>
           </div>
 
-          <!-- Campaign Control Panel -->
-          <div style="background:#f8fafc; border:1px solid var(--border); border-radius:16px; padding:1.5rem; margin-top:2rem;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-               <h3 style="font-size:0.95rem; font-weight:700; color:var(--text); margin:0;">Campaign Control Panel</h3>
-               <div style="display:flex; gap:10px;">
-                  <select class="input-field" style="width:auto; margin:0; padding:0.4rem 2rem 0.4rem 0.75rem; border-radius:8px; font-size:0.8rem;">
-                     <option>Ad Account: HF Media Agency</option>
-                  </select>
-                  <select id="metaCampaignSelect" class="input-field" style="width:auto; margin:0; padding:0.4rem 2rem 0.4rem 0.75rem; border-radius:8px; font-size:0.8rem;" onchange="updateMetaStats()">
-                     <option value="leads_gen_q2">Campaign: April Lead Gen Q2</option>
-                     <option value="retargeting_v1">Campaign: Retargeting Lookalike</option>
-                  </select>
-               </div>
-            </div>
-            <div class="metrics-grid" style="grid-template-columns: repeat(3, 1fr); margin:0;">
-               <div style="background:white; padding:1.25rem; border-radius:12px; border:1px solid var(--border);">
-                  <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:4px;">Impressions</div>
-                  <div style="font-size:1.25rem; font-weight:700;" id="metaImpressions">84.290</div>
-               </div>
-               <div style="background:white; padding:1.25rem; border-radius:12px; border:1px solid var(--border);">
-                  <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:4px;">Link Clicks</div>
-                  <div style="font-size:1.25rem; font-weight:700;" id="metaClicks">1.822</div>
-               </div>
-               <div style="background:white; padding:1.25rem; border-radius:12px; border:1px solid var(--border);">
-                  <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:4px;">Avg. CPC</div>
-                  <div style="font-size:1.25rem; font-weight:700;" id="metaCPC">€ 0,28</div>
-               </div>
-            </div>
-          </div>
+          <div style="display:grid; grid-template-columns: 1fr 2fr; gap:2.5rem;">
+             <!-- Left: Real-time Insights -->
+             <div class="panel" style="margin:0;">
+                <h3 style="font-size: 1.1rem; font-weight:bold; margin-bottom:1.5rem; display:flex; align-items:center; gap:8px;"><i data-lucide="bar-chart-3" style="color:var(--primary);"></i> Real-time Insights</h3>
+                <div style="display:flex; flex-direction:column; gap:1.25rem;">
+                   <div style="padding:1rem; background:#f8fafc; border-radius:12px; border:1px solid var(--border);">
+                      <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); margin-bottom:6px;">Impressions</div>
+                      <div style="font-size:1.5rem; font-weight:800;" id="metaImpressions">0</div>
+                   </div>
+                   <div style="padding:1rem; background:#f8fafc; border-radius:12px; border:1px solid var(--border);">
+                      <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); margin-bottom:6px;">Link Clicks</div>
+                      <div style="font-size:1.5rem; font-weight:800;" id="metaClicks">0</div>
+                   </div>
+                   <div style="padding:1rem; background:#f8fafc; border-radius:12px; border:1px solid var(--border);">
+                      <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); margin-bottom:6px;">Avg. CPC</div>
+                      <div style="font-size:1.5rem; font-weight:800;" id="metaCPC">€ 0,00</div>
+                   </div>
+                </div>
+             </div>
 
-          <!-- Live Lead Table -->
-          <div style="margin-top:2.5rem;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
-               <h3 style="font-size:1.1rem; font-weight:700; margin:0;">Live Feed: Meta Synchronisierte Leads</h3>
-               <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.75rem;" onclick="openFieldMapping()"><i data-lucide="settings" style="width:14px;"></i> Field Mapping</button>
-            </div>
-            <div class="table-container" style="background:white; border:1px solid var(--border); border-radius:12px; overflow:hidden;">
-              <table style="min-width: 900px;">
-                <thead>
-                  <tr>
-                    <th>Lead Name</th>
-                    <th>Kontakt</th>
-                    <th>Meta Form-Name</th>
-                    <th>Zeitstempel (Sync)</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="metaLeadsTable">
-                  <!-- Meta leads injected here -->
-                </tbody>
-              </table>
-            </div>
+             <!-- Right: Live Feed -->
+             <div class="panel" style="margin:0;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                   <h3 style="font-size: 1.1rem; font-weight:bold; margin:0; display:flex; align-items:center; gap:8px;"><i data-lucide="activity" style="color:var(--primary);"></i> Live Sync Feed</h3>
+                   <button class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.75rem;" onclick="openFieldMapping()"><i data-lucide="settings" style="width:14px; height:14px;"></i> Mapping</button>
+                </div>
+                <div class="table-container" style="border:1px solid var(--border); border-radius:12px; overflow:hidden;">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Lead Name</th>
+                        <th>Kontakt</th>
+                        <th>Zeitpunkt</th>
+                        <th>Status</th>
+                        <th style="text-align:right;">Aktion</th>
+                      </tr>
+                    </thead>
+                    <tbody id="metaLeadsTable">
+                      <tr><td colspan="5" style="padding:4rem; text-align:center; color:var(--text-muted); font-size:0.9rem;">Warte auf Daten-Synchronisierung...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+             </div>
           </div>
         </div>
       </div>
@@ -831,7 +838,8 @@
       currentMsgTemplates: [],
       currentMsgIdx: 0,
       activeLead: null,
-      selectedLeads: new Set()
+      selectedLeads: new Set(),
+      metaConnected: false
     };
 
     // Safe: store leads in a global map so onclick can use integer index
@@ -970,7 +978,16 @@
       
       if(view === 'calendar') renderCalendar();
       if(view === 'reports') renderReports();
-      if(view === 'metasync') updateMetaStats();
+      if(view === 'metasync') {
+        if (state.metaConnected) {
+          document.getElementById('metaOnboarding').style.display = 'none';
+          document.getElementById('metaDashboard').style.display = 'block';
+          updateMetaStats();
+        } else {
+          document.getElementById('metaOnboarding').style.display = 'block';
+          document.getElementById('metaDashboard').style.display = 'none';
+        }
+      }
       if(view === 'import') {
         const el = document.getElementById('totalLeadsCount');
         if (el) el.textContent = state.leads.length;
@@ -1119,11 +1136,24 @@
 
     /* Meta Sync High-Performance Logic */
     const META_MOCK_STATS = {
-      leads_gen_q2: { leads: 1284, spend: 5290.40, impressions: 84290, clicks: 1822, ads: 12, cr: '9.4%' },
-      retargeting_v1: { leads: 412, spend: 2150.20, impressions: 42100, clicks: 928, ads: 4, cr: '7.8%' }
+      leads_gen_q2: { leads: 48, spend: 529.40, impressions: 12290, clicks: 822, ads: 4, cr: '5.8%', subLeads: '+4% vs. Vorwoche', subSpend: 'April Budget' },
+      retargeting_v1: { leads: 12, spend: 150.20, impressions: 4100, clicks: 228, ads: 2, cr: '5.5%', subLeads: 'Retargeting', subSpend: 'Lookalike' }
     };
 
+    function connectMetaAccount() {
+      showLoader('Verbindung mit Meta Business wird hergestellt...');
+      setTimeout(() => {
+        state.metaConnected = true;
+        document.getElementById('metaOnboarding').style.display = 'none';
+        document.getElementById('metaDashboard').style.display = 'block';
+        updateMetaStats();
+        hideLoader();
+        showToast('Meta Business Account erfolgreich verbunden!', '#16a34a');
+      }, 1500);
+    }
+
     function updateMetaStats() {
+      if (!state.metaConnected) return;
       const camp = document.getElementById('metaCampaignSelect').value;
       const data = META_MOCK_STATS[camp] || META_MOCK_STATS.leads_gen_q2;
       
@@ -1137,14 +1167,23 @@
       set('metaClicks', data.clicks.toLocaleString());
       set('metaCPC', '€ ' + (data.spend/data.clicks).toLocaleString('de-DE', {minimumFractionDigits:2}));
       
+      set('metaTotalSub', data.subLeads);
+      set('metaSpendSub', data.subSpend);
+      
       renderMetaTable();
     }
 
     function renderMetaTable() {
       const tb = document.getElementById('metaLeadsTable');
       if (!tb) return;
-      const metaLeads = state.leads.filter(l => l.source === 'meta' || (l.ceos && l.ceos.includes('Meta')));
-      tb.innerHTML = metaLeads.slice(0, 8).map(l => {
+      const metaLeads = state.leads.filter(l => l.source === 'meta');
+      
+      if (metaLeads.length === 0) {
+        tb.innerHTML = `<tr><td colspan="5" style="padding:4rem; text-align:center; color:var(--text-muted); font-size:0.9rem;">Noch keine Leads synchronisiert. Starte den Sync-Vorgang...</td></tr>`;
+        return;
+      }
+
+      tb.innerHTML = metaLeads.map(l => {
         const ph = l.phone || '–';
         const mail = l.email || 'info@lead.com';
         return `
@@ -1154,14 +1193,13 @@
                <div style="font-size:0.8rem;">${ph}</div>
                <div style="font-size:0.75rem; color:var(--text-muted);">${mail}</div>
             </td>
-            <td>Lead_Form_Campaign_Q2</td>
-            <td>Gerade eben</td>
+            <td>Gestern, 14:22</td>
             <td><span class="status-badge neu">${normalizeStatus(l.status)}</span></td>
-            <td>
-              <div style="display:flex; gap:8px;">
-                <a href="tel:${ph}" class="action-icon info" title="Anrufen"><i data-lucide="phone"></i></a>
-                <a href="https://wa.me/${ph.replace(/[^\d]/g,'')}" target="_blank" class="action-icon info" title="WhatsApp"><i data-lucide="message-circle"></i></a>
-                <a href="mailto:${mail}" class="action-icon info" title="Email"><i data-lucide="mail"></i></a>
+            <td style="text-align:right;">
+              <div style="display:flex; gap:8px; justify-content:flex-end;">
+                <a href="tel:${ph}" class="action-icon info" style="background:#f1f5f9;" title="Anrufen"><i data-lucide="phone" style="width:14px;"></i></a>
+                <a href="https://wa.me/${ph.replace(/[^\d]/g,'')}" target="_blank" class="action-icon info" style="background:#f1f5f9;" title="WhatsApp"><i data-lucide="message-circle" style="width:14px;"></i></a>
+                <a href="mailto:${mail}" class="action-icon info" style="background:#f1f5f9;" title="Email"><i data-lucide="mail" style="width:14px;"></i></a>
               </div>
             </td>
           </tr>
@@ -1171,27 +1209,22 @@
     }
 
     async function startSimulatedSync() {
-      showToast('Meta Real-time Sync gestartet...', '#0E2A47');
-      const mockLead = {
-        name: 'Max Meta-Kunde',
-        industry: 'Interessent',
-        region: 'OÖ',
-        phone: '+43 664 99887766',
-        email: 'max@meta-buyer.com',
-        status: 'NEU',
-        createdAt: new Date(),
-        source: 'meta',
-        ceos: 'Meta Form Lead'
-      };
-      
-      state.leads = [mockLead, ...state.leads];
-      updateKPIs();
-      renderMetaTable();
-      showToast('NEUER LEAD SYNCHRONISIERT: Max Meta-Kunde', '#16a34a');
-    }
-
-    function openFieldMapping() {
-      showToast('Field Mapping Modus aktiv (Mock)', '#0E2A47');
+      showToast('Meta Websync läuft...', '#0E2A47');
+      setTimeout(() => {
+        const mockLead = {
+          name: 'Max Mustermann (Meta)',
+          industry: 'Meta Lead',
+          region: 'Wien',
+          phone: '+43 1 998877',
+          email: 'demo@meta-business.com',
+          status: 'NEU',
+          createdAt: new Date(),
+          source: 'meta'
+        };
+        state.leads = [mockLead, ...state.leads];
+        updateMetaStats();
+        showToast('NEUER LEAD EMPFANGEN', '#16a34a');
+      }, 500);
     }
 
     // ── Calendar State ──

@@ -500,6 +500,20 @@
       <div id="view-reports" class="view-section">
         <div class="panel">
           <div class="panel-header">Analytics & Performance</div>
+          <div style="padding: 2.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+            <div class="report-stat-box" style="background:var(--surface); padding:1.5rem; border-radius:12px; border:1px solid var(--border);">
+              <h4 style="font-size:0.875rem; color:var(--text-muted); margin-bottom:0.5rem;">Gesamt Leads</h4>
+              <div style="font-size:1.5rem; font-weight:700;" id="repTotalNum1">0</div>
+            </div>
+            <div class="report-stat-box" style="background:var(--surface); padding:1.5rem; border-radius:12px; border:1px solid var(--border);">
+              <h4 style="font-size:0.875rem; color:var(--text-muted); margin-bottom:0.5rem;">Kontaktiert</h4>
+              <div style="font-size:1.5rem; font-weight:700; color:var(--primary);" id="repContactNum">0</div>
+            </div>
+            <div class="report-stat-box" style="background:var(--surface); padding:1.5rem; border-radius:12px; border:1px solid var(--border);">
+              <h4 style="font-size:0.875rem; color:var(--text-muted); margin-bottom:0.5rem;">Termine / Closings</h4>
+              <div style="font-size:1.5rem; font-weight:700; color:#16a34a;" id="repWonNum">0</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -792,14 +806,19 @@
       const won = state.leads.filter(l => ['TERMIN FIXIERT','ABSCHLUSS / ABSAGE'].includes(normalizeStatus(l.status))).length;
       const contactRatio = total > 0 ? Math.round((contacted/total)*100) : 0;
       const closingRatio = total > 0 ? Math.round((won/total)*100) : 0;
-      document.getElementById('repTotalNum1').textContent = total;
-      document.getElementById('repTotalNum2').textContent = total;
-      document.getElementById('repContactNum').textContent = contacted;
-      document.getElementById('repWonNum').textContent = won;
-      document.getElementById('repContactPerc').textContent = contactRatio+'%';
-      document.getElementById('repContactDonut').style.setProperty('--perc', contactRatio+'%');
-      document.getElementById('repWonPerc').textContent = closingRatio+'%';
-      document.getElementById('repWonDonut').style.setProperty('--perc', closingRatio+'%');
+      
+      const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      set('repTotalNum1', total);
+      set('repTotalNum2', total);
+      set('repContactNum', contacted);
+      set('repWonNum', won);
+      set('repContactPerc', contactRatio+'%');
+      set('repWonPerc', closingRatio+'%');
+
+      const d1 = document.getElementById('repContactDonut');
+      if (d1) d1.style.setProperty('--perc', contactRatio+'%');
+      const d2 = document.getElementById('repWonDonut');
+      if (d2) d2.style.setProperty('--perc', closingRatio+'%');
     }
 
     // ── Calendar State ──

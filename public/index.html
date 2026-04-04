@@ -115,8 +115,8 @@
 
     .pipeline-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 4px; }
     .pipeline-tab { padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.82rem; color: var(--text-muted); background: transparent; border-radius: 99px; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
-    .pipeline-tab:hover { background: var(--surface-hover); color: var(--text); }
-    .pipeline-tab.active { background: var(--text); color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+    .pipeline-tab:hover { background: var(--secondary); color: var(--text); }
+    .pipeline-tab.active { background: white; color: var(--primary); border: 2px solid var(--primary); box-shadow: none; }
 
     /* Action buttons: always in a single horizontal row, no icon clipping */
     .action-group { display: flex; gap: 6px; flex-wrap: nowrap; align-items: center; justify-content: flex-end; }
@@ -427,7 +427,6 @@
                <select id="sortFilter" class="input-field" style="margin:0; width: 180px; padding: 0.55rem 2.2rem 0.55rem 0.9rem; appearance:none; background: var(--surface) url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230E2A47%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22/></svg>') no-repeat right 0.65rem center/16px;" onchange="renderTable()">
                  <option value="">Neueste zuerst</option>
                  <option value="asc">Älteste zuerst</option>
-                 <option value="status">Nach Status</option>
                </select>
                <input type="text" id="tableSearch" class="input-field" style="margin:0; width: 220px; padding: 0.55rem 1rem;" placeholder="Firma, Inhaber, Ort..." onkeyup="renderTable()">
             </div>
@@ -1079,11 +1078,15 @@
 
     function renderMonthView(grid, today, year, month) {
       const termins = state.leads.filter(l => normalizeStatus(l.status) === 'TERMIN FIXIERT');
-      const others  = state.leads.filter(l => normalizeStatus(l.status) !== 'TERMIN FIXIERT');
-      // Spread events across month days
       const monthEvents = {};
-      termins.forEach((l, i) => { const d = (i % 28) + 1; if (!monthEvents[d]) monthEvents[d] = []; monthEvents[d].push({ name: l.name, idx: state.leads.indexOf(l), orange: true }); });
-      others.forEach((l, i) => { const d = ((i + 5) % 28) + 1; if (!monthEvents[d]) monthEvents[d] = []; monthEvents[d].push({ name: l.name, idx: state.leads.indexOf(l), orange: false }); });
+      termins.forEach((l) => {
+        const apptDate = l.appointmentDate ? new Date(l.appointmentDate) : null;
+        if (apptDate && apptDate.getMonth() === month && apptDate.getFullYear() === year) {
+          const d = apptDate.getDate();
+          if (!monthEvents[d]) monthEvents[d] = [];
+          monthEvents[d].push({ name: l.name, idx: state.leads.indexOf(l), orange: true });
+        }
+      });
 
       const DAYS_FULL = ['Mo','Di','Mi','Do','Fr','Sa','So'];
       let html = DAYS_FULL.map(d => `<div class="cal-month-day-label">${d}</div>`).join('');
@@ -1540,12 +1543,33 @@
       const webStr = l.website && l.website !== '–' && l.website !== '' 
         ? `<a href="${l.website.startsWith('http') ? l.website : 'http://'+l.website}" target="_blank" style="color:var(--primary);text-decoration:underline;">${l.website}</a>` 
         : '–';
-      const city = (l.region || '').split(',')[0].trim();
-      const zip = (l.region || '').match(/\d{4,5}/) ? l.region.match(/\d{4,5}/)[0] : '';
-      const regionRemaining = (l.region || '').replace(city, '').replace(zip, '').replace(/,/g, '').trim();
+      let city = (l.region || '').split(',')[0].trim();
+      let zipMatch = (l.region || '').match(/\d{4,5}/);
+      let zip = zipMatch ? zipMatch[0] : '';
+      let addrStr = l.address || l.adresse || '';
+
+      // Smart Split: If address is empty but region looks like it contains a street
+      if ((!addrStr || addrStr === '–') && l.region) {
+        const streetKeywords = ['str.', 'straße', 'gasse', 'weg', 'platz', 'allee', 'kai', 'gürtel'];
+        if (streetKeywords.some(kw => l.region.toLowerCase().includes(kw))) {
+           if (zip) {
+             const parts = l.region.split(zip);
+             let preZip = parts[0].trim().replace(/,$/, '').trim();
+             let postZip = (parts[1] || '').trim().replace(/^,/, '').trim();
+             
+             // heuristic: the city is usually the last part
+             const words = postZip.split(/\s+/);
+             city = words.length > 0 ? words[words.length-1] : city;
+             addrStr = (preZip + ' ' + postZip.replace(city, '')).trim().replace(/,$/, '').trim();
+           } else {
+             addrStr = l.region;
+             city = '–';
+           }
+        }
+      }
       
-      const ortFull = `${city}${zip ? ' '+zip : ''}${regionRemaining ? ', '+regionRemaining : ''}` || '–';
-      const addrStr = l.address || l.adresse || '–';
+      const ortFull = `${zip ? zip + ' ' : ''}${city}` || '–';
+      addrStr = addrStr || '–';
 
       const fields = [
         ['Ansprechperson', l.ceos || l.owner || '–'],

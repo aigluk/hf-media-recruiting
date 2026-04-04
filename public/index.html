@@ -498,19 +498,38 @@
       <!-- REPORTS VIEW -->
       <div id="view-reports" class="view-section">
         <div class="panel">
-          <div class="panel-header">Analytics & Performance</div>
-          <div style="padding: 2.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
-            <div class="report-stat-box" style="background:var(--surface); padding:1.5rem; border-radius:12px; border:1px solid var(--border);">
-              <h4 style="font-size:0.875rem; color:var(--text-muted); margin-bottom:0.5rem;">Gesamt Leads</h4>
-              <div style="font-size:1.5rem; font-weight:700;" id="repTotalNum1">0</div>
+          <div class="panel-header" style="justify-content: space-between;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <i data-lucide="pie-chart" style="width:26px; color:var(--primary);"></i> Analytics & Pipeline Performance
             </div>
-            <div class="report-stat-box" style="background:var(--surface); padding:1.5rem; border-radius:12px; border:1px solid var(--border);">
-              <h4 style="font-size:0.875rem; color:var(--text-muted); margin-bottom:0.5rem;">Kontaktiert</h4>
-              <div style="font-size:1.5rem; font-weight:700; color:var(--primary);" id="repContactNum">0</div>
+            <select id="reportTimeFilter" class="input-field" style="width:auto; margin:0; padding:0.5rem 2.2rem 0.5rem 1rem; border-radius: 99px; font-weight:600;" onchange="renderReports()">
+               <option value="all">Gesamt (All-Time)</option>
+               <option value="today">Neu (Heute)</option>
+               <option value="month">Dieser Monat</option>
+            </select>
+          </div>
+          <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem;">Visualisierung deiner Vertriebserfolge basierend auf den generierten Datensätzen.</p>
+          
+          <div class="reports-layout">
+            <div class="report-stat-box">
+              <h3 style="font-size: 1.125rem; font-weight:700; margin-bottom:1.5rem;">Kontaktrate</h3>
+              <div class="donut-chart" style="--fill-color: var(--primary);" id="repContactDonut">
+                <div class="donut-inner"><span class="perc" id="repContactPerc">0%</span><span class="label">Pitches Set</span></div>
+              </div>
+              <div class="report-metrics-row">
+                <div class="rep-stat-col"><span class="val" id="repContactNum">0</span><span class="sub">Kontaktiert</span></div>
+                <div class="rep-stat-col"><span class="val" id="repTotalNum1">0</span><span class="sub">Gesamt Leads</span></div>
+              </div>
             </div>
-            <div class="report-stat-box" style="background:var(--surface); padding:1.5rem; border-radius:12px; border:1px solid var(--border);">
-              <h4 style="font-size:0.875rem; color:var(--text-muted); margin-bottom:0.5rem;">Termine / Closings</h4>
-              <div style="font-size:1.5rem; font-weight:700; color:#16a34a;" id="repWonNum">0</div>
+            <div class="report-stat-box">
+              <h3 style="font-size: 1.125rem; font-weight:700; margin-bottom:1.5rem;">Closing Rate</h3>
+              <div class="donut-chart" style="--fill-color: #16a34a;" id="repWonDonut">
+                <div class="donut-inner" style="box-shadow: inset 0 2px 10px rgba(22, 163, 74, 0.05);"><span class="perc" style="color: #16a34a;" id="repWonPerc">0%</span><span class="label">Deals Won</span></div>
+              </div>
+              <div class="report-metrics-row">
+                <div class="rep-stat-col"><span class="val" style="color: #16a34a;" id="repWonNum">0</span><span class="sub">Termine / Deals</span></div>
+                <div class="rep-stat-col"><span class="val" id="repTotalNum2">0</span><span class="sub">Gesamt Leads</span></div>
+              </div>
             </div>
           </div>
         </div>
@@ -524,58 +543,75 @@
             <p style="color:var(--text-muted);">Sichere und saubere Lead-Daten durch automatische Analyse & Dublettenprüfung.</p>
           </div>
           
-          <div style="padding: 2.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem;">
+          <div style="padding: 2.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: stretch;">
             <!-- Left: Upload -->
-            <div>
-              <div id="dropZone" style="border:2px dashed var(--border); border-radius:16px; padding:3rem 1.5rem; text-align:center; cursor:pointer; background:rgba(14,42,71,0.02); transition:all 0.2s;" ondragover="event.preventDefault(); this.style.borderColor='var(--primary)';" ondragleave="this.style.borderColor='var(--border)';" ondrop="event.preventDefault(); handleFileDrop(event)">
-                <div style="width:56px; height:56px; background:var(--primary); color:white; border-radius:14px; display:flex; align-items:center; justify-content:center; margin:0 auto 1.25rem; transform:rotate(-3deg);">
+            <div class="panel" style="margin:0; background:rgba(14,42,71,0.01); display:flex; flex-direction:column; justify-content:center;">
+              <div id="dropZone" style="border:2px dashed var(--border); border-radius:16px; padding:3rem 1.5rem; text-align:center; cursor:pointer; background:white; transition:all 0.2s;" ondragover="event.preventDefault(); this.style.borderColor='var(--primary)';" ondragleave="this.style.borderColor='var(--border)';" ondrop="event.preventDefault(); handleFileDrop(event)">
+                <div style="width:56px; height:56px; background:var(--primary); color:white; border-radius:14px; display:flex; align-items:center; justify-content:center; margin:0 auto 1.25rem;">
                   <i data-lucide="upload" style="width:28px; height:28px;"></i>
                 </div>
                 <h3 style="font-size:1.125rem; font-weight:700; margin-bottom:0.5rem;">Datei hochladen</h3>
                 <p style="color:var(--text-muted); font-size:0.875rem; margin-bottom:1.25rem;">.CSV, .XLSX oder .PDF</p>
                 <input type="file" id="importFile" style="display:none;" onchange="handleFileSelect(event)">
-                <button class="btn btn-outline" style="background:white;" onclick="document.getElementById('importFile').click()">Eigene Datei wählen</button>
+                <button class="btn btn-primary" onclick="document.getElementById('importFile').click()">Eigene Datei wählen</button>
               </div>
 
               <div id="importPreview" style="display:none; margin-top:2rem;">
-                <h4 style="font-size:0.95rem; margin-bottom:1rem; display:flex; align-items:center; gap:8px;"><i data-lucide="eye" style="width:16px;"></i> Vorschau</h4>
-                <div class="table-container" style="max-height: 300px; overflow-y:auto; border:1px solid var(--border); border-radius:12px;">
+                <h4 style="font-size:0.95rem; margin-bottom:1rem; display:flex; align-items:center; gap:8px;"><i data-lucide="eye" style="width:16px;"></i> Vorschau Neu-Import</h4>
+                <div class="table-container" style="max-height: 220px; overflow-y:auto; border:1px solid var(--border); border-radius:12px; background:white;">
                   <table><tbody id="importPreviewBody"></tbody></table>
                 </div>
                 <div style="margin-top:1.25rem; display:flex; gap:0.75rem;">
-                   <button class="btn btn-outline" style="width:100%;" onclick="clearImport()">Abbrechen</button>
-                   <button class="btn btn-primary" style="width:100%;" onclick="executeImport()"><i data-lucide="plus" style="width:18px;"></i> Import starten</button>
+                   <button class="btn btn-outline" style="width:100%;" onclick="clearImport()">Leeren</button>
+                   <button class="btn btn-primary" style="width:100%;" onclick="executeImport()"><i data-lucide="check-circle" style="width:18px;"></i> Import Bestätigen</button>
                 </div>
               </div>
             </div>
 
             <!-- Right: Analysis -->
-            <div id="importAnalysis" class="panel" style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.5rem;">
-               <h3 style="font-size:1rem; font-weight:700; margin-bottom:1.5rem; display:flex; align-items:center; gap:10px;"><i data-lucide="bar-chart-3" style="color:var(--primary);"></i> Lead-Analyse & Qualität</h3>
+            <div id="importAnalysis" class="panel" style="margin:0; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:2rem; display:flex; flex-direction:column;">
+               <h3 style="font-size:1.125rem; font-weight:700; margin-bottom:1.5rem; display:flex; align-items:center; gap:10px;"><i data-lucide="bar-chart-3" style="color:var(--primary);"></i> Lead-Analyse & Qualität</h3>
                
-               <div style="display:flex; flex-direction:column; gap:1.25rem;">
-                 <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:0.75rem; border-bottom:1px solid var(--border);">
-                   <span style="font-size:0.9rem; color:var(--text-muted);">Existierende Leads</span>
-                   <span style="font-weight:700;" id="totalLeadsCount">0</span>
+               <div style="flex:1; display:flex; flex-direction:column; gap:1.5rem;">
+                 <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:1rem; border-bottom:1px solid var(--border);">
+                   <span style="font-size:0.95rem; color:var(--text-muted);">Lead-Datenbank gesamt</span>
+                   <span style="font-size:1.25rem; font-weight:800; color:var(--primary);" id="totalLeadsCount">0</span>
                  </div>
                  
-                 <div id="importDuplicateCheck" style="display:none; background:#fffbf0; border:1px solid #fde68a; border-radius:12px; padding:1rem;">
-                   <div style="color:#d97706; font-size:0.9rem; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:0.5rem;">
-                     <i data-lucide="alert-circle" style="width:18px;"></i> Kritische Duplikate
+                 <div id="importDuplicateCheck" style="display:none; background:#fff7ed; border:1px solid #fed7aa; border-radius:12px; padding:1.25rem;">
+                   <div style="color:#c2410c; font-size:0.95rem; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:0.75rem;">
+                     <i data-lucide="alert-triangle" style="width:18px;"></i> Dubletten-Konflikt erkannt!
                    </div>
-                   <div id="duplicateList" style="font-size:0.8rem; color:#92400e; display:flex; flex-direction:column; gap:4px;"></div>
+                   <div id="duplicateList" style="font-size:0.8rem; color:#9a3412; display:flex; flex-direction:column; gap:6px; max-height: 120px; overflow-y:auto; padding-right:5px;"></div>
                  </div>
 
-                 <div style="background:white; padding:1.25rem; border-radius:12px; border:1px solid var(--border);">
-                   <h4 style="font-size:0.85rem; font-weight:700; margin-bottom:0.75rem;">Daten-Sauberkeit</h4>
-                   <div style="height:8px; width:100%; background:var(--border); border-radius:4px; overflow:hidden; margin-bottom:0.5rem;">
-                     <div id="dataScoreBar" style="height:100%; width:92%; background:linear-gradient(90deg, var(--primary), #16a34a); border-radius:4px;"></div>
+                 <div style="background:#f8fafc; padding:1.5rem; border-radius:12px; border:1px solid var(--border);">
+                   <!-- Cleanliness Bar -->
+                   <div style="margin-bottom:1.5rem;">
+                     <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+                       <span style="font-size:0.85rem; font-weight:700;">Daten-Sauberkeit</span>
+                       <span style="font-size:0.85rem; font-weight:700;" id="cleanlinessScore">100%</span>
+                     </div>
+                     <div style="height:8px; width:100%; background:var(--secondary); border-radius:4px; overflow:hidden;">
+                       <div id="dataScoreBar" style="height:100%; width:100%; background:#16a34a; border-radius:4px; transition:width 0.4s;"></div>
+                     </div>
                    </div>
-                   <p style="font-size:0.75rem; color:var(--text-muted);">Hervorragend: 92% aller Daten sind aktuell & vollständig.</p>
+
+                   <!-- Current Import Bar -->
+                   <div>
+                     <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+                       <span style="font-size:0.85rem; font-weight:700;">Lead-Import Analyse</span>
+                       <span style="font-size:0.85rem; font-weight:700;" id="importStatsText">Warte auf Datei...</span>
+                     </div>
+                     <div style="height:8px; width:100%; background:var(--secondary); border-radius:4px; overflow:hidden;">
+                       <div id="importProgressBar" style="height:100%; width:0%; background:var(--primary); border-radius:4px; transition:width 0.4s;"></div>
+                     </div>
+                   </div>
                  </div>
 
-                 <div style="font-size:0.85rem; color:var(--text-muted); line-height:1.5;">
-                   <i data-lucide="info" style="width:14px; position:relative; top:2px;"></i> Dubletten werden automatisch anhand des Firmennamens und der Telefonnummer abgeglichen, um Dubletten im CRM zu vermeiden.
+                 <div style="font-size:0.85rem; color:var(--text-muted); line-height:1.6; margin-top:auto;">
+                   <i data-lucide="shield-check" style="width:16px; color:#16a34a; position:relative; top:3px; margin-right:4px;"></i> 
+                   Unser Algorithmus verhindert Dubletten-Importe automatisch. Nur saubere Datensätze werden in dein CRM übernommen.
                  </div>
                </div>
             </div>
@@ -834,9 +870,20 @@
     }
 
     function renderReports() {
-      const total = state.leads.length;
-      const contacted = state.leads.filter(l => ['IN KONTAKT','TERMIN FIXIERT','KEIN INTERESSE','ABSCHLUSS / ABSAGE'].includes(normalizeStatus(l.status))).length;
-      const won = state.leads.filter(l => ['TERMIN FIXIERT','ABSCHLUSS / ABSAGE'].includes(normalizeStatus(l.status))).length;
+      const timeFilter = document.getElementById('reportTimeFilter').value;
+      const now = new Date();
+      let filtered = state.leads;
+
+      if (timeFilter === 'today') {
+        const todayStr = now.toLocaleDateString('de-AT');
+        filtered = filtered.filter(l => l.createdAt && new Date(l.createdAt).toLocaleDateString('de-AT') === todayStr);
+      } else if (timeFilter === 'month') {
+        filtered = filtered.filter(l => l.createdAt && new Date(l.createdAt).getMonth() === now.getMonth() && new Date(l.createdAt).getFullYear() === now.getFullYear());
+      }
+      
+      const total = filtered.length;
+      const contacted = filtered.filter(l => ['IN KONTAKT','TERMIN FIXIERT','KEIN INTERESSE','ABSCHLUSS / ABSAGE'].includes(normalizeStatus(l.status))).length;
+      const won = filtered.filter(l => ['TERMIN FIXIERT','ABSCHLUSS / ABSAGE'].includes(normalizeStatus(l.status))).length;
       const contactRatio = total > 0 ? Math.round((contacted/total)*100) : 0;
       const closingRatio = total > 0 ? Math.round((won/total)*100) : 0;
       
@@ -1407,20 +1454,44 @@
       const dupsView = document.getElementById('importDuplicateCheck');
       const dupsList = document.getElementById('duplicateList');
       const scoreBar = document.getElementById('dataScoreBar');
+      const scoreText = document.getElementById('cleanlinessScore');
+      const importBar = document.getElementById('importProgressBar');
+      const importText = document.getElementById('importStatsText');
+      
+      if (pendingLeads.length > 0) {
+        const percClean = Math.round(((pendingLeads.length - dups.length) / pendingLeads.length) * 100);
+        if (scoreBar) scoreBar.style.width = percClean + '%';
+        if (scoreBar) scoreBar.style.background = percClean < 90 ? '#ef4444' : '#16a34a';
+        if (scoreText) scoreText.textContent = percClean + '%';
+        
+        if (importBar) importBar.style.width = '100%';
+        if (importText) importText.textContent = `${pendingLeads.length} Leads analysiert`;
+      }
+
       if (dups.length > 0) {
         dupsView.style.display = 'block';
         dupsList.innerHTML = dups.map(d => `<div>• <strong>${d.name}</strong> (${d.phone})</div>`).join('');
-        if (scoreBar) scoreBar.style.width = '75%';
       } else {
         dupsView.style.display = 'none';
-        if (scoreBar) scoreBar.style.width = '96%';
       }
     }
     function renderImportPreview() {
       const p = document.getElementById('importPreview');
       const b = document.getElementById('importPreviewBody');
       p.style.display = 'block';
-      b.innerHTML = pendingLeads.map((l, i) => `<tr><td>${l.name}</td><td>${l.status}</td><td><button class="btn btn-outline" style="padding:2px 8px;" onclick="pendingLeads.splice(${i},1); renderImportPreview(); checkDuplicates();"><i data-lucide="trash-2" style="width:14px;"></i></button></td></tr>`).join('');
+      const dups = pendingLeads.filter(pl => state.leads.some(l => 
+        (l.name && l.name.toLowerCase() === pl.name.toLowerCase()) || 
+        (l.phone && l.phone.replace(/[^\d]/g,'').length > 5 && l.phone.replace(/[^\d]/g,'') === pl.phone.replace(/[^\d]/g,''))
+      ));
+
+      b.innerHTML = pendingLeads.map((l, i) => {
+        const isDup = dups.some(d => d.name === l.name);
+        return `<tr style="${isDup ? 'background:#fff7ed; opacity:0.7;' : ''}">
+          <td style="font-weight:600;">${l.name} ${isDup ? '<span style="color:#c2410c; font-size:10px;">(DUBLETTE)</span>' : ''}</td>
+          <td>${l.industry || l.branche || '-'}</td>
+          <td><button class="btn btn-outline" style="padding:2px 8px;" onclick="pendingLeads.splice(${i},1); renderImportPreview(); checkDuplicates();"><i data-lucide="trash-2" style="width:14px;"></i></button></td>
+        </tr>`;
+      }).join('');
       lucide.createIcons();
     }
     function clearImport() {
@@ -1428,11 +1499,26 @@
       document.getElementById('importPreview').style.display = 'none';
       document.getElementById('importDuplicateCheck').style.display = 'none';
       document.getElementById('importFile').value = '';
+      if(document.getElementById('dataScoreBar')) document.getElementById('dataScoreBar').style.width = '100%';
+      if(document.getElementById('cleanlinessScore')) document.getElementById('cleanlinessScore').textContent = '100%';
+      if(document.getElementById('importProgressBar')) document.getElementById('importProgressBar').style.width = '0%';
+      if(document.getElementById('importStatsText')) document.getElementById('importStatsText').textContent = 'Warte auf Datei...';
     }
     async function executeImport() {
       if (!pendingLeads.length) return;
+      // Filter out exact duplicates before import
+      const toImport = pendingLeads.filter(pl => !state.leads.some(l => 
+        (l.name && l.name.toLowerCase() === pl.name.toLowerCase()) || 
+        (l.phone && l.phone.replace(/[^\d]/g,'').length > 5 && l.phone.replace(/[^\d]/g,'') === pl.phone.replace(/[^\d]/g,''))
+      ));
+
+      if (toImport.length === 0) {
+        showToast('Keine neuen Leads zum Importieren (nur Dubletten)!', '#ef4444');
+        return;
+      }
+
       showLoader('Importiere Leads...');
-      state.leads = [...pendingLeads, ...state.leads];
+      state.leads = [...toImport, ...state.leads];
       window.__leads = state.leads;
       try {
         await fetch('/api/leads/replace', {
@@ -1442,7 +1528,7 @@
         });
         clearImport();
         hideLoader();
-        showToast(`${pendingLeads.length} Leads erfolgreich importiert!`, '#16a34a');
+        showToast(`${toImport.length} Leads erfolgreich importiert!`, '#16a34a');
         switchView('leads');
       } catch(e) { hideLoader(); showToast('Fehler bei Import'); }
     }

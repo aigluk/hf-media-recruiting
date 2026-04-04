@@ -50,7 +50,9 @@
     .nav-item.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(37,99,235,0.2); }
 
     .main-content { flex: 1; margin-left: var(--sidebar-w); padding: 2rem 2.5rem; overflow-y: auto; height: 100vh; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; gap: 1rem; }
+    .sidebar-toggle { display: none; background: var(--primary); color: white; border: none; border-radius: 8px; width: 42px; height: 42px; align-items: center; justify-content: center; cursor: pointer; z-index: 1100; flex-shrink: 0; box-shadow: 0 4px 12px rgba(14,42,71,0.2); }
+    .sidebar-toggle svg { width: 22px; height: 22px; }
     .header h1 { font-size: 2rem; font-weight: 700; color: var(--text); }
     .header-actions { display: flex; gap: 1rem; }
     .view-section { display: none; }
@@ -264,26 +266,34 @@
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
     /* ── Responsive ── */
-    @media (max-width: 1100px) {
-      .main-content { padding: 1.5rem 1.5rem; }
+    @media (max-width: 1200px) {
       .metrics-grid { grid-template-columns: repeat(3, 1fr); }
-      .cal-wrapper { flex-direction: column; }
-      .cal-sidebar { width: 100%; }
     }
-    @media (max-width: 900px) {
+
+    @media (max-width: 950px) {
       :root { --sidebar-w: 0px; }
-      .sidebar { transform: translateX(-100%); }
-      .main-content { margin-left: 0; padding: 1.25rem; }
-      .header h1 { font-size: 1.4rem; }
-      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
-      .reports-layout { grid-template-columns: 1fr; }
+      .sidebar { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2000; width: 280px; position: fixed; height: 100vh; overflow-y: auto; }
+      .sidebar.open { transform: translateX(0); box-shadow: 0 0 50px rgba(0,0,0,0.4); }
+      .sidebar-toggle { display: flex; }
+      .main-content { margin-left: 0; padding: 1.25rem; width: 100%; box-sizing: border-box; }
+      .header h1 { font-size: 1.35rem; }
+      .header-actions { width: 100%; display: flex; flex-direction: column; gap: 0.75rem; }
+      .header-actions .btn { width: 100%; justify-content: center; }
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+      .reports-layout { grid-template-columns: 1fr; gap: 1.5rem; }
+      .import-row { grid-template-columns: 1fr !important; gap: 1.5rem !important; padding: 1.25rem !important; }
+      .modal-box { max-width: 95%; padding: 1.5rem; width: 95%; margin: auto; }
+      .modal-grid { grid-template-columns: 1fr; gap: 1.25rem; }
+      .pipeline-tabs { gap: 0.25rem; }
+      .pipeline-tab { padding: 0.5rem 1rem; font-size: 0.75rem; }
     }
+
     @media (max-width: 600px) {
-      .header { flex-direction: column; align-items: flex-start; gap: 1rem; }
-      .header-actions { width: 100%; }
-      .btn { padding: 0.75rem 1rem; font-size: 0.8rem; }
-      .metrics-grid { grid-template-columns: 1fr 1fr; }
-      .pipeline-tabs { flex-wrap: nowrap; }
+      .metrics-grid { grid-template-columns: 1fr; }
+      .header { flex-direction: column; align-items: flex-start; gap: 1.25rem; }
+      .header > div { width: 100%; justify-content: space-between; }
+      .donut-chart { transform: scale(0.85); margin: 0 auto; }
+      .cal-wrapper { flex-direction: column; }
     }
   </style>
 </head>
@@ -325,10 +335,13 @@
     <main class="main-content">
       
       <div class="header">
-        <h1 id="pageTitle">Leads & Pipeline</h1>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <button class="sidebar-toggle" onclick="toggleSidebar()"><i data-lucide="menu"></i></button>
+          <h1 id="pageTitle" style="margin:0;">Leads & Pipeline</h1>
+        </div>
         <div class="header-actions">
-          <button class="btn btn-outline" onclick="exportCSV()"><i data-lucide="download" style="width:22px;height:22px;"></i> Tabelle Exportieren</button>
-          <button class="btn btn-primary" onclick="switchView('generator')"><i data-lucide="plus" style="width:22px;height:22px;"></i> Leads Generieren</button>
+          <button class="btn btn-outline" onclick="exportCSV()"><i data-lucide="download" style="width:20px;height:20px;"></i> Exportieren</button>
+          <button class="btn btn-primary" onclick="switchView('generator')"><i data-lucide="plus" style="width:20px;height:20px;"></i> Leads Generieren</button>
         </div>
       </div>
 
@@ -537,12 +550,12 @@
       <!-- IMPORT VIEW -->
       <div id="view-import" class="view-section">
         <div class="panel">
-          <div class="header" style="border-bottom:1px solid var(--border); padding-bottom:1.5rem;">
+          <div class="header" style="border-bottom:1px solid var(--border); padding-bottom:1.5rem; display:flex; flex-direction:column; align-items:flex-start; text-align:left;">
             <h2 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Lead Import & Management</h2>
-            <p style="color:var(--text-muted);">Sichere und saubere Lead-Daten durch automatische Analyse & Dublettenprüfung.</p>
+            <p style="color:var(--text-muted); margin:0;">Sichere und saubere Lead-Daten durch automatische Analyse & Dublettenprüfung.</p>
           </div>
           
-          <div style="padding: 2.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: stretch;">
+          <div class="import-row" style="padding: 2.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: stretch;">
             <!-- Left: Upload -->
             <div class="panel" style="margin:0; background:rgba(14,42,71,0.01); display:flex; flex-direction:column; justify-content:center;">
               <div id="dropZone" style="border:2px dashed var(--border); border-radius:16px; padding:3rem 1.5rem; text-align:center; cursor:pointer; background:white; transition:all 0.2s;" ondragover="event.preventDefault(); this.style.borderColor='var(--primary)';" ondragleave="this.style.borderColor='var(--border)';" ondrop="event.preventDefault(); handleFileDrop(event)">
@@ -801,10 +814,24 @@
     function switchView(view) {
       document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-      document.getElementById(`view-${view}`).classList.add('active');
-      document.getElementById(`nav-${view === 'generator' ? 'leads' : (view === 'import' ? 'import' : view)}`).classList.add('active');
+      
+      const vEl = document.getElementById(`view-${view}`);
+      if (vEl) vEl.classList.add('active');
+      
+      const nKey = view === 'generator' ? 'leads' : (view === 'import' ? 'import' : view);
+      const nEl = document.getElementById(`nav-${nKey}`);
+      if (nEl) nEl.classList.add('active');
+
+      // Auto-close sidebar on mobile
+      if (window.innerWidth <= 950) {
+        const side = document.querySelector('.sidebar');
+        if (side) side.classList.remove('open');
+      }
+
       const titles = { dashboard:'Dashboard', leads:'Pipelines & Leads', generator:'Neukunden Engine', calendar:'Kalender & Termine', reports:'Zentrale Reports', import:'Lead Import & Dublettenprüfung' };
-      document.getElementById('pageTitle').textContent = titles[view] || 'Lead Engine';
+      const titleEl = document.getElementById('pageTitle');
+      if (titleEl) titleEl.textContent = titles[view] || 'Lead Engine';
+      
       if(view === 'calendar') renderCalendar();
       if(view === 'reports') renderReports();
       if(view === 'import') {
@@ -1449,11 +1476,19 @@
         hideLoader();
       }, 1000);
     }
+    function toggleSidebar() {
+      const sb = document.querySelector('.sidebar');
+      sb.classList.toggle('open');
+    }
+
     function checkDuplicates() {
-      const dups = pendingLeads.filter(pl => state.leads.some(l => 
-        (l.name && l.name.toLowerCase() === pl.name.toLowerCase()) || 
-        (l.phone && l.phone.replace(/[^\d]/g,'').length > 5 && l.phone.replace(/[^\d]/g,'') === pl.phone.replace(/[^\d]/g,''))
-      ));
+      const dups = pendingLeads.filter(pl => state.leads.some(l => {
+        const nameMatch = (l.name && pl.name && l.name.trim().toLowerCase() === pl.name.trim().toLowerCase());
+        const phone1 = (l.phone || '').replace(/[^\d]/g,'');
+        const phone2 = (pl.phone || '').replace(/[^\d]/g,'');
+        const phoneMatch = (phone1.length > 5 && phone1 === phone2);
+        return Boolean(nameMatch || phoneMatch);
+      }));
       const dupsView = document.getElementById('importDuplicateCheck');
       const dupsList = document.getElementById('duplicateList');
       const scoreBar = document.getElementById('dataScoreBar');
@@ -1509,11 +1544,15 @@
     }
     async function executeImport() {
       if (!pendingLeads.length) return;
-      // Filter out exact duplicates before import
-      const toImport = pendingLeads.filter(pl => !state.leads.some(l => 
-        (l.name && l.name.toLowerCase() === pl.name.toLowerCase()) || 
-        (l.phone && l.phone.replace(/[^\d]/g,'').length > 5 && l.phone.replace(/[^\d]/g,'') === pl.phone.replace(/[^\d]/g,''))
-      ));
+      
+      // Robust duplicate logic
+      const toImport = pendingLeads.filter(pl => !state.leads.some(l => {
+        const nameMatch = (l.name && pl.name && l.name.trim().toLowerCase() === pl.name.trim().toLowerCase());
+        const phone1 = (l.phone || '').replace(/[^\d]/g,'');
+        const phone2 = (pl.phone || '').replace(/[^\d]/g,'');
+        const phoneMatch = (phone1.length > 5 && phone1 === phone2);
+        return Boolean(nameMatch || phoneMatch);
+      }));
 
       if (toImport.length === 0) {
         showToast('Keine neuen Leads zum Importieren (nur Dubletten)!', '#ef4444');

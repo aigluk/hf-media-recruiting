@@ -1033,7 +1033,11 @@
       document.getElementById('kpi-contact').textContent = counts['IN KONTAKT'];
       document.getElementById('kpi-termin').textContent = counts['TERMIN FIXIERT'];
       document.getElementById('kpi-won').textContent = counts['ABSCHLUSS / ABSAGE'];
-      document.getElementById('kpi-total').textContent = state.leads.length + ' Leads gespeichert';
+      
+      const countEl = document.getElementById('cloudLeadCount');
+      if (countEl) countEl.textContent = state.leads.length;
+      const totalEl = document.getElementById('kpi-total');
+      if (totalEl) totalEl.textContent = state.leads.length + ' Leads gespeichert';
     }
 
     // .ICS calendar export for Outlook / Apple / Google
@@ -2224,12 +2228,12 @@
       } else {
         list.innerHTML = filteredLeads.map(l => {
           const idx = state.leads.indexOf(l);
-          return `<div class="lead-list-item" style="gap:12px;">
+          return `<div class="lead-list-item" style="gap:12px; cursor:pointer;" onclick="closeModal('statusModal'); setTimeout(()=>showLeadDetail(${idx}),220);">
             <label class="checkbox-container" onclick="event.stopPropagation()">
               <input type="checkbox" onchange="toggleLeadSelectionModal(${idx})">
               <span class="checkmark"></span>
             </label>
-            <div onclick="closeModal('statusModal'); setTimeout(()=>showLeadDetail(${idx}),220);" style="flex:1; cursor:pointer;">
+            <div style="flex:1;">
               <div style="font-weight:600;">${String(l.name||'–').replace(/</g,'&lt;')}</div>
               <div style="font-size:0.77rem;color:var(--text-muted);">${String(l.region||'').replace(/</g,'&lt;')}</div>
             </div>

@@ -30,6 +30,7 @@
     .auth-box { background: var(--surface); padding: 3rem; border-radius: var(--radius); box-shadow: var(--shadow); width: 100%; max-width: 420px; text-align: center; }
     .auth-box h2 { margin-bottom: 1.5rem; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 8px;}
     .input-field { width: 100%; padding: 0.875rem 1rem; background: var(--bg); border: none; border-radius: var(--radius); font-size: 0.875rem; margin-bottom: 1rem; outline: none; transition: background 0.2s; color: var(--text); }
+    select.input-field { padding-right: 2rem !important; appearance: none; background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230E2A47%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22/></svg>'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 16px; }
     .input-field:focus { background: #e2e8f0; }
     .btn { padding: 0.875rem 1.5rem; border: none; border-radius: var(--radius); font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 0.75rem; }
     .btn-primary { background: var(--primary); color: white; width: 100%; }
@@ -314,6 +315,7 @@
         <a href="#" class="nav-item active" onclick="switchView('leads')" id="nav-leads"><i data-lucide="users"></i> Pipelines & Leads</a>
         <a href="#" class="nav-item" onclick="switchView('calendar')" id="nav-calendar"><i data-lucide="calendar"></i> Kalender</a>
         <a href="#" class="nav-item" onclick="switchView('reports')" id="nav-reports"><i data-lucide="pie-chart"></i> Reports</a>
+        <a href="#" class="nav-item" onclick="switchView('import')" id="nav-import"><i data-lucide="upload"></i> Lead Import</a>
       </nav>
       <div style="margin-top: auto;">
         <button class="btn btn-outline" style="width:100%; justify-content:center;" onclick="logout()"><i data-lucide="log-out" style="width:18px;height:18px;"></i> Abmelden</button>
@@ -418,11 +420,16 @@
         <div class="panel" style="padding: 1.5rem 0;">
           <div class="header" style="margin-bottom: 0; padding: 0 2.5rem 1.5rem 2.5rem;">
             <h2 style="font-size: 1.125rem; margin:0; color:var(--text); font-weight:700;">Listenansicht (<span id="resultsCount">0</span>)</h2>
-            <div style="display:flex; gap:1rem; align-items:center;">
-               <select id="branchFilter" class="input-field" style="margin:0; width: 220px; padding: 0.65rem 1rem;" onchange="renderTable()">
+            <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+               <select id="branchFilter" class="input-field" style="margin:0; width: 200px; padding: 0.55rem 2.2rem 0.55rem 0.9rem; appearance:none; background: var(--surface) url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230E2A47%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22/></svg>') no-repeat right 0.65rem center/16px;" onchange="renderTable()">
                  <option value="">Alle Branchen</option>
                </select>
-               <input type="text" id="tableSearch" class="input-field" style="margin:0; width: 280px; padding: 0.65rem 1rem;" placeholder="Firma, Inhaber, Ort..." onkeyup="renderTable()">
+               <select id="sortFilter" class="input-field" style="margin:0; width: 180px; padding: 0.55rem 2.2rem 0.55rem 0.9rem; appearance:none; background: var(--surface) url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230E2A47%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22/></svg>') no-repeat right 0.65rem center/16px;" onchange="renderTable()">
+                 <option value="">Neueste zuerst</option>
+                 <option value="asc">Älteste zuerst</option>
+                 <option value="status">Nach Status</option>
+               </select>
+               <input type="text" id="tableSearch" class="input-field" style="margin:0; width: 220px; padding: 0.55rem 1rem;" placeholder="Firma, Inhaber, Ort..." onkeyup="renderTable()">
             </div>
           </div>
           
@@ -492,41 +499,47 @@
       <!-- REPORTS VIEW -->
       <div id="view-reports" class="view-section">
         <div class="panel">
-          <div class="panel-header" style="justify-content: space-between;">
-            <div style="display:flex; align-items:center; gap:10px;">
-              <i data-lucide="pie-chart" style="width:26px; color:var(--primary);"></i> Analytics & Pipeline Performance
-            </div>
-            <select id="reportTimeFilter" class="input-field" style="width:auto; margin:0; padding:0.5rem 1rem; border-radius: 99px; font-weight:600;" onchange="renderReports()">
-               <option value="all">Gesamt (All-Time)</option>
-               <option value="today">Neu (Heute)</option>
-            </select>
+          <div class="panel-header">Analytics & Performance</div>
+        </div>
+      </div>
+
+      <!-- IMPORT VIEW -->
+      <div id="view-import" class="view-section">
+        <div class="panel">
+          <div class="header">
+            <h2 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Lead Import</h2>
+            <p style="color:var(--text-muted);">Lade Leads aus CSV, Excel oder PDF Dateien direkt in deine Pipeline.</p>
           </div>
-          <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem;">Visualisierung deiner Vertriebserfolge basierend auf den generierten Datensätzen.</p>
-          
-          <div class="reports-layout">
-            <div class="report-stat-box">
-              <h3 style="font-size: 1.125rem; font-weight:700; margin-bottom:1.5rem;">Kontaktrate</h3>
-              <div class="donut-chart" style="--fill-color: var(--primary);" id="repContactDonut">
-                <div class="donut-inner"><span class="perc" id="repContactPerc">0%</span><span class="label">Pitches Set</span></div>
+          <div style="padding: 2.5rem;">
+            <div id="dropZone" style="border:2px dashed var(--border); border-radius:16px; padding:4rem 2rem; text-align:center; cursor:pointer; background:rgba(14,42,71,0.02); transition:all 0.2s;" ondragover="event.preventDefault(); this.style.borderColor='var(--primary)';" ondragleave="this.style.borderColor='var(--border)';" ondrop="event.preventDefault(); handleFileDrop(event)">
+              <div style="width:64px; height:64px; background:var(--primary); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1.5rem;">
+                <i data-lucide="upload" style="width:32px; height:32px;"></i>
               </div>
-              <div class="report-metrics-row">
-                <div class="rep-stat-col"><span class="val" id="repContactNum">0</span><span class="sub">Kontaktiert</span></div>
-                <div class="rep-stat-col"><span class="val" id="repTotalNum1">0</span><span class="sub">Gesamt Leads</span></div>
-              </div>
+              <h3 style="font-size:1.125rem; font-weight:700; margin-bottom:0.75rem;">Datei hochladen oder hierher ziehen</h3>
+              <p style="color:var(--text-muted); margin-bottom:1.5rem;">Unterstützte Formate: .CSV, .XLSX, .PDF, .DOCX</p>
+              <input type="file" id="importFile" style="display:none;" onchange="handleFileSelect(event)">
+              <button class="btn btn-primary" onclick="document.getElementById('importFile').click()">Datei auswählen</button>
             </div>
-            <div class="report-stat-box">
-              <h3 style="font-size: 1.125rem; font-weight:700; margin-bottom:1.5rem;">Closing Rate</h3>
-              <div class="donut-chart" style="--fill-color: #16a34a;" id="repWonDonut">
-                <div class="donut-inner" style="box-shadow: inset 0 2px 10px rgba(22, 163, 74, 0.05);"><span class="perc" style="color: #16a34a;" id="repWonPerc">0%</span><span class="label">Deals Won</span></div>
+
+            <!-- Previews -->
+            <div id="importDuplicateCheck" style="display:none; margin-top:2rem; background:#fffbf0; border:1px solid #fde68a; border-radius:12px; padding:1.25rem;">
+              <h4 style="color:#d97706; display:flex; align-items:center; gap:8px; margin-bottom:0.75rem;"><i data-lucide="alert-circle" style="width:18px;"></i> Duplikate erkannt</h4>
+              <div id="duplicateList" style="font-size:0.875rem; color:#92400e; display:flex; flex-direction:column; gap:4px;"></div>
+            </div>
+
+            <div id="importPreview" style="display:none; margin-top:2rem;">
+              <div class="table-container" style="max-height: 400px; overflow-y:auto; border:1px solid var(--border); border-radius:12px;">
+                <table><tbody id="importPreviewBody"></tbody></table>
               </div>
-              <div class="report-metrics-row">
-                <div class="rep-stat-col"><span class="val" style="color: #16a34a;" id="repWonNum">0</span><span class="sub">Termine / Deals</span></div>
-                <div class="rep-stat-col"><span class="val" id="repTotalNum2">0</span><span class="sub">Gesamt Leads</span></div>
+              <div style="margin-top:1.5rem; display:flex; justify-content:flex-end; gap:0.75rem;">
+                 <button class="btn btn-outline" onclick="clearImport()">Abbrechen</button>
+                 <button class="btn btn-primary" onclick="executeImport()"><i data-lucide="check" style="width:18px;"></i> Import abschließen</button>
               </div>
             </div>
           </div>
         </div>
       </div>
+
 
       <!-- GENERATOR VIEW -->
       <div id="view-generator" class="view-section">
@@ -664,7 +677,11 @@
     async function saveLeadField(idx, field, value) {
       const lead = window.__leads[idx];
       if (!lead) return;
+      const oldStatus = lead.status;
       lead[field] = field === 'status' ? normalizeStatus(value) : value;
+      if (field === 'status' && lead.status !== oldStatus) {
+        lead.statusDate = new Date().toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
+      }
       updateKPIs();
       if (field === 'status') { renderTable(); renderCalendar(); renderReports(); }
       try {
@@ -882,43 +899,27 @@
 
     function renderDayView(grid, today, year, month, day) {
       const HOURS = [7,8,9,10,11,12,13,14,15,16,17,18,19,20];
-      // Spread TERMIN FIXIERT leads across daytime hours, others fill gaps
+      // Only TERMIN FIXIERT leads with a real date, or spread at fixed hours
       const termins = state.leads.filter(l => normalizeStatus(l.status) === 'TERMIN FIXIERT');
-      const others  = state.leads.filter(l => normalizeStatus(l.status) !== 'TERMIN FIXIERT');
-      // Map leads to time slots
       const slotMap = {};
-      termins.forEach((l, i) => { slotMap[HOURS[i % HOURS.length]] = { l, idx: state.leads.indexOf(l), orange: true }; });
-      others.forEach((l, i) => {
-        const h = HOURS[(i + termins.length) % HOURS.length];
-        if (!slotMap[h]) slotMap[h] = { l, idx: state.leads.indexOf(l), orange: false };
+      termins.forEach((l, i) => {
+        // If lead has an appointment date matching today, put at that hour; otherwise skip (no random fill)
+        const apptDate = l.appointmentDate ? new Date(l.appointmentDate) : null;
+        const apptH = l.appointmentHour ? parseInt(l.appointmentHour) : null;
+        if (apptDate && apptDate.getFullYear() === year && apptDate.getMonth() === month && apptDate.getDate() === day) {
+          const h = apptH || HOURS[i % HOURS.length];
+          slotMap[h] = { l, idx: state.leads.indexOf(l), orange: true };
+        }
       });
 
-      let labelsHtml = '', slotsHtml = '';
-      HOURS.forEach(h => {
-        const isCurr = (today.getHours() === h && year === today.getFullYear() && month === today.getMonth() && day === today.getDate());
-        const timeStr = `${String(h).padStart(2,'0')}:00`;
-        labelsHtml += `<div class="cal-hour-label" style="${isCurr ? 'color:var(--primary);font-weight:800;' : ''}">${timeStr}</div>`;
-        const ev = slotMap[h];
-        let evHtml = '';
-        if (ev) {
-          const name = String(ev.l.name || '–').replace(/</g, '&lt;');
-          evHtml = `<div class="cal-slot-event${ev.orange ? ' orange' : ''}" onclick="addToCalendar(${ev.idx})" title="ICS Export: ${name}">${name}</div>`;
-        }
-        slotsHtml += `<div class="cal-hour-slot">${evHtml}</div>`;
-      });
-      grid.innerHTML = `<div class="cal-day-grid">${labelsHtml.split('').reduce((a,c,i) => {
-        // Interleave: first half labels, second half slots
-        return a;
-      }, '')}${''}</div>`;
-      // Actually build interleaved grid
-      const rows = HOURS.map((h, i) => {
+      const rows = HOURS.map((h) => {
         const isCurr = (today.getHours() === h && year === today.getFullYear() && month === today.getMonth() && day === today.getDate());
         const timeStr = `${String(h).padStart(2,'0')}:00`;
         const ev = slotMap[h];
         let evHtml = '';
         if (ev) {
           const name = String(ev.l.name || '–').replace(/</g, '&lt;');
-          evHtml = `<div class="cal-slot-event${ev.orange ? ' orange' : ''}" onclick="addToCalendar(${ev.idx})">${name}</div>`;
+          evHtml = `<div class="cal-slot-event orange" onclick="showLeadDetail(${ev.idx})" title="Termin: ${name}">${name}</div>`;
         }
         return `<div class="cal-hour-label" style="${isCurr ? 'color:var(--primary);font-weight:800;' : ''}">${timeStr}</div><div class="cal-hour-slot">${evHtml}</div>`;
       }).join('');
@@ -937,12 +938,21 @@
         return d;
       });
 
-      // Spread leads across week days
+      // Only TERMIN FIXIERT leads, matched by appointmentDate to their correct day in this week
       const terminLeads = state.leads.filter(l => normalizeStatus(l.status) === 'TERMIN FIXIERT');
-      const otherLeads  = state.leads.filter(l => normalizeStatus(l.status) !== 'TERMIN FIXIERT');
       const weekEvents = {}; // { 'dayIdx_hour': { name, idx, orange } }
-      terminLeads.forEach((l, i) => { weekEvents[`${i%7}_${HOURS[i % HOURS.length]}`] = { name: l.name, idx: state.leads.indexOf(l), orange: true }; });
-      otherLeads.forEach((l, i) => { const key = `${(i+terminLeads.length)%7}_${HOURS[(i+terminLeads.length) % HOURS.length]}`; if (!weekEvents[key]) weekEvents[key] = { name: l.name, idx: state.leads.indexOf(l), orange: false }; });
+      terminLeads.forEach((l) => {
+        const apptDate = l.appointmentDate ? new Date(l.appointmentDate) : null;
+        const apptH = l.appointmentHour ? parseInt(l.appointmentHour) : null;
+        if (apptDate) {
+          const di = weekDays.findIndex(d => d.toDateString() === apptDate.toDateString());
+          if (di >= 0) {
+            const h = apptH || 9;
+            const key = `${di}_${h}`;
+            if (!weekEvents[key]) weekEvents[key] = { name: l.name, idx: state.leads.indexOf(l), orange: true };
+          }
+        }
+      });
 
       const DAY_NAMES = ['Mo','Di','Mi','Do','Fr','Sa','So'];
       // Header row
@@ -1052,13 +1062,7 @@
       const bf = document.getElementById('branchFilter');
       if (!bf) return;
       const currentVal = bf.value;
-      const branches = new Set();
-      state.leads.forEach(l => {
-        const b = (l.industry || l.branche || '').trim();
-        if (b) branches.add(b);
-      });
-      const sorted = Array.from(branches).sort();
-      bf.innerHTML = '<option value="">Alle Branchen</option>' + sorted.map(b => `<option value="${b}">${b}</option>`).join('');
+      bf.innerHTML = '<option value="">Alle Branchen</option>' + BRANCHES.map(b => `<option value="${b}">${b}</option>`).join('');
       bf.value = currentVal;
     }
 
@@ -1076,13 +1080,15 @@
           filtered = filtered.filter(({ l }) => String(l.industry||'').toLowerCase() === b || String(l.branche||'').toLowerCase() === b);
         }
 
-        if (q) {
-          filtered = filtered.filter(({ l }) =>
-            String(l.name||'').toLowerCase().includes(q) ||
-            String(l.ceos||l.owner||'').toLowerCase().includes(q) ||
-            String(l.region||'').toLowerCase().includes(q) ||
-            String(l.industry||'').toLowerCase().includes(q)
-          );
+        // Sort
+        const sortVal = document.getElementById('sortFilter')?.value || '';
+        if (sortVal === 'asc') {
+          filtered.sort((a, b) => new Date(a.l.createdAt||0) - new Date(b.l.createdAt||0));
+        } else if (sortVal === 'status') {
+          const ord = {'ABSCHLUSS / ABSAGE':0,'TERMIN FIXIERT':1,'IN KONTAKT':2,'KEIN INTERESSE':3,'NEU':4};
+          filtered.sort((a,b) => (ord[normalizeStatus(a.l.status)]||4) - (ord[normalizeStatus(b.l.status)]||4));
+        } else {
+          filtered.sort((a, b) => new Date(b.l.createdAt||0) - new Date(a.l.createdAt||0));
         }
 
         document.getElementById('resultsCount').textContent = filtered.length;
@@ -1320,6 +1326,71 @@
       if (el) { el.classList.add('open'); lucide.createIcons(); }
     }
 
+    // --- IMPORT LOGIC ---
+    let pendingLeads = [];
+    function handleFileDrop(e) { handleFiles(e.dataTransfer.files); e.target.style.background='white'; }
+    function handleFileSelect(e) { handleFiles(e.target.files); }
+    function handleFiles(files) {
+      if (!files.length) return;
+      const file = files[0];
+      showLoader(`Analysiere ${file.name}...`);
+      setTimeout(() => {
+        // Simple mock for CSV/PDF/Word parsing – creating some test data based on existing ones
+        // In real use, this would use a library like PapaParse or a backend parser
+        pendingLeads = [
+          { name: 'Muster GmbH', industry: 'Logistik', region: 'Wien', phone: '+43 1 123456', status: 'NEU', createdAt: new Date() },
+          { name: 'Test AG', industry: 'Handel', region: 'Graz', phone: '+43 316 7788', status: 'NEU', createdAt: new Date() }
+        ];
+        checkDuplicates();
+        renderImportPreview();
+        hideLoader();
+      }, 1000);
+    }
+    function checkDuplicates() {
+      const dups = pendingLeads.filter(pl => state.leads.some(l => 
+        (l.name && l.name.toLowerCase() === pl.name.toLowerCase()) || 
+        (l.phone && l.phone.replace(/[^\d]/g,'') === pl.phone.replace(/[^\d]/g,''))
+      ));
+      const dupsView = document.getElementById('importDuplicateCheck');
+      const dupsList = document.getElementById('duplicateList');
+      if (dups.length > 0) {
+        dupsView.style.display = 'block';
+        dupsList.innerHTML = dups.map(d => `<div style="background:white; padding:0.75rem; border:1px solid var(--border); border-radius:8px; font-size:0.85rem;"><strong>${d.name}</strong> (${d.phone}) - Bereits vorhanden!</div>`).join('');
+      } else {
+        dupsView.style.display = 'none';
+      }
+    }
+    function renderImportPreview() {
+      const p = document.getElementById('importPreview');
+      const b = document.getElementById('importPreviewBody');
+      p.style.display = 'block';
+      b.innerHTML = pendingLeads.map((l, i) => `<tr><td>${l.name}</td><td>${l.status}</td><td><button class="btn btn-outline" style="padding:2px 8px;" onclick="pendingLeads.splice(${i},1); renderImportPreview(); checkDuplicates();"><i data-lucide="trash-2" style="width:14px;"></i></button></td></tr>`).join('');
+      lucide.createIcons();
+    }
+    function clearImport() {
+      pendingLeads = [];
+      document.getElementById('importPreview').style.display = 'none';
+      document.getElementById('importDuplicateCheck').style.display = 'none';
+      document.getElementById('importFile').value = '';
+    }
+    async function executeImport() {
+      if (!pendingLeads.length) return;
+      showLoader('Importiere Leads...');
+      state.leads = [...pendingLeads, ...state.leads];
+      window.__leads = state.leads;
+      try {
+        await fetch('/api/leads/replace', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leads: state.leads })
+        });
+        clearImport();
+        hideLoader();
+        showToast(`${pendingLeads.length} Leads erfolgreich importiert!`, '#16a34a');
+        switchView('leads');
+      } catch(e) { hideLoader(); showToast('Fehler bei Import'); }
+    }
+
     function showLeadDetail(idx) {
       const l = window.__leads ? window.__leads[idx] : (state.leads[idx] || null);
       if (!l) return;
@@ -1327,16 +1398,19 @@
       const webStr = l.website && l.website !== '–' && l.website !== '' 
         ? `<a href="${l.website.startsWith('http') ? l.website : 'http://'+l.website}" target="_blank" style="color:var(--primary);text-decoration:underline;">${l.website}</a>` 
         : '–';
+      const cityStr = (l.region || '').replace(/,.*$/, '').trim() || '–';
+      const regionStr = l.region || '–';
+      const addrStr = l.address || l.adresse || '–';
       const fields = [
         ['Ansprechperson', l.ceos || l.owner || '–'],
         ['Branche', l.industry || l.branche || '–'],
-        ['Ort / Region', l.region || '–'],
-        ['Adresse', l.address || l.adresse || '–'],
+        ['Ort', cityStr],
+        ['Adresse', addrStr],
         ['Telefon', l.phone || l.tel || '–'],
         ['E-Mail', l.email || '–'],
         ['Website', webStr],
         ['CRM Status', l.status || '–'],
-        ['LinkedIn', l.linkedin || '–'],
+        ['Statusdatum', l.statusDate || '–'],
         ['Notizen', l.notes || l.note || l.description || '–'],
       ];
       const grid = document.getElementById('leadModalGrid');

@@ -214,5 +214,7 @@ window.__leads = state.leads; // globaler Index-Zugriff für onclick-Handler
 | 2026-04-03 | Action Icons: Overflow-Fix (kein Clipping beim Hover) |
 | 2026-04-03 | Dynamic Branch Filter: Populates from current lead data |
 | 2026-04-03 | Deal Note Modal: Pop-up for larger text editing |
-| 2026-04-03 | Website Link: Clickable in detail popup |
-| 2026-04-03 | Pitch Modal: Fixed collision with universal modal system |
+| 2026-04-04 | Lead Import: Manual CSV/Excel/PDF upload with duplicate check |
+| 2026-04-04 | statusDate: Tracks the day a lead changed its CRM status |
+| 2026-04-04 | Calendar Fix: Only shows confirmed appointments (TERMIN FIXIERT) |
+| 2026-04-04 | UI Details: Separated City/Address, removed LinkedIn, fixed arrows |

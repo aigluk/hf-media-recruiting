@@ -6,6 +6,7 @@
   <title>Lead CRM Engine</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     :root {
       --bg: #f5f7fa;
@@ -1915,37 +1916,79 @@
 
     // --- IMPORT LOGIC ---
     let pendingLeads = [];
-    function handleFileDrop(e) { handleFiles(e.dataTransfer.files); e.target.style.background='white'; }
+    function handleFileDrop(e) { e.preventDefault(); handleFiles(e.dataTransfer.files); e.target.style.background='white'; }
     function handleFileSelect(e) { handleFiles(e.target.files); }
+    
     function handleFiles(files) {
       if (!files.length) return;
       const file = files[0];
       showLoader(`Analysiere ${file.name}...`);
-      setTimeout(() => {
-        // Simple mock for CSV/PDF/Word parsing – creating some test data based on existing ones
-        // In real use, this would use a library like PapaParse or a backend parser
-        pendingLeads = [
-          { name: 'Muster GmbH', industry: 'Logistik', region: 'Wien', phone: '+43 1 123456', status: 'NEU', createdAt: new Date() },
-          { name: 'Test AG', industry: 'Handel', region: 'Graz', phone: '+43 316 7788', status: 'NEU', createdAt: new Date() }
-        ];
-        checkDuplicates();
-        renderImportPreview();
-        hideLoader();
-      }, 1000);
+      
+      const reader = new FileReader();
+      const isCsv = file.name.toLowerCase().endsWith('.csv');
+      
+      reader.onload = (e) => {
+        try {
+          const data = e.target.result;
+          const workbook = XLSX.read(data, { type: isCsv ? 'string' : 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+          
+          if (!rows || rows.length === 0) throw new Error('Die Datei ist leer oder ungültig.');
+          
+          pendingLeads = mapImportedData(rows);
+          checkDuplicates();
+          renderImportPreview();
+          hideLoader();
+        } catch (err) {
+          console.error('Import error:', err);
+          hideLoader();
+          showToast('Fehler: ' + err.message);
+        }
+      };
+      
+      if (isCsv) reader.readAsText(file);
+      else reader.readAsBinaryString(file);
     }
-    function toggleSidebar() {
-      const sb = document.querySelector('.sidebar');
-      sb.classList.toggle('open');
+
+    function mapImportedData(rows) {
+      return rows.map(row => {
+        const find = (keys) => {
+          for (let k in row) {
+            const keyL = k.toLowerCase();
+            if (keys.some(key => keyL === key || keyL.includes(key))) return String(row[k]).trim();
+          }
+          return '';
+        };
+
+        return {
+          name: find(['firma', 'company', 'name', 'unternehmen']) || 'Unbekannt',
+          ceos: find(['inhaber', 'ceo', 'ansprechperson', 'person', 'geschäftsführer', 'owner']),
+          industry: find(['branche', 'industry', 'fokus', 'kategorie']),
+          region: find(['ort', 'stadt', 'region', 'city', 'plz', 'adresse', 'location']),
+          phone: find(['tel', 'phone', 'mobil', 'telefon', 'handy']),
+          email: find(['mail', 'email', 'kontakt', 'e-mail']),
+          website: find(['web', 'site', 'url', 'homepage', 'link']),
+          status: 'NEU',
+          createdAt: new Date().toISOString(),
+          source: 'import'
+        };
+      });
     }
 
     function checkDuplicates() {
       const dups = pendingLeads.filter(pl => state.leads.some(l => {
         const nameMatch = (l.name && pl.name && l.name.trim().toLowerCase() === pl.name.trim().toLowerCase());
+        const email1 = (l.email || '').toLowerCase().trim();
+        const email2 = (pl.email || '').toLowerCase().trim();
+        const emailMatch = (email1.length > 3 && email1 === email2);
         const phone1 = (l.phone || '').replace(/[^\d]/g,'');
         const phone2 = (pl.phone || '').replace(/[^\d]/g,'');
         const phoneMatch = (phone1.length > 5 && phone1 === phone2);
-        return Boolean(nameMatch || phoneMatch);
+        return Boolean(nameMatch || phoneMatch || emailMatch);
       }));
+      
       const dupsView = document.getElementById('importDuplicateCheck');
       const dupsList = document.getElementById('duplicateList');
       const scoreBar = document.getElementById('dataScoreBar');
@@ -1954,61 +1997,67 @@
       const importText = document.getElementById('importStatsText');
       
       if (pendingLeads.length > 0) {
-        const percClean = Math.round(((pendingLeads.length - dups.length) / pendingLeads.length) * 100);
+        const total = pendingLeads.length;
+        const cleanCount = total - dups.length;
+        const percClean = Math.round((cleanCount / total) * 100);
         if (scoreBar) scoreBar.style.width = percClean + '%';
-        if (scoreBar) scoreBar.style.background = percClean < 90 ? '#ef4444' : '#16a34a';
+        if (scoreBar) scoreBar.style.background = percClean < 80 ? '#ef4444' : '#16a34a';
         if (scoreText) scoreText.textContent = percClean + '%';
         
         if (importBar) importBar.style.width = '100%';
-        if (importText) importText.textContent = `${pendingLeads.length} Leads analysiert`;
+        if (importText) importText.textContent = `${total} Leads analysiert`;
       }
 
       if (dups.length > 0) {
         dupsView.style.display = 'block';
-        dupsList.innerHTML = dups.map(d => `<div>• <strong>${d.name}</strong> (${d.phone})</div>`).join('');
+        dupsList.innerHTML = dups.map(d => `<div>• <strong>${d.name}</strong> (${d.email || d.phone || 'Dublette'})</div>`).join('');
       } else {
         dupsView.style.display = 'none';
       }
     }
+
     function renderImportPreview() {
       const p = document.getElementById('importPreview');
       const b = document.getElementById('importPreviewBody');
       p.style.display = 'block';
-      const dups = pendingLeads.filter(pl => state.leads.some(l => 
-        (l.name && l.name.toLowerCase() === pl.name.toLowerCase()) || 
-        (l.phone && l.phone.replace(/[^\d]/g,'').length > 5 && l.phone.replace(/[^\d]/g,'') === pl.phone.replace(/[^\d]/g,''))
-      ));
-
-      b.innerHTML = pendingLeads.map((l, i) => {
-        const isDup = dups.some(d => d.name === l.name);
-        return `<tr style="${isDup ? 'background:#fff7ed; opacity:0.7;' : ''}">
-          <td style="font-weight:600;">${l.name} ${isDup ? '<span style="color:#c2410c; font-size:10px;">(DUBLETTE)</span>' : ''}</td>
-          <td>${l.industry || l.branche || '-'}</td>
-          <td><button class="btn btn-outline" style="padding:2px 8px;" onclick="pendingLeads.splice(${i},1); renderImportPreview(); checkDuplicates();"><i data-lucide="trash-2" style="width:14px;"></i></button></td>
+      
+      b.innerHTML = pendingLeads.slice(0, 50).map((l, i) => {
+        const isDup = state.leads.some(el => {
+          const nameM = (el.name && l.name && el.name.trim().toLowerCase() === l.name.trim().toLowerCase());
+          const emM = (el.email && l.email && el.email.toLowerCase().trim() === l.email.toLowerCase().trim());
+          return nameM || emM;
+        });
+        return `<tr style="${isDup ? 'background:rgba(239,68,68,0.05); color:var(--danger);' : ''}">
+          <td style="font-weight:600;">${String(l.name).replace(/</g,'&lt;')} ${isDup ? '<span style="font-size:10px; opacity:0.8;">(DUBLETTE)</span>' : ''}</td>
+          <td style="font-size:0.8rem;">${String(l.industry || l.region || '-').replace(/</g,'&lt;')}</td>
+          <td style="text-align:right;"><button class="action-icon" style="color:var(--text-muted);" onclick="pendingLeads.splice(${i},1); renderImportPreview(); checkDuplicates();"><i data-lucide="trash-2" style="width:14px;"></i></button></td>
         </tr>`;
       }).join('');
+      if (pendingLeads.length > 50) {
+        b.innerHTML += `<tr><td colspan="3" style="text-align:center; font-size:0.75rem; color:var(--text-muted); padding:0.5rem;">+ ${pendingLeads.length - 50} weitere Leads in der Datei</td></tr>`;
+      }
       lucide.createIcons();
     }
+
     function clearImport() {
       pendingLeads = [];
       document.getElementById('importPreview').style.display = 'none';
       document.getElementById('importDuplicateCheck').style.display = 'none';
       document.getElementById('importFile').value = '';
       if(document.getElementById('dataScoreBar')) document.getElementById('dataScoreBar').style.width = '100%';
-      if(document.getElementById('cleanlinessScore')) document.getElementById('cleanlinessScore').textContent = '100%';
       if(document.getElementById('importProgressBar')) document.getElementById('importProgressBar').style.width = '0%';
       if(document.getElementById('importStatsText')) document.getElementById('importStatsText').textContent = 'Warte auf Datei...';
     }
+
     async function executeImport() {
       if (!pendingLeads.length) return;
       
-      // Robust duplicate logic
       const toImport = pendingLeads.filter(pl => !state.leads.some(l => {
         const nameMatch = (l.name && pl.name && l.name.trim().toLowerCase() === pl.name.trim().toLowerCase());
-        const phone1 = (l.phone || '').replace(/[^\d]/g,'');
-        const phone2 = (pl.phone || '').replace(/[^\d]/g,'');
-        const phoneMatch = (phone1.length > 5 && phone1 === phone2);
-        return Boolean(nameMatch || phoneMatch);
+        const email1 = (l.email || '').toLowerCase().trim();
+        const email2 = (pl.email || '').toLowerCase().trim();
+        const emailMatch = (email1.length > 3 && email1 === email2);
+        return Boolean(nameMatch || emailMatch);
       }));
 
       if (toImport.length === 0) {
@@ -2016,7 +2065,7 @@
         return;
       }
 
-      showLoader('Importiere Leads...');
+      showLoader(`${toImport.length} Leads werden importiert...`);
       state.leads = [...toImport, ...state.leads];
       window.__leads = state.leads;
       try {

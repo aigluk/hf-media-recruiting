@@ -181,7 +181,7 @@
     .pipeline-tab.active { background: var(--primary); color: white; border: 2px solid var(--primary); box-shadow: none; }
 
     /* Action buttons: always in a single horizontal row, no icon clipping */
-    .action-group { display: flex; gap: 5px; flex-wrap: nowrap; align-items: center; justify-content: flex-end; }
+    .action-group { display: flex; gap: 10px; flex-wrap: nowrap; align-items: center; justify-content: flex-end; }
     .action-icon { min-width: 32px; width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; border: none; background: var(--bg); color: var(--text-muted); cursor: pointer; transition: all 0.2s; text-decoration: none; flex-shrink: 0; overflow: visible; box-sizing: border-box; position: relative; }
     .action-icon:hover { color: var(--primary); background: #dee5ee; }
     .action-icon svg, .action-icon i { width: 17px !important; height: 17px !important; pointer-events: none; flex-shrink: 0; }
@@ -2921,7 +2921,21 @@
     function showLeadDetail(idx) {
       const l = window.__leads ? window.__leads[idx] : (state.leads[idx] || null);
       if (!l) return;
-      document.getElementById('leadModalTitle').textContent = String(l.name || '–');
+      const rawPhone = (l.phone || l.tel || l.Phone || l.Telefon || l.phone_number || '').replace(/[^\d+]/g,'');
+      const emCands  = [l.email_general, l.emails, l.email, l.email_ceo, l.Email, l.mail].map(e => e ? String(e).trim() : '');
+      const rawEmail = emCands.find(e => e && e.includes('@')) || '';
+
+      const phoneLink = rawPhone ? `<a href="tel:${rawPhone}" style="margin-left:12px; display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:var(--primary); color:white; flex-shrink:0;" title="Anrufen"><i data-lucide="phone" style="width:13px;height:13px;"></i></a>` : '';
+      const emailLink = rawEmail ? `<a href="mailto:${rawEmail}" style="margin-left:8px; display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:var(--primary); color:white; flex-shrink:0;" title="E-Mail"><i data-lucide="mail" style="width:13px;height:13px;"></i></a>` : '';
+
+      document.getElementById('leadModalTitle').innerHTML = `
+        <div style="display:flex; align-items:center;">
+          <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;">${String(l.name || '–').replace(/</g,'&lt;')}</span>
+          ${phoneLink}
+          ${emailLink}
+        </div>
+      `;
+
       const webStr = l.website && l.website !== '–' && l.website !== '' 
         ? `<a href="${l.website.startsWith('http') ? l.website : 'http://'+l.website}" target="_blank" style="color:var(--primary);text-decoration:underline;">${l.website}</a>` 
         : '–';
@@ -2954,9 +2968,7 @@
       addrStr = addrStr || '–';
 
       const grid = document.getElementById('leadModalGrid');
-      const phone = (l.phone || l.tel || l.Phone || l.Telefon || l.phone_number || '').replace(/[^\d+]/g,'');
-      const emailCandidates = [l.email_general, l.emails, l.email, l.email_ceo, l.Email, l.mail].map(e => e ? String(e).trim() : '');
-      const email = emailCandidates.find(e => e && e.includes('@')) || '–';
+      const email = rawEmail || '–';
       
       const notes = (l.notes || l.note || l.description || '–').replace(/</g, '&lt;').replace(/Termin:\s*[^.]+\./g, '').replace(/Termin:\s*\d{4}-\d{2}-\d{2}.*/g, '').replace(/\n\n+/g, '\n').trim();
       const notesRaw = (l.notes || l.note || l.description || '').replace(/Termin:\s*[^.]+\./g, '').replace(/Termin:\s*\d{4}-\d{2}-\d{2}.*/g, '').replace(/\n\n+/g, '\n').trim();
@@ -3010,20 +3022,14 @@
 
       const actions = document.getElementById('leadModalActions');
       actions.innerHTML = `
-        <div style="display:flex; justify-content: space-between; align-items:center; margin-top:0.5rem; flex-wrap:wrap; gap:0.5rem; border-top:1px solid var(--bg); padding-top:0.75rem;">
-          <div style="display:flex; gap:0.5rem;">
-            ${phone ? `<a href="tel:${phone}" class="btn btn-outline" style="padding:0.45rem 0.65rem; font-size:0.8rem;" title="Anrufen"><i data-lucide="phone" style="width:15px;height:15px;"></i></a>` : ''}
-            ${email ? `<a href="mailto:${email}" class="btn btn-outline" style="padding:0.45rem 0.65rem; font-size:0.8rem;" title="E-Mail senden"><i data-lucide="mail" style="width:15px;height:15px;"></i></a>` : ''}
-          </div>
-          <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-            <button class="btn btn-outline" style="padding:0.45rem 0.65rem; font-size:0.8rem;" onclick="closeModal('leadModal'); openApptModal(${idx});">
-              <i data-lucide="calendar-plus" style="width:15px;height:15px;"></i> Neuer Termin
-            </button>
-            <button class="btn btn-primary" style="padding:0.45rem 0.65rem; font-size:0.8rem;" onclick="sendInvite(${idx})">
-              <i data-lucide="send" style="width:15px;height:15px;"></i> Einladung
-            </button>
-            ${l.appointmentDate ? `<button class="btn btn-outline" style="padding:0.45rem 0.65rem; border-color:#ef4444; color:#ef4444; background:transparent;" title="Termin löschen" onclick="deleteAppt(${idx})"><i data-lucide="trash-2" style="width:15px;height:15px;"></i></button>` : ''}
-          </div>
+        <div style="display:flex; justify-content: flex-end; align-items:center; margin-top:0.5rem; flex-wrap:wrap; gap:0.5rem; border-top:1px solid var(--bg); padding-top:0.75rem;">
+          <button class="btn btn-outline" style="padding:0.45rem 0.65rem; font-size:0.8rem;" onclick="closeModal('leadModal'); openApptModal(${idx});">
+            <i data-lucide="calendar-plus" style="width:15px;height:15px;"></i> Neuer Termin
+          </button>
+          <button class="btn btn-primary" style="padding:0.45rem 0.65rem; font-size:0.8rem;" onclick="sendInvite(${idx})">
+            <i data-lucide="send" style="width:15px;height:15px;"></i> Einladung
+          </button>
+          ${l.appointmentDate ? `<button class="btn btn-outline" style="padding:0.45rem 0.65rem; border-color:#ef4444; color:#ef4444; background:transparent;" title="Termin löschen" onclick="deleteAppt(${idx})"><i data-lucide="trash-2" style="width:15px;height:15px;"></i></button>` : ''}
         </div>`;
       openModal('leadModal');
     }

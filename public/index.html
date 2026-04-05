@@ -2595,7 +2595,12 @@
     function saveNoteFromModal() {
       if (activeNoteIdx < 0) return;
       const val = document.getElementById('noteModalText').value;
-      saveLeadField(activeNoteIdx, 'note', val);
+      const l = window.__leads ? window.__leads[activeNoteIdx] : state.leads[activeNoteIdx];
+      if (l) {
+        l.note = val;
+        l.notes = val; // Synchronize both field names
+      }
+      saveLeadField(activeNoteIdx, 'notes', val); // Use 'notes' as primary save field
       closeModal('noteModal');
     }
 
@@ -2980,7 +2985,8 @@
     function updateLeadQuick(idx) {
       const l = state.leads[idx];
       if (!l) return;
-      l.notes = document.getElementById('editLeadNotes').value;
+      l.note = document.getElementById('editLeadNotes').value;
+      l.notes = l.note; // Sync both fields for consistency
       l.appointmentDate = document.getElementById('editApptDate').value;
       l.appointmentFrom = document.getElementById('editApptFrom').value;
       l.appointmentTo = document.getElementById('editApptTo').value;
@@ -3003,13 +3009,9 @@
       const sel = document.getElementById('apptLead');
       if (idx !== null && idx !== undefined && typeof idx !== 'object') {
         sel.innerHTML = `<option value="${idx}">${state.leads[idx].name}</option>`;
-        // Only pre-fill IF there is an actual appointment note. 
-        // We look for the "Notiz: " marker we add in saveAppt, or just leave empty if it's just the AI description.
         const lead = state.leads[idx];
-        const rawNotes = lead.notes || lead.note || '';
-        // If the notes contain "Notiz: ", extract that part. Otherwise, assume no appt note.
-        const match = rawNotes.match(/Notiz:\s*([\s\S]*)/);
-        document.getElementById('apptNote').value = match ? match[1].trim() : "";
+        // Pre-fill with existing lead notes (from the blue button OR previous appts)
+        document.getElementById('apptNote').value = lead.notes || lead.note || "";
       } else {
         sel.innerHTML = '<option value="">— Lead wählen —</option>' + 
           state.leads.map((l,i) => `<option value="${i}">${String(l.name||'Lead '+i).replace(/</g,'&lt;')}</option>`).join('');
@@ -3089,9 +3091,9 @@
 
         const overlaps = state.leads.filter(x => x !== lead && normalizeStatus(x.status) === 'TERMIN FIXIERT' && x.appointmentDate === date && parseInt(x.appointmentHour) === parseInt(hour));
 
-        if (note.trim().length > 0) {
-          lead.notes = (lead.notes || '') + (lead.notes ? '\n' : '') + `Notiz: ${note}`;
-        }
+        // Sync notes - overwrite instead of append to prevent duplication
+        lead.notes = note;
+        lead.note = note; // sync both fields
 
         fetch('/api/leads', {
           method: 'POST',

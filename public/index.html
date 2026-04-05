@@ -471,7 +471,12 @@
         </div>
         <div class="header-actions">
           <button class="btn btn-outline" onclick="exportCSV()"><i data-lucide="download" style="width:20px;height:20px;"></i> Exportieren</button>
-          <button class="btn btn-primary" onclick="switchView('generator')"><i data-lucide="plus" style="width:20px;height:20px;"></i> Leads Generieren</button>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <button class="btn btn-primary" onclick="switchView('generator')"><i data-lucide="plus" style="width:20px;height:20px;"></i> Leads Generieren</button>
+            <button class="btn btn-outline" style="font-size:0.75rem; padding:0.35rem 0.6rem; justify-content:center; border-color:#cbd5e1; color:#64748b;" onclick="openManualLeadModal()">
+              <i data-lucide="user-plus" style="width:14px;height:14px;"></i> Lead anlegen
+            </button>
+          </div>
         </div>
       </div>
 
@@ -2577,6 +2582,56 @@
     </div>
   </div>
 
+  <!-- Manual Lead Creation Modal -->
+  <div class="modal" id="manualLeadModal">
+    <div class="modal-content" style="max-width: 550px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.25rem; font-weight: 700;">Neuen Lead manuell anlegen</h3>
+        <button style="background:none;border:none; cursor:pointer;" onclick="closeModal('manualLeadModal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+          <div class="modal-field" style="grid-column: span 2;">
+            <label>Firmenname *</label>
+            <input type="text" id="mlName" placeholder="z.B. Hotel Central" style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:8px;">
+          </div>
+          <div class="modal-field">
+            <label>Branche</label>
+            <select id="mlIndustry" style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:8px;"></select>
+          </div>
+          <div class="modal-field">
+            <label>Ansprechperson / CEO</label>
+            <input type="text" id="mlCEO" placeholder="Vorname Nachname" style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:8px;">
+          </div>
+          <div class="modal-field" style="grid-column: span 2;">
+            <label>Region / Adresse</label>
+            <input type="text" id="mlRegion" placeholder="Straße, PLZ, Ort" style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:8px;">
+          </div>
+          <div class="modal-field">
+            <label>Telefon</label>
+            <input type="text" id="mlPhone" placeholder="+43..." style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:8px;">
+          </div>
+          <div class="modal-field">
+            <label>E-Mail</label>
+            <input type="email" id="mlEmail" placeholder="info@firma.at" style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:8px;">
+          </div>
+          <div class="modal-field" style="grid-column: span 2;">
+            <label>Website</label>
+            <input type="text" id="mlWebsite" placeholder="https://..." style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:8px;">
+          </div>
+          <div class="modal-field" style="grid-column: span 2;">
+            <label>Notizen</label>
+            <textarea id="mlNotes" rows="3" placeholder="Erste Infos..." style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:8px; resize:vertical; font-family:inherit;"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('manualLeadModal')">Abbrechen</button>
+        <button class="btn btn-primary" onclick="saveManualLead()">Lead speichern</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     function closeModal(id) {
       const el = document.getElementById(id);
@@ -2607,6 +2662,63 @@
     function openModal(id) {
       const el = document.getElementById(id);
       if (el) { el.classList.add('open'); lucide.createIcons(); }
+    }
+
+    function openManualLeadModal() {
+      // Clear fields
+      document.getElementById('mlName').value = '';
+      document.getElementById('mlCEO').value = '';
+      document.getElementById('mlRegion').value = '';
+      document.getElementById('mlPhone').value = '';
+      document.getElementById('mlEmail').value = '';
+      document.getElementById('mlWebsite').value = '';
+      document.getElementById('mlNotes').value = '';
+      
+      // Fill industry dropdown
+      const sel = document.getElementById('mlIndustry');
+      sel.innerHTML = BRANCHES.map(b => `<option value="${b}" ${b === 'Import-Status' ? 'selected' : ''}>${b}</option>`).join('');
+      
+      openModal('manualLeadModal');
+    }
+
+    async function saveManualLead() {
+      const name = document.getElementById('mlName').value.trim();
+      if (!name) { showToast('Firmenname ist erforderlich.', '#ef4444'); return; }
+      
+      const newLead = {
+        name: name,
+        ceos: document.getElementById('mlCEO').value.trim(),
+        owner: document.getElementById('mlCEO').value.trim(),
+        industry: document.getElementById('mlIndustry').value,
+        region: document.getElementById('mlRegion').value.trim(),
+        phone: document.getElementById('mlPhone').value.trim(),
+        email_general: document.getElementById('mlEmail').value.trim(),
+        emails: document.getElementById('mlEmail').value.trim(),
+        website: document.getElementById('mlWebsite').value.trim(),
+        notes: document.getElementById('mlNotes').value.trim(),
+        note: document.getElementById('mlNotes').value.trim(),
+        status: 'NEU',
+        statusDate: new Date().toLocaleString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }),
+        createdAt: new Date().toISOString()
+      };
+      
+      showLoader('Lead wird gespeichert...');
+      try {
+        const res = await fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leads: [newLead] })
+        });
+        if (!res.ok) throw new Error('Save failed');
+        
+        showToast('Lead erfolgreich angelegt!', '#16a34a');
+        closeModal('manualLeadModal');
+        await syncDatabase();
+        switchView('leads');
+      } catch(e) {
+        showToast('Fehler beim Speichern: ' + e.message, '#ef4444');
+        hideLoader();
+      }
     }
 
     // --- IMPORT LOGIC ---

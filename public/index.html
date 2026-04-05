@@ -2796,53 +2796,74 @@
     function handleFileDrop(e) { e.preventDefault(); handleFiles(e.dataTransfer.files); e.target.style.background='white'; }
     function handleFileSelect(e) { handleFiles(e.target.files); }
     
-    function handleFiles(files) {
+    async function handleFiles(files) {
       if (!files.length) return;
       const file = files[0];
       const fnDisplay = document.getElementById('selectedFileName');
       if (fnDisplay) fnDisplay.textContent = 'Ausgewählt: ' + file.name;
       showLoader(`Analysiere ${file.name}...`);
       
-      const reader = new FileReader();
-      const isCsv = file.name.toLowerCase().endsWith('.csv');
+      const ext = file.name.split('.').pop().toLowerCase();
       
-      reader.onload = (e) => {
-        try {
-          const data = e.target.result;
-          const workbook = XLSX.read(data, { type: isCsv ? 'string' : 'binary' });
-          const sheetName = workbook.SheetNames[0];
-          const sheet = workbook.Sheets[sheetName];
-          
-          // Determine the actual header row to handle sheets with title rows
-          const rawAoA = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-          let headerRowIndex = 0;
-          let maxCols = 0;
-          for (let i = 0; i < Math.min(10, rawAoA.length); i++) {
-             const cols = rawAoA[i].filter(cell => String(cell).trim() !== '').length;
-             if (cols > maxCols) {
-                maxCols = cols;
-                headerRowIndex = i;
-             }
-          }
-          
-          // Re-parse using the detected header row
-          const rows = XLSX.utils.sheet_to_json(sheet, { range: headerRowIndex, defval: '' });
-          
-          if (!rows || rows.length === 0) throw new Error('Die Datei ist leer oder ungültig.');
-          
-          pendingLeads = mapImportedData(rows);
-          checkDuplicates();
-          renderImportPreview();
-          hideLoader();
-        } catch (err) {
-          console.error('Import error:', err);
-          hideLoader();
-          showToast('Fehler: ' + err.message);
+      try {
+        if (ext === 'pdf') {
+          pendingLeads = await parsePDF(file);
+        } else if (ext === 'docx' || ext === 'doc') {
+          pendingLeads = await parseDOCX(file);
+        } else if (ext === 'csv' || ext === 'xlsx' || ext === 'xls') {
+          pendingLeads = await parseExcelOrCsv(file, ext === 'csv');
+        } else {
+          throw new Error('Nicht unterstütztes Format. Bitte .csv, .xlsx, .pdf oder .docx hochladen.');
         }
-      };
-      
-      if (isCsv) reader.readAsText(file);
-      else reader.readAsBinaryString(file);
+
+        if (!pendingLeads || pendingLeads.length === 0) {
+          throw new Error('Keine Leads gefunden.');
+        }
+
+        checkDuplicates();
+        renderImportPreview();
+        hideLoader();
+      } catch (err) {
+        console.error('Import error:', err);
+        hideLoader();
+        showToast('Fehler: ' + err.message, '#ef4444');
+      }
+    }
+
+    function parseExcelOrCsv(file, isCsv) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = e.target.result;
+            const workbook = XLSX.read(data, { type: isCsv ? 'string' : 'binary' });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            
+            // Determine the actual header row to handle sheets with title rows
+            const rawAoA = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+            let headerRowIndex = 0;
+            let maxCols = 0;
+            for (let i = 0; i < Math.min(10, rawAoA.length); i++) {
+               const cols = rawAoA[i].filter(cell => String(cell).trim() !== '').length;
+               if (cols > maxCols) {
+                  maxCols = cols;
+                  headerRowIndex = i;
+               }
+            }
+            
+            // Re-parse using the detected header row
+            const rows = XLSX.utils.sheet_to_json(sheet, { range: headerRowIndex, defval: '' });
+            resolve(mapImportedData(rows));
+          } catch(err) {
+            reject(new Error('Dokument konnte nicht als Tabelle gelesen werden.'));
+          }
+        };
+        reader.onerror = () => reject(new Error('Dateilesefehler'));
+        
+        if (isCsv) reader.readAsText(file);
+        else reader.readAsBinaryString(file);
+      });
     }
 
     function mapImportedData(rows) {

@@ -1419,52 +1419,6 @@
       if (website && isPureNum(website)) website = ''; // never allow bare numbers
       if (website && !/^https?:\/\//i.test(website)) website = 'https://' + website.replace(/^\/\//, '');
 
-      // Industry — must have letters + Smart Mapping
-      let industryRaw = find(v => hasLetters(v) && !isPureNum(v), 'branche','industry','geschäftsfeld','sektor','kategorie','sector','type','typ') || '';
-      
-      // Smart Normalization for Industry (Priority order: 1. Specific/Long, 2. Manual match)
-      const normMap = [
-        { k: ['gastro', 'restaurant', 'gasthof', 'gasthaus', 'vitis', 'vino', 'speisen', 'küche', 'kulinarik', 'delicious', 'wirt'], v: 'Gastronomie' },
-        { k: ['hotel', 'pension', 'unterkunft', 'resort', 'lodging', 'beherbergung'], v: 'Hotellerie' },
-        { k: ['software', 'entwickler', 'edv', 'informatik', 'systemhaus', 'saas', 'application'], v: 'IT/Software' },
-        { k: ['arzt', 'pflege', 'klinik', 'apotheke', 'med', 'pharma', 'praxis', 'health', 'doktor'], v: 'Gesundheit/Pflege' },
-        { k: ['metall', 'stahl', 'industrie', 'factory', 'fertigung', 'produktion'], v: 'Industrie' },
-        { k: ['bau', 'tischler', 'handwerk', 'schmiede', 'montage', 'elektro', 'sanitär'], v: 'Handwerk' },
-        { k: ['immobilien', 'makler', 'real estate', 'hausverwaltung'], v: 'Immobilien' },
-        { k: ['efs', 'bank', 'versich', 'finanz', 'investment', 'consulting', 'vertrieb', 'sales'], v: 'Finanzen/Versicherung' },
-        { k: ['logistik', 'transport', 'spedition', 'versand', 'lager'], v: 'Logistik' },
-        { k: ['tourismus', 'reise', 'urlaub', 'camping', 'travel', 'guide'], v: 'Tourismus' },
-        { k: ['handel', 'shop', 'verkauf', 'retail', 'einzelhandel'], v: 'Handel' },
-        { k: ['wellness', 'spa', 'massage', 'sauna', 'beauty'], v: 'Wellness/Spa' },
-        { k: ['it'], v: 'IT/Software', wordOnly: true } // IT only if distinct
-      ];
-      
-      let industry = '';
-      const context = (name + ' ' + industryRaw).toLowerCase();
-      
-      // Match with priority
-      for (const entry of normMap) {
-        for (const k of entry.k) {
-          if (entry.wordOnly) {
-             const regex = new RegExp(`\\b${k}\\b`, 'i');
-             if (regex.test(context)) { industry = entry.v; break; }
-          } else if (context.includes(k)) {
-             industry = entry.v;
-             break;
-          }
-        }
-        if (industry) break;
-      }
-      
-      // Exact match fallback
-      if (!industry && industryRaw && BRANCHES.includes(industryRaw)) industry = industryRaw;
-      
-      // Confidence Guard: if name is very generic and no industryRaw matched clearly → Import-Status
-      if (!industry || (!industryRaw && name.split(' ').length < 2)) industry = 'Import-Status';
-
-      // Notes
-      const notes = find(v => hasLetters(v), 'notiz','notizen','note','notes','anmerkung','bemerkung','kommentar','info') || '';
-
       // Status override
       let status = 'NEU';
       const statusRaw = findRaw('status','state','leadstatus','crmstatus');
@@ -1474,6 +1428,9 @@
 
       // Description
       const description = find(v => hasLetters(v), 'beschreibung','description','zusammenfassung','summary','profil','über','about') || '';
+
+      // FORCE 'Import-Status' for all imported leads (user request: "pauschal")
+      const industry = 'Import-Status';
 
       // Final gate: need at least company + one useful data field
       if (!emailClean && !phoneClean && !regionVal && !ceo) return null;
@@ -2315,6 +2272,7 @@
           const name = String(l.name || '–').replace(/</g, '&lt;');
           const owner = String(l.ceos || l.ceoname || l.ansprechperson || l.owner || '–').replace(/</g, '&lt;');
           const branch = String(getMainBranch(l.industry)).replace(/</g, '&lt;');
+          const bOpts = BRANCHES.map(b => `<option value="${b}" ${b === branch ? 'selected':''}>${b}</option>`).join('');
           const city = String(l.region || l.city || '–').replace(/</g, '&lt;');
 
           return `
@@ -2327,7 +2285,11 @@
             </td>
             <td><div class="td-name" onclick="showLeadDetail(${idx})" style="cursor:pointer;" title="Popup öffnen">${name}</div></td>
             <td><div class="td-sub"><i data-lucide="user" style="width:14px;"></i>&nbsp;${owner}</div></td>
-            <td style="padding-right:0.25rem;"><span style="font-weight:600; color:var(--text);">${branch}</span></td>
+            <td style="padding-right:0.25rem;">
+              <select class="status-select-inline" style="background:#f1f5f9;border-color:#e2e8f0;font-weight:600;min-width:130px;" onchange="saveLeadField(${idx}, 'industry', this.value)">
+                ${bOpts}
+              </select>
+            </td>
             <td style="padding-left:0.25rem;"><span style="color:var(--text-muted);">${city}</span></td>
             <td>
               <select class="status-select-inline ${stCls}" onchange="saveLeadField(${idx}, 'status', this.value)">
@@ -2692,7 +2654,7 @@
         reader.onload = (e) => {
           try {
             const data = e.target.result;
-            const workbook = XLSX.read(data, { type: isCsv ? 'string' : 'binary' });
+            const workbook = XLSX.read(data, { type: 'array' });
             const sheetName = workbook.SheetNames[0];
             const sheet = workbook.Sheets[sheetName];
             
@@ -2712,13 +2674,13 @@
             const rows = XLSX.utils.sheet_to_json(sheet, { range: headerRowIndex, defval: '' });
             resolve(mapImportedData(rows));
           } catch(err) {
+            console.error('XLSX Read Err:', err);
             reject(new Error('Dokument konnte nicht als Tabelle gelesen werden.'));
           }
         };
         reader.onerror = () => reject(new Error('Dateilesefehler'));
         
-        if (isCsv) reader.readAsText(file);
-        else reader.readAsBinaryString(file);
+        reader.readAsArrayBuffer(file);
       });
     }
 

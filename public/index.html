@@ -2222,29 +2222,27 @@
           );
         }
 
-        // Sort (Neueste/Älteste zuerst nach createdAt)
+        // Robust parser for "DD.MM.YYYY HH:mm"
+        const parseS = (s) => {
+          if (!s || s === '—' || String(s).length < 5) return 0;
+          try {
+            const parts = s.split(' ');
+            const dStr = parts[0].split('.');
+            const tStr = parts[1] || '00:00';
+            return new Date(`${dStr[2]}-${dStr[1]}-${dStr[0]}T${tStr}:00`).getTime();
+          } catch(e) { return 0; }
+        };
+        // Sort (Neueste/Älteste zuerst nach statusDate)
         const sortVal = document.getElementById('sortFilter')?.value || '';
         if (sortVal === 'asc') {
           // Älteste zuerst
-          filtered.sort((a, b) => {
-            const timeA = a.l.createdAt ? new Date(a.l.createdAt).getTime() : 0;
-            const timeB = b.l.createdAt ? new Date(b.l.createdAt).getTime() : 0;
-            return timeA - timeB;
-          });
+          filtered.sort((a, b) => parseS(a.l.statusDate) - parseS(b.l.statusDate));
         } else if (sortVal === 'status') {
           // Status-Datum (Statusänderung) - neueste oben
-          filtered.sort((a, b) => {
-            const da = a.l.statusDate ? new Date(a.l.statusDate.split('.').reverse().join('-')) : new Date(0);
-            const db = b.l.statusDate ? new Date(b.l.statusDate.split('.').reverse().join('-')) : new Date(0);
-            return db - da;
-          });
+          filtered.sort((a, b) => parseS(b.l.statusDate) - parseS(a.l.statusDate));
         } else {
           // Neueste zuerst (Standard)
-          filtered.sort((a, b) => {
-            const timeA = a.l.createdAt ? new Date(a.l.createdAt).getTime() : 0;
-            const timeB = b.l.createdAt ? new Date(b.l.createdAt).getTime() : 0;
-            return timeB - timeA;
-          });
+          filtered.sort((a, b) => parseS(b.l.statusDate) - parseS(a.l.statusDate));
         }
 
         state.lastFiltered = filtered.map(f => f.idx);
@@ -2323,6 +2321,7 @@
         const dbRes = await fetch('/api/leads', { method:'POST', headers:{'Authorization':`Bearer ${state.token}`,'Content-Type':'application/json'}, body: JSON.stringify({ leads: data.leads }) });
         if(!dbRes.ok) throw new Error('Vercel DB Fehler.');
         await syncDatabase();
+        if (document.getElementById('sortFilter')) document.getElementById('sortFilter').value = '';
         switchView('leads');
         setTab('NEU');
       } catch(e) { alert('Engine Abbruch: ' + e.message); }
@@ -2786,7 +2785,10 @@
         clearImport();
         hideLoader();
         showToast(`${toImport.length} Leads erfolgreich importiert!`, '#16a34a');
+        state.activeTab = 'NEU'; // Force NEU tab
+        if (document.getElementById('sortFilter')) document.getElementById('sortFilter').value = '';
         updateKPIs(); renderTable(); renderActivityFeed();
+        initUI(); // Re-render tabs to reflect active state
         switchView('leads');
       } catch(e) { hideLoader(); showToast('Fehler bei Import'); }
     }

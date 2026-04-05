@@ -1409,7 +1409,7 @@
         const countryLine = (country && !['austria','österreich','at','de','germany','ch','schweiz','deutschland'].includes(country.toLowerCase())) ? country : '';
         regionVal = [streetLine, cityLine, countryLine].filter(Boolean).join(', ');
       }
-      if (region && !hasLetters(region)) region = '';
+      if (regionVal && !hasLetters(regionVal)) regionVal = '';
 
       // CEO — must have letters, ideally first+last name
       const ceo = find(v => hasLetters(v) && !isPureNum(v) && !isJobTitle(v), 'geschäftsführer','geschäftsführerin','gf','ceo','inhaber','inhaberin','eigentümer','eigentümerin','leiter','leiterin','direktor','direktorin','vorstand','gründer','gründerin','owner','founder','president','ansprechperson','ansprechpartner','kontaktperson','hauptkontakt','kontakt','ansprechparter');
@@ -1418,6 +1418,9 @@
       let website = find(v => isUrl(v) || (/[a-zA-Z]/.test(v) && v.includes('.')), 'website','web','url','homepage','internetadresse','webseite','www');
       if (website && isPureNum(website)) website = ''; // never allow bare numbers
       if (website && !/^https?:\/\//i.test(website)) website = 'https://' + website.replace(/^\/\//, '');
+
+      // Notes
+      const notes = find(v => hasLetters(v), 'notiz','notizen','note','notes','anmerkung','bemerkung','kommentar','info') || '';
 
       // Status override
       let status = 'NEU';

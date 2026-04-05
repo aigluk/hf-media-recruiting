@@ -621,9 +621,6 @@
               <span><i data-lucide="calendar" style="width:13px;height:13px;"></i> Tippe auf einen Lead-Termin</span>
             </div>
             <div class="cal-filters">
-              <h4>Filter</h4>
-              <label class="cal-filter-item"><input type="checkbox" checked id="filterTermin"> Termin Fixiert</label>
-              <label class="cal-filter-item"><input type="checkbox" checked id="filterAll"> Alle Leads</label>
               <button class="btn btn-outline" style="width:100%; justify-content:center; margin-top:1.5rem;" onclick="openModal('calConnectModal')">
                 <i data-lucide="link" style="width:16px;"></i> Kalender verbinden
               </button>
@@ -2591,13 +2588,13 @@
           </div>
         </button>
 
-        <button class="btn btn-primary" onclick="window.location.href = 'webcal://hf-media-recruiting.vercel.app/api/calendar?token=' + state.token" style="justify-content:flex-start;gap:1.25rem;padding:1.15rem 1.25rem;">
+        <button class="btn btn-primary" onclick="window.open('https://outlook.office.com/calendar/0/addfromweb?url=https%3A%2F%2Fhf-media-recruiting.vercel.app%2Fapi%2Fcalendar%3Ftoken%3D' + state.token + '&name=HF+Media+CRM', '_blank')" style="justify-content:flex-start;gap:1.25rem;padding:1.15rem 1.25rem;">
           <div style="width:40px;height:40px;background:rgba(255,255,255,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;">
              <i data-lucide="mail" style="width:20px;height:20px;color:white;"></i>
           </div>
           <div style="text-align:left;">
             <div style="font-weight:700;color:white;font-size:0.95rem;">Microsoft Outlook</div>
-            <div style="font-size:0.75rem;opacity:0.8;font-weight:400;margin-top:2px;">Öffnet Outlook & abonniert Kalender URL</div>
+            <div style="font-size:0.75rem;opacity:0.8;font-weight:400;margin-top:2px;">Öffnet Outlook Web & abonniert Feed</div>
           </div>
         </button>
 
@@ -2945,7 +2942,7 @@
       const emailCandidates = [l.email_general, l.emails, l.email, l.email_ceo, l.Email, l.mail].map(e => e ? String(e).trim() : '');
       const email = emailCandidates.find(e => e && e.includes('@')) || '–';
       
-      const notes = (l.notes || l.note || l.description || '–').replace(/</g, '&lt;').replace(/\n\n+/g, '\n');
+      const notesRaw = l.notes || l.note || l.description || '';
 
       grid.innerHTML = `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1.25rem; margin-bottom: 1rem;">
@@ -2965,8 +2962,16 @@
         </div>
         <div style="border-top: 1px solid var(--bg); padding-top: 0.75rem;">
           <div class="modal-field">
-            <label style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Notizen</label>
-            <div class="val" style="white-space: pre-line; line-height: 1.35; font-size: 0.9rem; color: var(--text); margin-top: 2px;">${notes}</div>
+            <label style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Termin & Notizen bearbeiten</label>
+            <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
+              <div style="flex:1;"><label style="font-size:0.6rem;color:var(--text-muted);">Datum</label><input type="date" id="editApptDate" value="${l.appointmentDate || ''}" style="width:100%; font-size:0.8rem; padding:0.4rem; border:1px solid var(--border); border-radius:6px; background:var(--bg);"></div>
+              <div style="flex:1;"><label style="font-size:0.6rem;color:var(--text-muted);">Von</label><input type="time" id="editApptFrom" value="${l.appointmentFrom || ''}" style="width:100%; font-size:0.8rem; padding:0.4rem; border:1px solid var(--border); border-radius:6px; background:var(--bg);"></div>
+              <div style="flex:1;"><label style="font-size:0.6rem;color:var(--text-muted);">Bis</label><input type="time" id="editApptTo" value="${l.appointmentTo || ''}" style="width:100%; font-size:0.8rem; padding:0.4rem; border:1px solid var(--border); border-radius:6px; background:var(--bg);"></div>
+            </div>
+            <textarea id="editLeadNotes" rows="4" style="width:100%; margin-top:0.5rem; font-size:0.85rem; padding:0.5rem; border:1px solid var(--border); border-radius:6px; resize:vertical; background:var(--bg);">${notesRaw}</textarea>
+            <button class="btn btn-outline" style="margin-top:0.5rem; width:100%; justify-content:center; font-size:0.82rem;" onclick="updateLeadQuick(${idx})">
+              <i data-lucide="save" style="width:15px;height:15px;"></i> Änderungen Speichern
+            </button>
           </div>
         </div>
       `;
@@ -3021,9 +3026,30 @@
       openModal('statusModal');
     }
 
-    function openApptModal(idx, date, hour) {
+    function updateLeadQuick(idx) {
+      const l = state.leads[idx];
+      if (!l) return;
+      l.notes = document.getElementById('editLeadNotes').value;
+      l.appointmentDate = document.getElementById('editApptDate').value;
+      l.appointmentFrom = document.getElementById('editApptFrom').value;
+      l.appointmentTo = document.getElementById('editApptTo').value;
+      if (l.appointmentDate) l.appointmentHour = (l.appointmentFrom || '10:00').split(':')[0];
+
+      fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leads: [l] })
+      }).then(res => {
+        if (!res.ok) throw new Error('Update Fehler');
+        showToast('Änderungen gespeichert!', '#16a34a');
+        updateKPIs(); renderTable(); renderCalendar(); renderActivityFeed();
+        closeModal('leadModal');
+      }).catch(err => showToast('Fehler beim Speichern: ' + err.message, '#ef4444'));
+    }
+
+    function openApptModal(idx = null) {
       const sel = document.getElementById('apptLead');
-      if (idx !== undefined) {
+      if (idx !== null) {
         sel.innerHTML = `<option value="${idx}">${state.leads[idx].name}</option>`;
       } else {
         sel.innerHTML = '<option value="">— Lead wählen —</option>' + 
@@ -3093,8 +3119,12 @@
         lead.status = 'TERMIN FIXIERT';
         lead.statusDate = today;
         lead.appointmentDate = date;
+        lead.appointmentFrom = from;
+        lead.appointmentTo = to;
         lead.appointmentHour = (from || '10:00').split(':')[0];
-        lead.notes = (lead.notes || '') + `\nTermin: ${date} ${from}–${to}. ${note}`;
+        if (note.trim().length > 0) {
+          lead.notes = (lead.notes || '') + (lead.notes ? '\n' : '') + `Agenda: ${note}`;
+        }
         fetch('/api/leads', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' },

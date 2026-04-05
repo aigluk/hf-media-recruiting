@@ -998,7 +998,8 @@
         lead.statusDate = new Date().toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
       }
       updateKPIs();
-      if (field === 'status') { renderTable(); renderCalendar(); renderReports(); }
+      if (field === 'status' || field === 'note') { renderTable(); }
+      if (field === 'status') { renderCalendar(); renderReports(); }
       try {
         await fetch('/api/leads', {
           method: 'POST',

@@ -186,7 +186,6 @@
     .mini-cal-grid .day-num.today { background: var(--primary); color: white; font-weight: 700; }
     .mini-cal-grid .day-num.selected { background: #e0e7ff; color: var(--primary); font-weight: 700; }
     .mini-cal-grid .day-num.other-month { color: #cbd5e1; }
-    .mini-cal-grid .day-num.has-event::after { content: ''; display: block; width: 4px; height: 4px; background: #f97316; border-radius: 50%; margin: 1px auto 0; }
 
     .cal-reminder-box { background: var(--text); color: white; padding: 1.25rem; border-radius: 14px; margin-top: 1.5rem; }
     .cal-reminder-box h4 { font-size: 0.75rem; opacity: 0.6; margin-bottom: 3px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -1414,14 +1413,6 @@
 
     function buildMiniCalendar(miniCont, today, year, month, selectedDay) {
       if (!miniCont) return;
-      const termins = new Set();
-      state.leads.filter(l => normalizeStatus(l.status) === 'TERMIN FIXIERT').forEach(l => {
-        if (!l.appointmentDate) return;
-        const [y, m, d] = l.appointmentDate.split('-').map(Number);
-        if (y === year && m === (month + 1)) {
-          termins.add(d);
-        }
-      });
       const firstDay = new Date(year, month, 1).getDay();
       const startOffset = (firstDay === 0 ? 6 : firstDay - 1);
       const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -1431,7 +1422,7 @@
       for (let d = 1; d <= daysInMonth; d++) {
         const isToday = (year === today.getFullYear() && month === today.getMonth() && d === today.getDate());
         const isSel = d === selectedDay && !isToday;
-        const cls = [isToday ? 'today' : '', isSel ? 'selected' : '', termins.has(d) ? 'has-event' : ''].filter(Boolean).join(' ');
+        const cls = [isToday ? 'today' : '', isSel ? 'selected' : ''].filter(Boolean).join(' ');
         daysHtml += `<div class="day-num ${cls}" onclick="calState.selectedDay=${d}; renderCalendar();">${d}</div>`;
       }
       const total = Math.ceil((startOffset + daysInMonth) / 7) * 7;

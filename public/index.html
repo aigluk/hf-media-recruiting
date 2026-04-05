@@ -73,11 +73,12 @@
     #authOverlay .auth-box .btn-primary:hover { background: var(--primary-hover); transform: none; }
     
     #authOverlay .eye-btn {
-      position: absolute; right: 6px; top: 50%; transform: translateY(-45%);
+      position: absolute; right: 8px; top: 0; bottom: 0;
       background: none; border: none; cursor: pointer; color: var(--text-muted);
-      display: flex; align-items: center; justify-content: center; padding: 10px;
+      display: flex; align-items: center; justify-content: center; padding: 0 10px;
+      -webkit-tap-highlight-color: transparent; outline: none !important;
     }
-    #authOverlay .eye-btn svg { width: 17px !important; height: 17px !important; stroke-width: 2.3px; }
+    #authOverlay .eye-btn svg { width: 18px !important; height: 18px !important; stroke-width: 2.3px; pointer-events: none; }
 
     .app-layout { display: flex; height: 100vh; overflow: hidden; opacity: 0; transition: opacity 0.3s; }
     .app-layout.loaded { opacity: 1; }

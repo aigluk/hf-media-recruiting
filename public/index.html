@@ -1429,16 +1429,21 @@
         'gast': 'Gastronomie', 'rest': 'Gastronomie', 'essen': 'Gastronomie', 'wirt': 'Gastronomie',
         'tour': 'Tourismus', 'reise': 'Tourismus', 'urlaub': 'Tourismus',
         'metall': 'Metalltechnik', 'stahl': 'Metalltechnik', 'industrie': 'Industrie',
-        'arzt': 'Gesundheit/Pflege', 'pflege': 'Gesundheit/Pflege', 'klinik': 'Gesundheit/Pflege',
+        'arzt': 'Gesundheit/Pflege', 'pflege': 'Gesundheit/Pflege', 'klinik': 'Gesundheit/Pflege', 'apotheke': 'Gesundheit/Pflege', 'med': 'Gesundheit/Pflege', 'pharma': 'Gesundheit/Pflege', 'praxis': 'Gesundheit/Pflege',
         'bau': 'Handwerk', 'tischler': 'Handwerk', 'handwerk': 'Handwerk',
         'immobilien': 'Immobilien', 'makler': 'Immobilien',
-        'bank': 'Finanzen/Versicherung', 'versich': 'Finanzen/Versicherung'
+        'bank': 'Finanzen/Versicherung', 'versich': 'Finanzen/Versicherung',
+        'logistik': 'Logistik', 'transport': 'Logistik', 'spedition': 'Logistik',
+        'handel': 'Handel', 'shop': 'Handel', 'verkauf': 'Handel'
       };
-      let industry = industryRaw;
+      
+      let industry = 'Tourismus';
+      const context = (name + ' ' + industryRaw).toLowerCase();
       for (const [key, val] of Object.entries(normMap)) {
-        if (industryRaw.toLowerCase().includes(key)) { industry = val; break; }
+        if (context.includes(key)) { industry = val; break; }
       }
-      if (!BRANCHES.includes(industry)) industry = 'Österreichischer Tourismus'; // Fallback if no match
+      // If industryRaw is an exact match for a branch, use it
+      if (industryRaw && BRANCHES.includes(industryRaw)) industry = industryRaw;
 
       // Notes
       const notes = find(v => hasLetters(v), 'notiz','notizen','note','notes','anmerkung','bemerkung','kommentar','info') || '';

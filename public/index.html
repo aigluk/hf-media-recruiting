@@ -73,11 +73,11 @@
     #authOverlay .auth-box .btn-primary:hover { background: var(--primary-hover); transform: none; }
     
     #authOverlay .eye-btn {
-      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
       background: none; border: none; cursor: pointer; color: var(--text-muted);
-      display: flex; align-items: center; justify-content: center; padding: 8px;
+      display: flex; align-items: center; justify-content: center; padding: 10px;
     }
-    #authOverlay .eye-btn svg { width: 18px !important; height: 18px !important; stroke-width: 2.5px; }
+    #authOverlay .eye-btn svg { width: 18px !important; height: 18px !important; stroke-width: 2.2px; }
 
     .app-layout { display: flex; height: 100vh; overflow: hidden; opacity: 0; transition: opacity 0.3s; }
     .app-layout.loaded { opacity: 1; }
@@ -2388,7 +2388,7 @@
           <button class="btn btn-primary" style="font-size:0.82rem;" onclick="closeModal('leadModal'); openApptModal(${idx});">
             <i data-lucide="calendar" style="width:15px;height:15px;"></i> Termin eintragen
           </button>
-          <button class="btn btn-outline" style="font-size:0.82rem; border-color:#f97316; color:#f97316;" onclick="sendInvite(${idx})">
+          <button class="btn btn-primary" style="font-size:0.82rem;" onclick="sendInvite(${idx})">
             <i data-lucide="send" style="width:15px;height:15px;"></i> Einladung senden
           </button>
           ${l.appointmentDate ? `<button class="btn btn-outline" style="font-size:0.82rem; border-color:#ef4444; color:#ef4444;" onclick="deleteAppt(${idx})"><i data-lucide="trash-2" style="width:15px;height:15px;"></i> Termin löschen</button>` : ''}
@@ -2483,8 +2483,8 @@
       if (!lead || !email) { showToast('Keine E-Mail Adresse verfügbar','#ef4444'); return; }
       const date = lead.appointmentDate || '[DATUM]';
       const hour = lead.appointmentHour ? `${lead.appointmentHour}:00` : '[UHRZEIT]';
-      const subject = encodeURIComponent(`Terminbestätigung: ${lead.name} & Lead Gen Engine`);
-      const body = encodeURIComponent(`Hallo ${lead.ceos || lead.ceoname || lead.ansprechperson || lead.owner || lead.name},\n\nhiermit bestätigen wir unseren Termin am ${date} um ${hour} Uhr.\n\nWir freuen uns auf das Gespräch!\n\nMit freundlichen Grüßen,\nIhr Lead Gen Team`);
+      const subject = encodeURIComponent(`Terminbestätigung: Gespräch mit ${lead.name}`);
+      const body = encodeURIComponent(`Sehr geehrtes Team ${lead.name},\n\nDanke erstmals für das angenehme Gespräch und Ihre Zeit.\nAnbei übermittle ich Ihnen den Link für unser Gespräch am ${date} um ${hour} Uhr.\nBei Fragen vorab gerne jederzeit melden!\n\nMit freundlichen Grüßen,\nLukas Aigner`);
       window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
     }
 

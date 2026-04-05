@@ -954,7 +954,8 @@
         // Normalize statuses on load so filter always works
         state.leads = (Array.isArray(data.leads) ? data.leads : []).map(l => ({
           ...l,
-          status: normalizeStatus(l.status)
+          status: normalizeStatus(l.status),
+          statusDate: l.statusDate || formatDate(l.createdAt)
         }));
         window.__leads = state.leads;
         document.getElementById('authOverlay').style.display = 'none';
@@ -2304,13 +2305,13 @@
       const notes = (l.notes || l.note || l.description || '–').replace(/</g, '&lt;');
 
       grid.innerHTML = `
-        <div class="modal-grid" style="grid-template-columns: repeat(2, 1fr); gap: 1.25rem 2rem; margin-bottom: 2rem;">
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem 2rem; margin-bottom: 2rem;">
           ${infoGridHtml}
         </div>
-        <div class="modal-section" style="border-top: 1px solid var(--bg); padding-top: 1.5rem; margin-top: 2rem;">
+        <div class="modal-section" style="border-top: 1px solid var(--bg); padding-top: 1.5rem; margin-top: 1.5rem;">
           <div class="modal-field" style="width: 100%;">
-            <label style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Notizen</label>
-            <div class="val" style="white-space: pre-wrap; line-height: 1.6; font-size: 0.95rem; color: var(--text); margin-top: 0.75rem;">${notes}</div>
+            <label style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Notizen</label>
+            <div class="val" style="white-space: pre-line; line-height: 1.5; font-size: 0.95rem; color: var(--text); margin-top: 0.5rem;">${notes}</div>
           </div>
         </div>
       `;

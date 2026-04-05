@@ -2297,20 +2297,20 @@
       const grid = document.getElementById('leadModalGrid');
       const infoGridHtml = infoFields.map(([label, val]) => `
         <div class="modal-field">
-          <label>${label}</label>
-          <div class="val">${String(val).includes('<a') ? val : String(val).replace(/</g,'&lt;')}</div>
+          <label style="font-size: 0.68rem; margin-bottom: 2px;">${label}</label>
+          <div class="val" style="font-size: 0.88rem; line-height: 1.4; word-break: break-word;">${String(val).includes('<a') ? val : String(val).replace(/</g,'&lt;')}</div>
         </div>`).join('');
       
       const notes = (l.notes || l.note || l.description || '–').replace(/</g, '&lt;');
 
       grid.innerHTML = `
-        <div class="modal-grid" style="grid-template-columns: repeat(3, 1fr); gap: 1.5rem 1rem; margin-bottom: 2rem;">
+        <div class="modal-grid" style="grid-template-columns: repeat(2, 1fr); gap: 1.25rem 2rem; margin-bottom: 2rem;">
           ${infoGridHtml}
         </div>
         <div class="modal-section" style="border-top: 1px solid var(--bg); padding-top: 1.5rem; margin-top: 2rem;">
           <div class="modal-field" style="width: 100%;">
-            <label>Notizen</label>
-            <div class="val" style="white-space: pre-wrap; line-height: 1.6; font-size: 0.92rem; color: var(--text); margin-top: 0.75rem;">${notes}</div>
+            <label style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Notizen</label>
+            <div class="val" style="white-space: pre-wrap; line-height: 1.6; font-size: 0.95rem; color: var(--text); margin-top: 0.75rem;">${notes}</div>
           </div>
         </div>
       `;

@@ -848,11 +848,11 @@
     lucide.createIcons();
 
     function formatDate(d) {
-      if (!d) return '—';
+      if (!d) return '';
       const date = new Date(d);
       if (isNaN(date)) {
         if (typeof d === 'string' && d.includes('.')) return d;
-        return '—';
+        return '';
       }
       return date.toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
     }
@@ -952,10 +952,11 @@
         catch(e) { throw new Error(`HTTP ${res.status}: Kein gültiger Response`); }
         if (data.error) throw new Error(data.error);
         // Normalize statuses on load so filter always works
+        // Normalize statuses and BACKFILL dates on load
         state.leads = (Array.isArray(data.leads) ? data.leads : []).map(l => ({
           ...l,
           status: normalizeStatus(l.status),
-          statusDate: l.statusDate || formatDate(l.createdAt)
+          statusDate: l.statusDate && l.statusDate !== '—' ? l.statusDate : (formatDate(l.createdAt) || formatDate(l.timestamp) || formatDate(l.created) || formatDate(l.date) || '')
         }));
         window.__leads = state.leads;
         document.getElementById('authOverlay').style.display = 'none';
@@ -2283,45 +2284,37 @@
       const ortFull = `${zip ? zip + ' ' : ''}${city}` || '–';
       addrStr = addrStr || '–';
 
-      const infoFields = [
-        ['Ansprechperson', l.ceos || l.ceoname || l.ansprechperson || l.owner || '–'],
-        ['Branche', l.industry || l.branche || '–'],
-        ['Ort / PLZ', ortFull],
-        ['Hausanschrift', addrStr],
-        ['Telefon', l.phone || l.tel || l.Phone || l.Telefon || l.phone_number || '–'],
-        ['E-Mail', l.email || l.email_ceo || l.email_general || l.Email || l.mail || (l.emails ? String(l.emails).split(',')[0].trim() : '') || '–'],
-        ['Website', webStr],
-        ['CRM Status', l.status || '–'],
-        ['Status-Datum', l.statusDate || formatDate(l.createdAt)],
-      ];
-      
       const grid = document.getElementById('leadModalGrid');
-      const infoGridHtml = infoFields.map(([label, val]) => {
-        const isWide = label === 'E-Mail' || label === 'Website' || label === 'Hausanschrift';
-        return `
-        <div class="modal-field" style="${isWide ? 'grid-column: span 2;' : ''}">
-          <label style="font-size: 0.68rem; margin-bottom: 2px;">${label}</label>
-          <div class="val" style="font-size: 0.88rem; line-height: 1.4; word-break: break-all;">${String(val).includes('<a') ? val : String(val).replace(/</g,'&lt;')}</div>
-        </div>`;
-      }).join('');
+      const phone = (l.phone || l.tel || l.Phone || l.Telefon || l.phone_number || '').replace(/[^\d+]/g,'');
+      const email = l.email || l.email_ceo || l.email_general || l.Email || l.mail || (l.emails ? String(l.emails).split(',')[0].trim() : '') || '–';
       
-      const notes = (l.notes || l.note || l.description || '–').replace(/</g, '&lt;');
+      const notes = (l.notes || l.note || l.description || '–').replace(/</g, '&lt;').replace(/\n\n+/g, '\n');
 
       grid.innerHTML = `
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem 2rem;">
-          ${infoGridHtml}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem 1.5rem; margin-bottom: 1.5rem;">
+          <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:2px;">Ansprechperson</label><div class="val" style="font-size:0.85rem;">${l.ceos || l.ceoname || l.ansprechperson || l.owner || '–'}</div></div>
+          <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:2px;">Branche</label><div class="val" style="font-size:0.85rem;">${l.industry || l.branche || '–'}</div></div>
+          
+          <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:2px;">Ort / PLZ</label><div class="val" style="font-size:0.85rem;">${ortFull}</div></div>
+          <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:2px;">Hausanschrift</label><div class="val" style="font-size:0.85rem;">${addrStr}</div></div>
+          
+          <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:2px;">Telefon</label><div class="val" style="font-size:0.85rem;">${l.phone || l.tel || '–'}</div></div>
+          <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:2px;">E-Mail</label><div class="val" style="font-size:0.85rem;word-break:break-all;">${email}</div></div>
+          
+          <div class="modal-field" style="grid-column: span 2;"><label style="font-size:0.65rem;margin-bottom:2px;">Website</label><div class="val" style="font-size:0.85rem;word-break:break-all;">${webStr}</div></div>
+          
+          <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:2px;">CRM Status</label><div class="val" style="font-size:0.85rem;">${l.status || '–'}</div></div>
+          <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:2px;">Status-Datum</label><div class="val" style="font-size:0.85rem;">${l.statusDate || '—'}</div></div>
         </div>
-        <div class="modal-section" style="border-top: 1px solid var(--bg); padding-top: 1.5rem; margin-top: 1.5rem;">
-          <div class="modal-field" style="width: 100%;">
-            <label style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Notizen</label>
-            <div class="val" style="white-space: pre-line; line-height: 1.5; font-size: 0.95rem; color: var(--text); margin-top: 0.5rem;">${notes}</div>
+        <div style="border-top: 1px solid var(--bg); padding-top: 1rem;">
+          <div class="modal-field">
+            <label style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Notizen</label>
+            <div class="val" style="white-space: pre-line; line-height: 1.4; font-size: 0.92rem; color: var(--text); margin-top: 4px;">${notes}</div>
           </div>
         </div>
       `;
 
       const actions = document.getElementById('leadModalActions');
-      const phone = (l.phone || l.tel || l.Phone || l.Telefon || l.phone_number || '').replace(/[^\d+]/g,'');
-      const email = l.email || l.email_ceo || l.email_general || l.Email || l.mail || (l.emails ? String(l.emails).split(',')[0].trim() : '') || '';
       actions.innerHTML = `
         <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.5rem;">
           ${phone ? `<a href="tel:${phone}" class="btn btn-outline" style="font-size:0.82rem;"><i data-lucide="phone" style="width:15px;height:15px;"></i> Anrufen</a>` : ''}

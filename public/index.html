@@ -1393,15 +1393,15 @@
       const phoneClean = phoneRaw || '';
 
       // Address: full field or compose from validated parts
-      const fullAddr = find(v => hasLetters(v) && v.length > 3, 'vollständigeadresse','volladresse','anschrift','adresse','address','standortadresse','firmenadresse');
-      const street = find(hasLetters, 'straße','strasse','street','strassenname','gasse','allee');
-      const houseNum = findRaw('hausnummer','hnr','hausnr');
+      const fullAddr = find(v => hasLetters(v) && v.length > 3, 'vollständigeadresse','volladresse','anschrift','adresse','address','standortadresse','firmenadresse','hausanschrift','sitz','firmensitz');
+      const street = find(hasLetters, 'straße','strasse','street','strassenname','gasse','allee','weg','platz');
+      const houseNum = findRaw('hausnummer','hnr','hausnr','nr','nummer');
       const zip = find(v => /^\d{4,5}$/.test(v), 'plz','postleitzahl','zip','zipcode','postalcode','postcode');
       const city = find(hasLetters, 'ort','stadt','city','gemeinde','standort','bezirk','town','place');
       const country = find(hasLetters, 'land','country','staat');
 
       let region = '';
-      if (fullAddr && fullAddr.length > 3) {
+      if (fullAddr && fullAddr.length > 5) {
         region = fullAddr;
       } else {
         const streetLine = [street, houseNum].filter(Boolean).join(' ').trim();
@@ -1419,8 +1419,26 @@
       if (website && isPureNum(website)) website = ''; // never allow bare numbers
       if (website && !/^https?:\/\//i.test(website)) website = 'https://' + website.replace(/^\/\//, '');
 
-      // Industry — must have letters
-      const industry = find(v => hasLetters(v) && !isPureNum(v), 'branche','industry','geschäftsfeld','sektor','kategorie','sector','type','typ') || '';
+      // Industry — must have letters + Smart Mapping
+      let industryRaw = find(v => hasLetters(v) && !isPureNum(v), 'branche','industry','geschäftsfeld','sektor','kategorie','sector','type','typ') || '';
+      
+      // Smart Normalization for Industry
+      const normMap = {
+        'software': 'IT/Software', 'it': 'IT/Software', 'entwickler': 'IT/Software',
+        'hotel': 'Hotellerie', 'pension': 'Hotellerie', 'unterkunft': 'Hotellerie',
+        'gast': 'Gastronomie', 'rest': 'Gastronomie', 'essen': 'Gastronomie', 'wirt': 'Gastronomie',
+        'tour': 'Tourismus', 'reise': 'Tourismus', 'urlaub': 'Tourismus',
+        'metall': 'Metalltechnik', 'stahl': 'Metalltechnik', 'industrie': 'Industrie',
+        'arzt': 'Gesundheit/Pflege', 'pflege': 'Gesundheit/Pflege', 'klinik': 'Gesundheit/Pflege',
+        'bau': 'Handwerk', 'tischler': 'Handwerk', 'handwerk': 'Handwerk',
+        'immobilien': 'Immobilien', 'makler': 'Immobilien',
+        'bank': 'Finanzen/Versicherung', 'versich': 'Finanzen/Versicherung'
+      };
+      let industry = industryRaw;
+      for (const [key, val] of Object.entries(normMap)) {
+        if (industryRaw.toLowerCase().includes(key)) { industry = val; break; }
+      }
+      if (!BRANCHES.includes(industry)) industry = 'Österreichischer Tourismus'; // Fallback if no match
 
       // Notes
       const notes = find(v => hasLetters(v), 'notiz','notizen','note','notes','anmerkung','bemerkung','kommentar','info') || '';
@@ -1434,7 +1452,7 @@
       return {
         name, email_general: emailClean, emails: emailClean, phone: phoneClean,
         region: region.substring(0,300), ceos: ceo, owner: ceo,
-        status:'NEU', statusDate: new Date().toLocaleDateString('de-AT',{day:'2-digit',month:'2-digit',year:'numeric'}),
+        status:'NEU', statusDate: new Date().toLocaleString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }),
         createdAt: new Date().toISOString(), industry, notes, website, description,
       };
     }
@@ -2028,11 +2046,13 @@
         const parseS = (s) => {
           if (!s || s === '—' || String(s).length < 5) return 0;
           try {
-            // Split "DD.MM.YYYY HH:mm"
-            const parts = s.split(' ');
+            const clean = String(s).replace(',', '').trim();
+            const parts = clean.split(/\s+/);
             const dStr = parts[0].split('.');
+            if (dStr.length < 3) return 0;
             const tStr = parts[1] || '00:00';
-            return new Date(`${dStr[2]}-${dStr[1]}-${dStr[0]}T${tStr}:00`).getTime();
+            const ts = new Date(`${dStr[2]}-${dStr[1]}-${dStr[0]}T${tStr}:00`).getTime();
+            return isNaN(ts) ? 0 : ts;
           } catch(e) { return 0; }
         };
         return parseS(b.statusDate) - parseS(a.statusDate);
@@ -2226,10 +2246,14 @@
         const parseS = (s) => {
           if (!s || s === '—' || String(s).length < 5) return 0;
           try {
-            const parts = s.split(' ');
+            const clean = String(s).replace(',', '').trim();
+            const parts = clean.split(/\s+/);
             const dStr = parts[0].split('.');
+            if (dStr.length < 3) return 0;
             const tStr = parts[1] || '00:00';
-            return new Date(`${dStr[2]}-${dStr[1]}-${dStr[0]}T${tStr}:00`).getTime();
+            const iso = `${dStr[2]}-${dStr[1]}-${dStr[0]}T${tStr}:00`;
+            const ts = new Date(iso).getTime();
+            return isNaN(ts) ? 0 : ts;
           } catch(e) { return 0; }
         };
         // Sort (Neueste/Älteste zuerst nach statusDate)
@@ -2237,9 +2261,6 @@
         if (sortVal === 'asc') {
           // Älteste zuerst
           filtered.sort((a, b) => parseS(a.l.statusDate) - parseS(b.l.statusDate));
-        } else if (sortVal === 'status') {
-          // Status-Datum (Statusänderung) - neueste oben
-          filtered.sort((a, b) => parseS(b.l.statusDate) - parseS(a.l.statusDate));
         } else {
           // Neueste zuerst (Standard)
           filtered.sort((a, b) => parseS(b.l.statusDate) - parseS(a.l.statusDate));

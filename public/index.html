@@ -2889,7 +2889,7 @@
         </div>
         `;
       } else {
-        if (notesRaw && notesRaw !== '–' && notesRaw.length > 0) {
+        if (desc && desc !== '–' && desc.length > 5) {
            gridContent += `
            <div style="border-top: 1px solid var(--bg); padding-top: 0.75rem;">
              <div class="modal-field">
@@ -3040,7 +3040,7 @@
       const date = lead.appointmentDate || '[DATUM]';
       const hour = lead.appointmentHour ? `${lead.appointmentHour}:00` : '[UHRZEIT]';
       const subject = encodeURIComponent(`Terminbestätigung: Gespräch mit ${lead.name}`);
-      const body = encodeURIComponent(`Sehr geehrtes Team ${lead.name},\n\nDanke erstmals für das angenehme Gespräch und Ihre Zeit.\nAnbei übermittle ich Ihnen den Link für unser Gespräch am ${date} um ${hour} Uhr.\nBei Fragen vorab gerne jederzeit melden!\n\nMit freundlichen Grüßen,\nLukas Aigner`);
+      const body = encodeURIComponent(`Sehr geehrtes Team ${lead.name},\n\nDanke erstmals für das angenehme Gespräch und Ihre Zeit.\nAnbei übermittle ich Ihnen den Link für unser Gespräch am ${date} um ${hour} Uhr.\nBei Fragen vorab gerne jederzeit melden!\n\nMit freundlichen Grüßen,\n[NAME]`);
       window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
     }
 

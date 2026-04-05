@@ -1745,13 +1745,13 @@
           const isSelected = state.selectedLeads.has(idx);
           const stCls = PIPELINES.find(p => p.id === status)?.color || 'st-neu';
           const opts = PIPELINES.map(p => `<option value="${p.id}" ${p.id === status ? 'selected':''}>${p.label}</option>`).join('');
-          const em = l.email_ceo || l.email_general || (l.emails ? String(l.emails).split(',')[0].trim() : '');
-          const tn = l.phone || '';
+          const em = l.email || l.email_ceo || l.email_general || l.Email || l.mail || (l.emails ? String(l.emails).split(',')[0].trim() : '') || '';
+          const tn = l.phone || l.tel || l.Phone || l.Telefon || l.phone_number || '';
           const note = String(l.note || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
           const name = String(l.name || '–').replace(/</g, '&lt;');
-          const owner = String(l.ceos || l.owner || '–').replace(/</g, '&lt;');
-          const branch = String(l.industry || '–').replace(/</g, '&lt;');
-          const city = String(l.region || '–').replace(/</g, '&lt;');
+          const owner = String(l.ceos || l.ceoname || l.ansprechperson || l.owner || '–').replace(/</g, '&lt;');
+          const branch = String(l.industry || l.branche || '–').replace(/</g, '&lt;');
+          const city = String(l.region || l.city || '–').replace(/</g, '&lt;');
 
           return `
           <tr>
@@ -2240,8 +2240,9 @@
         ['Branche', l.industry || l.branche || '–'],
         ['Ort / PLZ', ortFull],
         ['Hausanschrift', addrStr],
-        ['Telefon', l.phone || l.tel || '–'],
-        ['E-Mail', l.email || '–'],
+        ['Telefon', l.phone || l.tel || l.Phone || l.Telefon || l.phone_number || '–'],
+        ['E-Mail', l.email || l.email_ceo || l.email_general || l.Email || l.mail || (l.emails ? String(l.emails).split(',')[0].trim() : '') || '–'],
+        ['Ansprechperson', l.ceos || l.ceoname || l.ansprechperson || l.owner || '–'],
         ['Website', webStr],
         ['CRM Status', l.status || '–'],
         ['Status-Datum', l.statusDate || '—'],
@@ -2254,8 +2255,8 @@
           <div class="val">${String(val).includes('<a') ? val : String(val).replace(/</g,'&lt;')}</div>
         </div>`).join('');
       const actions = document.getElementById('leadModalActions');
-      const phone = (l.phone || l.tel || '').replace(/[^\d+]/g,'');
-      const email = l.email || '';
+      const phone = (l.phone || l.tel || l.Phone || l.Telefon || l.phone_number || '').replace(/[^\d+]/g,'');
+      const email = l.email || l.email_ceo || l.email_general || l.Email || l.mail || (l.emails ? String(l.emails).split(',')[0].trim() : '') || '';
       actions.innerHTML = `
         <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.5rem;">
           ${phone ? `<a href="tel:${phone}" class="btn btn-outline" style="font-size:0.82rem;"><i data-lucide="phone" style="width:15px;height:15px;"></i> Anrufen</a>` : ''}
@@ -2354,12 +2355,13 @@
 
     function sendInvite(idx) {
       const lead = state.leads[idx];
-      if (!lead || !lead.email) { showToast('Keine E-Mail Adresse verfügbar','#ef4444'); return; }
+      const email = lead.email || lead.email_ceo || lead.email_general || lead.Email || lead.mail || (lead.emails ? String(lead.emails).split(',')[0].trim() : '') || '';
+      if (!lead || !email) { showToast('Keine E-Mail Adresse verfügbar','#ef4444'); return; }
       const date = lead.appointmentDate || '[DATUM]';
       const hour = lead.appointmentHour ? `${lead.appointmentHour}:00` : '[UHRZEIT]';
       const subject = encodeURIComponent(`Terminbestätigung: ${lead.name} & HF Media`);
-      const body = encodeURIComponent(`Hallo ${lead.ceos || lead.name},\n\nhiermit bestätigen wir unseren Termin am ${date} um ${hour} Uhr.\n\nWir freuen uns auf das Gespräch!\n\nMit freundlichen Grüßen,\nIhr HF Media Team`);
-      window.location.href = `mailto:${lead.email}?subject=${subject}&body=${body}`;
+      const body = encodeURIComponent(`Hallo ${lead.ceos || lead.ceoname || lead.ansprechperson || lead.owner || lead.name},\n\nhiermit bestätigen wir unseren Termin am ${date} um ${hour} Uhr.\n\nWir freuen uns auf das Gespräch!\n\nMit freundlichen Grüßen,\nIhr HF Media Team`);
+      window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
     }
 
     function saveAppt() {

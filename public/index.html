@@ -504,11 +504,12 @@
                     </label>
                   </th>
                   <th>Firmenname</th>
-                  <th>Ansprechperson</th>
-                  <th>Branche</th>
-                  <th>Ort</th>
-                  <th style="width: 20%;">Deal-Notizen</th>
-                  <th style="min-width: 220px; text-align:right; padding-right:2.5rem;">Aktionen</th>
+                  <th>Kontakt</th>
+                   <th>Branche</th>
+                   <th>Ort</th>
+                   <th style="width:105px;">Status</th>
+                   <th style="width:90px;">Notiz</th>
+                   <th style="min-width: 170px; text-align:right; padding-right:3.5rem;">Aktionen</th>
                 </tr>
               </thead>
               <tbody id="leadsTableBody"></tbody>
@@ -1802,34 +1803,34 @@
 
           return `
           <tr>
-            <td style="padding-left:2.5rem;">
+            <td style="padding-left:3.5rem;">
               <label class="checkbox-container">
                 <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="toggleLeadSelection(${idx}, event)">
                 <span class="checkmark"></span>
               </label>
             </td>
             <td><div class="td-name" onclick="showLeadDetail(${idx})" style="cursor:pointer; transition:color 0.15s;" onmouseover="this.style.color='var(--primary)';" onmouseout="this.style.color='';" title="Popup öffnen">${name}</div></td>
-            <td><div class="td-sub"><i data-lucide="user" style="width:13px;"></i>&nbsp;${owner}</div></td>
-            <td><span style="font-size:12px;font-weight:600;">${branch}</span></td>
-            <td><span style="font-size:12.5px;font-weight:500;color:var(--text-muted);">${city}</span></td>
+            <td><div class="td-sub" style="max-width:110px;"><i data-lucide="user" style="width:12px;"></i>&nbsp;${owner}</div></td>
+            <td><span style="font-size:11.5px;font-weight:600;padding-right:4px;">${branch}</span></td>
+            <td><span style="font-size:12px;font-weight:500;color:var(--text-muted); max-width:250px; display:block; overflow:hidden; text-overflow:ellipsis;">${city}</span></td>
             <td>
-              <select class="status-select-inline ${stCls}" onchange="saveLeadField(${idx}, 'status', this.value)">
+              <select class="status-select-inline ${stCls}" onchange="saveLeadField(${idx}, 'status', this.value)" style="min-width:90px; font-size:0.7rem; padding-right:18px;">
                 ${opts}
               </select>
             </td>
             <td>
-              <button class="note-btn" onclick="openNoteModal(${idx})" title="Notizen bearbeiten">
-                <i data-lucide="edit-3"></i>
-                <span>${l.note || l.notes ? 'Notiz öffnen' : 'Hinzufügen'}</span>
+              <button class="note-btn" onclick="openNoteModal(${idx})" title="Notizen bearbeiten" style="padding:0 6px; font-size:0.68rem; gap:4px;">
+                <i data-lucide="edit-3" style="width:12px;height:12px;"></i>
+                <span>${l.note || l.notes ? 'Öffnen' : 'Neu'}</span>
               </button>
             </td>
-            <td class="td-actions" style="padding-right:1.5rem;">
-              <div class="action-group">
+            <td class="td-actions" style="padding-right:3.5rem;">
+              <div class="action-group" style="gap:2px;">
                 <button class="action-icon info" onclick="showLeadDetail(${idx})" title="Details anzeigen"><i data-lucide="info"></i></button>
                 <button class="action-icon cal" onclick="openApptModal(${idx})" title="Termin eintragen"><i data-lucide="calendar"></i></button>
                 <a href="${tn ? 'tel:'+tn : 'javascript:;'}" class="action-icon" title="Anrufen" ${!tn ? 'style="opacity:0.3;pointer-events:none;"':''}><i data-lucide="phone"></i></a>
                 <a href="${em ? 'mailto:'+em : 'javascript:;'}" class="action-icon" title="E-Mail" ${!em ? 'style="opacity:0.3;pointer-events:none;"':''}><i data-lucide="mail"></i></a>
-                <button class="action-icon dm" onclick="openPitchModal(${idx})"><i data-lucide="send" style="width:14px;margin-right:5px;"></i> Pitch</button>
+                <button class="action-icon dm" onclick="openPitchModal(${idx})" style="padding:0 8px; font-size:11px;"><i data-lucide="send" style="width:13px;margin-right:3px;"></i> Pitch</button>
                 <button class="action-icon del" onclick="deleteLead(${idx})" title="Lead löschen"><i data-lucide="trash-2"></i></button>
               </div>
             </td>

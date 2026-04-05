@@ -1507,7 +1507,7 @@
       const isJobTitle = v => /^(vertrieb|verkauf|marketing|leitung|direktor|manager|berater|consultant|account|abteilung|assistenz|verwaltung|buchhaltung|sekretariat|sachbearbeiter|projektleiter)/i.test(v);
       const isGenericCol = col => /^(spalte|column|col|field|__empty|feld|var|v)\s*\d*$/i.test(col.trim()) || /^\d+$/.test(col.trim());
       const hasLetters = v => /[a-zA-ZäöüÄÖÜß]{2,}/.test(v);
-      const isCompanyName = v => v.length >= 3 && !isPureNum(v) && !isJunkHeader(v) && !isEmail(v) && !isPhone(v) && hasLetters(v) && !isJobTitle(v);
+      const isCompanyName = v => v.length >= 3 && !isPureNum(v) && !isJunkHeader(v) && !isEmail(v) && !isPhone(v) && hasLetters(v) && !isJobTitle(v) && !isAddress(v) && !isUrl(v);
 
       const allGeneric = entries.every(([col]) => isGenericCol(col));
 
@@ -1566,16 +1566,28 @@
       // ═══════════════════════════════════════════════════════════
 
       // Company name — MUST be a real company, not a job title or number
-      let name = find(isCompanyName, 'firmenname','firma','unternehmensname','unternehmen','company','organisation','organization','businessname','business');
+      let name = find(isCompanyName, 'firmenname','firma','unternehmensname','unternehmen','company','organisation','organization','businessname','business', 'standort', 'location', 'filiale', 'praxis', 'klinik', 'agentur');
       if (!name) name = find(v => isCompanyName(v) && !isJobTitle(v), 'name','bezeichnung','betrieb','titel');
+      
+      // Email — MUST contain @ with valid domain
+      let emailRaw = find(isEmail, 'email','e-mail','mail','emailadresse','kontaktemail','contactemail','geschäftsemail','businessemail');
+      
+      // Phone — MUST start with + or 0, have 7+ digits
+      let phoneRaw = find(isPhone, 'telefon','tel','phone','mobil','mobiltelefon','handynummer','mobile','fon','rufnummer','direktwahl','geschäftstelefon','kontaktnummer');
+
+      // ── BRUTE FORCE FALLBACK für fehlende Felder ──
+      // Scannt einfach die gesamte Zeile nach passenden Inhalten!
+      if (!name || !emailRaw || !phoneRaw) {
+        for (const [col, val] of entries) {
+           if (!emailRaw && isEmail(val)) emailRaw = val;
+           else if (!phoneRaw && isPhone(val)) phoneRaw = val;
+           else if (!name && isCompanyName(val)) name = val;
+        }
+      }
+
       if (!name || name.length < 3) return null;
 
-      // Email — MUST contain @ with valid domain
-      const emailRaw = find(isEmail, 'email','e-mail','mail','emailadresse','kontaktemail','contactemail','geschäftsemail','businessemail');
       const emailClean = emailRaw ? emailRaw.toLowerCase() : '';
-
-      // Phone — MUST start with + or 0, have 7+ digits
-      const phoneRaw = find(isPhone, 'telefon','tel','phone','mobil','mobiltelefon','handynummer','mobile','fon','rufnummer','direktwahl','geschäftstelefon','kontaktnummer');
       const phoneClean = phoneRaw || '';
 
       // Address: full field or compose from validated parts

@@ -1358,32 +1358,20 @@
       // ═══════════════════════════════════════════════════════════
 
       // Company name — MUST be a real company, not a job title or number
-      let name = find(isCompanyName, 'firmenname','firma','unternehmensname','unternehmen','company','organisation','organization','businessname','business', 'standort', 'location', 'filiale', 'praxis', 'klinik', 'agentur');
-      if (!name) name = find(v => isCompanyName(v) && !isJobTitle(v), 'name','bezeichnung','betrieb','titel');
+      let name = find(isCompanyName, 'firmenname','firma','unternehmensname','unternehmen','company','organisation','organization','businessname','business', 'standort', 'location', 'filiale', 'praxis', 'klinik', 'agentur', 'bezeichnung', 'betrieb', 'label', 'name');
       
       // Email — MUST contain @ with valid domain
-      let emailRaw = find(isEmail, 'email','e-mail','mail','emailadresse','kontaktemail','contactemail','geschäftsemail','businessemail');
+      let emailRaw = find(isEmail, 'email','e-mail','mail','emailadresse','kontaktemail','contactemail','geschäftsemail','businessemail','kontaktdaten');
       
       // Phone — MUST start with + or 0, have 7+ digits
-      let phoneRaw = find(isPhone, 'telefon','tel','phone','mobil','mobiltelefon','handynummer','mobile','fon','rufnummer','direktwahl','geschäftstelefon','kontaktnummer');
+      let phoneRaw = find(isPhone, 'telefon','tel','phone','mobil','mobiltelefon','handynummer','mobile','fon','rufnummer','direktwahl','geschäftstelefon','kontaktnummer','festnetz');
 
-      // Check if file has an explicitly labeled name/company column
-      const nameKeys = ['firmenname','firma','unternehmensname','unternehmen','company','organisation','organization','businessname','business','standort','location','filiale','praxis','klinik','agentur','name','bezeichnung','betrieb','titel'];
-      const hasExplicitNameColumn = entries.some(([col]) => {
-         if (isGenericCol(col)) return false;
-         const normCol = col.toLowerCase().replace(/[\s_\-\.\(\)\/\:;]/g, '');
-         return nameKeys.some(k => normCol.includes(k));
-      });
-
-      // ── BRUTE FORCE FALLBACK für fehlende Felder ──
-      // Scannt einfach die gesamte Zeile nach passenden Inhalten!
+      // ── BRUTE FORCE FALLBACK ──
       if (!name || !emailRaw || !phoneRaw) {
         for (const [col, val] of entries) {
-           if (hasExplicitNameColumn && nameKeys.some(k => col.toLowerCase().replace(/[\s_\-\.\(\)\/\:;]/g, '').includes(k))) continue; // don't brute-force from the explicit column if it was empty/invalid
-           
            if (!emailRaw && isEmail(val)) emailRaw = val;
            else if (!phoneRaw && isPhone(val)) phoneRaw = val;
-           else if (!name && !hasExplicitNameColumn && isCompanyName(val)) name = val;
+           else if (!name && isCompanyName(val) && !isJobTitle(val)) name = val;
         }
       }
 
@@ -1393,8 +1381,8 @@
       const phoneClean = phoneRaw || '';
 
       // Address: full field or compose from validated parts
-      const fullAddr = find(v => hasLetters(v) && v.length > 3, 'vollständigeadresse','volladresse','anschrift','adresse','address','standortadresse','firmenadresse','hausanschrift','sitz','firmensitz','region');
-      const street = find(hasLetters, 'straße','strasse','street','strassenname','gasse','allee','weg','platz');
+      const fullAddr = find(v => hasLetters(v) && v.length > 3, 'region','vollständigeadresse','volladresse','anschrift','adresse','address','standortadresse','firmenadresse','hausanschrift','sitz','firmensitz','standort');
+      const street = find(hasLetters, 'straße','strasse','street','strassenname','gasse','allee','weg','platz', 'anschrift');
       const houseNum = findRaw('hausnummer','hnr','hausnr','nr','nummer');
       const zip = find(v => /^\d{4,5}$/.test(v), 'plz','postleitzahl','zip','zipcode','postalcode','postcode');
       const city = find(hasLetters, 'ort','stadt','city','gemeinde','standort','bezirk','town','place');
@@ -1412,7 +1400,7 @@
       if (regionVal && !hasLetters(regionVal)) regionVal = '';
 
       // CEO — must have letters, ideally first+last name
-      const ceo = find(v => hasLetters(v) && !isPureNum(v) && !isJobTitle(v), 'geschäftsführer','geschäftsführerin','gf','ceo','inhaber','inhaberin','eigentümer','eigentümerin','leiter','leiterin','direktor','direktorin','vorstand','gründer','gründerin','owner','founder','president','ansprechperson','ansprechpartner','kontaktperson','hauptkontakt','kontakt','ansprechparter');
+      const ceo = find(v => hasLetters(v) && !isPureNum(v) && !isJobTitle(v), 'ceo','geschäftsführer','geschäftsführerin','gf','inhaber','inhaberin','eigentümer','eigentümerin','leiter','leiterin','direktor','direktorin','vorstand','gründer','gründerin','owner','founder','president','ansprechperson','ansprechpartner','kontaktperson','hauptkontakt','kontakt');
 
       // Website — MUST look like a URL
       let website = find(v => isUrl(v) || (/[a-zA-Z]/.test(v) && v.includes('.')), 'website','web','url','homepage','internetadresse','webseite','www');
@@ -2657,7 +2645,11 @@
         reader.onload = (e) => {
           try {
             const data = e.target.result;
-            const workbook = XLSX.read(data, { type: 'array' });
+            // Senior Fix: For CSV, use readAsText to avoid encoding issues (mojibake)
+            const workbook = isCsv 
+                ? XLSX.read(data, { type: 'string' }) 
+                : XLSX.read(data, { type: 'array' });
+            
             const sheetName = workbook.SheetNames[0];
             const sheet = workbook.Sheets[sheetName];
             
@@ -2666,7 +2658,7 @@
             let headerRowIndex = 0;
             let maxCols = 0;
             for (let i = 0; i < Math.min(10, rawAoA.length); i++) {
-               const cols = rawAoA[i].filter(cell => String(cell).trim() !== '').length;
+               const cols = rawAoA[i].filter(cell => cell && String(cell).trim() !== '').length;
                if (cols > maxCols) {
                   maxCols = cols;
                   headerRowIndex = i;
@@ -2683,7 +2675,8 @@
         };
         reader.onerror = () => reject(new Error('Dateilesefehler'));
         
-        reader.readAsArrayBuffer(file);
+        if (isCsv) reader.readAsText(file, 'UTF-8');
+        else reader.readAsArrayBuffer(file);
       });
     }
 

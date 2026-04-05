@@ -1358,13 +1358,13 @@
       // ═══════════════════════════════════════════════════════════
 
       // Company name — MUST be a real company, not a job title or number
-      let name = find(isCompanyName, 'firmenname','firma','unternehmensname','unternehmen','company','organisation','organization','businessname','business', 'standort', 'location', 'filiale', 'praxis', 'klinik', 'agentur', 'bezeichnung', 'betrieb', 'label', 'name');
+      let name = find(isCompanyName, 'firmenname','firma','unternehmensname','unternehmen','company','organisation','organization','businessname','business', 'standort', 'location', 'filiale', 'praxis', 'klinik', 'agentur', 'bezeichnung', 'betrieb', 'label', 'name','title','titel','projekt','project');
       
       // Email — MUST contain @ with valid domain
-      let emailRaw = find(isEmail, 'email','e-mail','mail','emailadresse','kontaktemail','contactemail','geschäftsemail','businessemail','kontaktdaten');
+      let emailRaw = find(isEmail, 'email','e-mail','mail','emailadresse','kontaktemail','contactemail','geschäftsemail','businessemail','kontaktdaten','e-mail-adresse','email-adresse','kontakt-email');
       
       // Phone — MUST start with + or 0, have 7+ digits
-      let phoneRaw = find(isPhone, 'telefon','tel','phone','mobil','mobiltelefon','handynummer','mobile','fon','rufnummer','direktwahl','geschäftstelefon','kontaktnummer','festnetz');
+      let phoneRaw = find(isPhone, 'telefon','tel','phone','mobil','mobiltelefon','handynummer','mobile','fon','rufnummer','direktwahl','geschäftstelefon','kontaktnummer','festnetz','phone_number','telephone','tel.','telno');
 
       // ── BRUTE FORCE FALLBACK ──
       if (!name || !emailRaw || !phoneRaw) {
@@ -1381,8 +1381,8 @@
       const phoneClean = phoneRaw || '';
 
       // Address: full field or compose from validated parts
-      const fullAddr = find(v => hasLetters(v) && v.length > 3, 'region','vollständigeadresse','volladresse','anschrift','adresse','address','standortadresse','firmenadresse','hausanschrift','sitz','firmensitz','standort');
-      const street = find(hasLetters, 'straße','strasse','street','strassenname','gasse','allee','weg','platz', 'anschrift');
+      const fullAddr = find(v => hasLetters(v) && v.length > 3, 'region','vollständigeadresse','volladresse','anschrift','adresse','address','standortadresse','firmenadresse','hausanschrift','sitz','firmensitz','standort','gebäude','office','headquarters','location_address');
+      const street = find(hasLetters, 'straße','strasse','street','strassenname','gasse','allee','weg','platz', 'anschrift','str.','str','ga.','ga','sq.','square','road','rd.','rd','lane','ln.','avenue','ave.');
       const houseNum = findRaw('hausnummer','hnr','hausnr','nr','nummer');
       const zip = find(v => /^\d{4,5}$/.test(v), 'plz','postleitzahl','zip','zipcode','postalcode','postcode');
       const city = find(hasLetters, 'ort','stadt','city','gemeinde','standort','bezirk','town','place');
@@ -1400,7 +1400,7 @@
       if (regionVal && !hasLetters(regionVal)) regionVal = '';
 
       // CEO — must have letters, ideally first+last name
-      const ceo = find(v => hasLetters(v) && !isPureNum(v) && !isJobTitle(v), 'ceo','geschäftsführer','geschäftsführerin','gf','inhaber','inhaberin','eigentümer','eigentümerin','leiter','leiterin','direktor','direktorin','vorstand','gründer','gründerin','owner','founder','president','ansprechperson','ansprechpartner','kontaktperson','hauptkontakt','kontakt');
+      const ceo = find(v => hasLetters(v) && !isPureNum(v) && !isJobTitle(v), 'ceo','geschäftsführer','geschäftsführerin','gf','gf.','inhaber','inhaberin','inh.','eigentümer','eigentümerin','leiter','leiterin','direktor','direktorin','vorstand','gründer','gründerin','owner','founder','president','ansprechperson','ansprechpartner','kontaktperson','hauptkontakt','kontakt','contact','person');
 
       // Website — MUST look like a URL
       let website = find(v => isUrl(v) || (/[a-zA-Z]/.test(v) && v.includes('.')), 'website','web','url','homepage','internetadresse','webseite','www');

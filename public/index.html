@@ -1492,7 +1492,7 @@
 
       // ═══ STRICT VALIDATORS ═══
       const isEmail = v => /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(v);
-      const isPhone = v => /^[\+]?[0\+]/.test(v) && v.replace(/\D/g,'').length >= 7 && /^[\+\d\s\-\/\(\)\.]{7,25}$/.test(v);
+      const isPhone = v => { const d = v.replace(/\D/g,''); return d.length >= 7 && d.length <= 20 && /^[\+\d\s\-\/\(\)\.]{6,30}$/.test(v) && !/^[a-zA-Z]/.test(v); };
       const isUrl = v => /^(https?:\/\/|www\.)/i.test(v) || (/\.[a-z]{2,}$/i.test(v) && /[a-zA-Z]/.test(v) && v.includes('.'));
       const isPlzCity = v => /^\d{4,5}\s+[A-ZÄÖÜa-zäöüß]/.test(v);
       const isAddress = v => /[a-zA-ZäöüÄÖÜß]/.test(v) && (/\d+/.test(v) || isPlzCity(v)) && (/straße|strasse|gasse|weg|platz|ring|allee|ort|stadt|city/i.test(v) || isPlzCity(v));
@@ -1510,8 +1510,8 @@
         for (const k of keys) {
           for (const [col, val] of entries) {
             if (isGenericCol(col)) continue;
-            const normCol = col.toLowerCase().replace(/[\s_\-\.\(\)\/]/g, '');
-            const normKey = k.toLowerCase().replace(/[\s_\-\.\(\)\/]/g, '');
+            const normCol = col.toLowerCase().replace(/[\s_\-\.\(\)\/\:;]/g, '');
+            const normKey = k.toLowerCase().replace(/[\s_\-\.\(\)\/\:;]/g, '');
             if (normCol.includes(normKey) && val !== '') {
               if (validator && !validator(val)) continue; // value fails validation → skip
               return val;
@@ -1561,7 +1561,7 @@
 
       // Company name — MUST be a real company, not a job title or number
       let name = find(isCompanyName, 'firmenname','firma','unternehmensname','unternehmen','company','organisation','organization','businessname','business');
-      if (!name) name = find(v => isCompanyName(v) && !isJobTitle(v), 'name','bezeichnung','betrieb');
+      if (!name) name = find(v => isCompanyName(v) && !isJobTitle(v), 'name','bezeichnung','betrieb','titel');
       if (!name || name.length < 3) return null;
 
       // Email — MUST contain @ with valid domain
@@ -1591,7 +1591,7 @@
       }
 
       // CEO — must have letters, ideally first+last name
-      const ceo = find(v => hasLetters(v) && !isPureNum(v) && !isJobTitle(v), 'geschäftsführer','geschäftsführerin','gf','ceo','inhaber','inhaberin','eigentümer','eigentümerin','leiter','leiterin','direktor','direktorin','vorstand','gründer','gründerin','owner','founder','president','ansprechperson','ansprechpartner','kontaktperson','hauptkontakt');
+      const ceo = find(v => hasLetters(v) && !isPureNum(v) && !isJobTitle(v), 'geschäftsführer','geschäftsführerin','gf','ceo','inhaber','inhaberin','eigentümer','eigentümerin','leiter','leiterin','direktor','direktorin','vorstand','gründer','gründerin','owner','founder','president','ansprechperson','ansprechpartner','kontaktperson','hauptkontakt','kontakt','ansprechparter');
 
       // Website — MUST look like a URL
       let website = find(v => isUrl(v) || (/[a-zA-Z]/.test(v) && v.includes('.')), 'website','web','url','homepage','internetadresse','webseite','www');
@@ -3007,7 +3007,8 @@
 
       const grid = document.getElementById('leadModalGrid');
       const phone = (l.phone || l.tel || l.Phone || l.Telefon || l.phone_number || '').replace(/[^\d+]/g,'');
-      const email = l.email || l.email_ceo || l.email_general || l.Email || l.mail || (l.emails ? String(l.emails).split(',')[0].trim() : '') || '–';
+      const emailCandidates = [l.email_general, l.emails, l.email, l.email_ceo, l.Email, l.mail].map(e => e ? String(e).trim() : '');
+      const email = emailCandidates.find(e => e && e.includes('@')) || '–';
       
       const notes = (l.notes || l.note || l.description || '–').replace(/</g, '&lt;').replace(/\n\n+/g, '\n');
 

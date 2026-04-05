@@ -2265,7 +2265,9 @@
           <button class="btn btn-primary" style="font-size:0.82rem;" onclick="closeModal('leadModal'); openApptModal(${idx});">
             <i data-lucide="calendar" style="width:15px;height:15px;"></i> Termin eintragen
           </button>
-          ${l.appointmentDate ? `<button class="btn btn-outline" style="font-size:0.82rem; border-color:#f97316; color:#f97316;" onclick="sendInvite(${idx})"><i data-lucide="send" style="width:15px;height:15px;"></i> Einladung senden</button>` : ''}
+          <button class="btn btn-outline" style="font-size:0.82rem; border-color:#f97316; color:#f97316;" onclick="sendInvite(${idx})">
+            <i data-lucide="send" style="width:15px;height:15px;"></i> Einladung senden
+          </button>
           ${l.appointmentDate ? `<button class="btn btn-outline" style="font-size:0.82rem; border-color:#ef4444; color:#ef4444;" onclick="deleteAppt(${idx})"><i data-lucide="trash-2" style="width:15px;height:15px;"></i> Termin löschen</button>` : ''}
           <button class="btn btn-outline" style="font-size:0.82rem;" onclick="addToCalendar(${idx}); closeModal('leadModal');">
             <i data-lucide="download" style="width:15px;height:15px;"></i> .ics Export
@@ -2358,8 +2360,10 @@
     function sendInvite(idx) {
       const lead = state.leads[idx];
       if (!lead || !lead.email) { showToast('Keine E-Mail Adresse verfügbar','#ef4444'); return; }
+      const date = lead.appointmentDate || '[DATUM]';
+      const hour = lead.appointmentHour ? `${lead.appointmentHour}:00` : '[UHRZEIT]';
       const subject = encodeURIComponent(`Terminbestätigung: ${lead.name} & HF Media`);
-      const body = encodeURIComponent(`Hallo ${lead.ceos || lead.name},\n\nhiermit bestätigen wir unseren Termin am ${lead.appointmentDate} um ${lead.appointmentHour}:00 Uhr.\n\nWir freuen uns auf das Gespräch!\n\nMit freundlichen Grüßen,\nIhr HF Media Team`);
+      const body = encodeURIComponent(`Hallo ${lead.ceos || lead.name},\n\nhiermit bestätigen wir unseren Termin am ${date} um ${hour} Uhr.\n\nWir freuen uns auf das Gespräch!\n\nMit freundlichen Grüßen,\nIhr HF Media Team`);
       window.location.href = `mailto:${lead.email}?subject=${subject}&body=${body}`;
     }
 

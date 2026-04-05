@@ -2262,9 +2262,12 @@
         <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.5rem;">
           ${phone ? `<a href="tel:${phone}" class="btn btn-outline" style="font-size:0.82rem;"><i data-lucide="phone" style="width:15px;height:15px;"></i> Anrufen</a>` : ''}
           ${email ? `<a href="mailto:${email}" class="btn btn-outline" style="font-size:0.82rem;"><i data-lucide="mail" style="width:15px;height:15px;"></i> E-Mail</a>` : ''}
+          <button class="btn btn-primary" style="font-size:0.82rem;" onclick="closeModal('leadModal'); openApptModal(${idx});">
+            <i data-lucide="calendar" style="width:15px;height:15px;"></i> Termin eintragen
+          </button>
           ${l.appointmentDate ? `<button class="btn btn-outline" style="font-size:0.82rem; border-color:#f97316; color:#f97316;" onclick="sendInvite(${idx})"><i data-lucide="send" style="width:15px;height:15px;"></i> Einladung senden</button>` : ''}
           ${l.appointmentDate ? `<button class="btn btn-outline" style="font-size:0.82rem; border-color:#ef4444; color:#ef4444;" onclick="deleteAppt(${idx})"><i data-lucide="trash-2" style="width:15px;height:15px;"></i> Termin löschen</button>` : ''}
-          <button class="btn btn-primary" style="font-size:0.82rem;" onclick="addToCalendar(${idx}); closeModal('leadModal');">
+          <button class="btn btn-outline" style="font-size:0.82rem;" onclick="addToCalendar(${idx}); closeModal('leadModal');">
             <i data-lucide="download" style="width:15px;height:15px;"></i> .ics Export
           </button>
         </div>`;

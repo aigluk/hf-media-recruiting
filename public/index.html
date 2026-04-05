@@ -99,9 +99,8 @@
     .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     table { width: 100%; border-collapse: collapse; text-align: left; min-width: 700px; }
     th { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; padding: 0.75rem 0.75rem; border-bottom: 1px solid var(--bg); white-space: nowrap; letter-spacing: 0.05em; }
-    td { padding: 0.75rem 0.75rem; font-size: 0.875rem; vertical-align: middle; border-bottom: 1px solid var(--bg); transition: background 0.15s; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
-    td.td-wrap { white-space: normal; }
-    tr:last-child td { border-bottom: none; }
+    td { padding: 1.1rem 0.75rem; font-size: 0.875rem; vertical-align: middle; border-bottom: 1px solid var(--bg); transition: background 0.15s; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+    td.td-actions { overflow: visible; max-width: none; width: 1%; }
     tr:hover td { background: var(--surface-hover); }
     .td-name { font-weight: 700; color: var(--text); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
     .td-sub { font-size: 0.8rem; color: var(--text-muted); display:flex; align-items:center; gap:5px; font-weight:500; overflow:hidden; text-overflow:ellipsis; max-width:130px; }
@@ -123,9 +122,9 @@
 
     /* Action buttons: always in a single horizontal row, no icon clipping */
     .action-group { display: flex; gap: 6px; flex-wrap: nowrap; align-items: center; justify-content: flex-end; }
-    .action-icon { min-width: 32px; width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; border: none; background: var(--bg); color: var(--text-muted); cursor: pointer; transition: all 0.2s; text-decoration: none; flex-shrink: 0; overflow: visible; box-sizing: border-box; }
+    .action-icon { min-width: 32px; width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; border: none; background: var(--bg); color: var(--text-muted); cursor: pointer; transition: all 0.2s; text-decoration: none; flex-shrink: 0; overflow: visible; box-sizing: border-box; position: relative; }
     .action-icon:hover { color: var(--primary); background: #dee5ee; }
-    .action-icon svg, .action-icon i { width: 15px !important; height: 15px !important; pointer-events: none; flex-shrink: 0; }
+    .action-icon svg, .action-icon i { width: 18px !important; height: 18px !important; pointer-events: none; flex-shrink: 0; }
     .action-icon.dm { background: var(--primary); color: white; width: auto; padding: 0 12px; font-weight: 600; font-size: 12px; height: 32px; }
     .action-icon.dm:hover { background: var(--primary-hover); box-shadow: 0 3px 8px rgba(14,42,71,0.25); }
     .action-icon.cal { background: var(--bg); color: var(--text-muted); }
@@ -1771,15 +1770,14 @@
                 ${note || '<span style="color:var(--text-muted);">Notiz...</span>'}
               </div>
             </td>
-            <td style="padding-right:1.5rem; white-space:nowrap;">
-              <div class="action-group" style="justify-content:flex-end;">
-                <button class="action-icon info" onclick="showLeadDetail(${idx})" title="Details anzeigen"><i data-lucide="info" style="width:18px;height:18px;"></i></button>
-                <button class="action-icon cal" onclick="openApptModal(${idx})" title="Termin eintragen"><i data-lucide="calendar" style="width:18px;height:18px;"></i></button>
-                ${tn ? `<a href="tel:${tn}" class="action-icon" title="Anrufen"><i data-lucide="phone" style="width:18px;height:18px;"></i></a>` : ''}
-                ${em ? `<a href="mailto:${em}" class="action-icon" title="E-Mail"><i data-lucide="mail" style="width:18px;height:18px;"></i></a>` : ''}
+            <td class="td-actions" style="padding-right:1.5rem;">
+              <div class="action-group">
+                <button class="action-icon info" onclick="showLeadDetail(${idx})" title="Details anzeigen"><i data-lucide="info"></i></button>
+                <button class="action-icon cal" onclick="openApptModal(${idx})" title="Termin eintragen"><i data-lucide="calendar"></i></button>
+                <a href="${tn ? 'tel:'+tn : 'javascript:;'}" class="action-icon" title="Anrufen" ${!tn ? 'style="opacity:0.3;pointer-events:none;"':''}><i data-lucide="phone"></i></a>
+                <a href="${em ? 'mailto:'+em : 'javascript:;'}" class="action-icon" title="E-Mail" ${!em ? 'style="opacity:0.3;pointer-events:none;"':''}><i data-lucide="mail"></i></a>
                 <button class="action-icon dm" onclick="openPitchModal(${idx})"><i data-lucide="send" style="width:14px;margin-right:5px;"></i> Pitch</button>
-                <button class="action-icon" onclick="deleteLead(${idx})" title="Lead löschen" style="color:#ef4444;"><i data-lucide="trash-2" style="width:16px;"></i></button>
-
+                <button class="action-icon del" onclick="deleteLead(${idx})" title="Lead löschen"><i data-lucide="trash-2"></i></button>
               </div>
             </td>
           </tr>`;

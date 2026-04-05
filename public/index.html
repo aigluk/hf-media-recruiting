@@ -114,6 +114,13 @@
     .st-termin { background: #ecfdf5; color: #16a34a; }
     .st-keininteresse { background: #fef2f2; color: #dc2626; }
     .st-abschluss { background: #f0fdf4; color: #059669; }
+    
+    .status-select-inline { appearance: none; padding: 0.4rem 0.75rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700; border: 1px solid transparent; cursor: pointer; text-align: left; outline: none; transition: all 0.2s; white-space: nowrap; width: 100%; min-width: 140px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px; }
+    .status-select-inline:hover { filter: brightness(0.95); }
+    
+    .note-btn { background: var(--primary); color: white !important; padding: 0.5rem 0.8rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.78rem; font-weight: 600; border: none; transition: all 0.2s; white-space: nowrap; }
+    .note-btn:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 3px 8px rgba(14,42,71,0.2); }
+    .note-btn i { width: 14px; height: 14px; stroke: white; }
 
     .pipeline-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 4px; }
     .pipeline-tab { padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.82rem; color: var(--text-muted); background: transparent; border-radius: 99px; cursor: pointer; transition: all 0.2s; flex-shrink: 0; border: 2px solid transparent; }
@@ -849,6 +856,27 @@
     ];
     const VALID_STATUSES = new Set(PIPELINES.map(p => p.id));
     const BRANCHES = ['Metalltechnik','Hotellerie','Gesundheit/Pflege','Handel','Industrie','Gastronomie','Wellness/Spa','Handwerk','Tourismus','Logistik','IT/Software','Finanzen/Versicherung','Immobilien'];
+    
+    function getMainBranch(raw) {
+      if (!raw) return '–';
+      const s = raw.toLowerCase();
+      if (s.includes('restaurant') || s.includes('gastronomie') || s.includes('café') || s.includes('bistro') || s.includes('küche') || s.includes('essen') || s.includes('pizzeria') || s.includes('gasthof') || s.includes('imbiss')) return 'Gastronomie';
+      if (s.includes('hotel') || s.includes('pension') || s.includes('unterkunft') || s.includes('herberge') || s.includes('resort')) return 'Hotellerie';
+      if (s.includes('arzt') || s.includes('klinik') || s.includes('pflege') || s.includes('krankenhaus') || s.includes('medizin') || s.includes('praxis') || s.includes('therapie')) return 'Gesundheit/Pflege';
+      if (s.includes('shop') || s.includes('laden') || s.includes('handel') || s.includes('markt') || s.includes('verkauf') || s.includes('kaufhaus')) return 'Handel';
+      if (s.includes('werkstatt') || s.includes('tischler') || s.includes('elektro') || s.includes('bau') || s.includes('handwerk') || s.includes('maler') || s.includes('installateur')) return 'Handwerk';
+      if (s.includes('industrie') || s.includes('fabrik') || s.includes('herstellung') || s.includes('produktion')) return 'Industrie';
+      if (s.includes('wellness') || s.includes('spa') || s.includes('friseur') || s.includes('massage') || s.includes('kosmetik') || s.includes('beauty')) return 'Wellness/Spa';
+      if (s.includes('software') || s.includes('it') || s.includes('computer') || s.includes('programmierung') || s.includes('webdesign')) return 'IT/Software';
+      if (s.includes('logistik') || s.includes('transport') || s.includes('spedition') || s.includes('lager') || s.includes('versand')) return 'Logistik';
+      if (s.includes('tourismus') || s.includes('reise') || s.includes('ausflug')) return 'Tourismus';
+      if (s.includes('versicherung') || s.includes('finanz') || s.includes('bank') || s.includes('steuer') || s.includes('beratung')) return 'Finanzen/Versicherung';
+      if (s.includes('immobilien') || s.includes('makler') || s.includes('vermietung')) return 'Immobilien';
+      if (s.includes('metall') || s.includes('stahl') || s.includes('schlosserei')) return 'Metalltechnik';
+      
+      const found = BRANCHES.find(b => s.includes(b.toLowerCase()));
+      return found || raw; 
+    }
     const CARD_COLORS = ['bg-pink','bg-blue','bg-purple','bg-orange','bg-green'];
 
     let state = {
@@ -1594,10 +1622,13 @@
       
       const visibleLeads = state.leads
         .map((l, idx) => ({ l, idx }))
-        .filter(({ l }) => normalizeStatus(l.status) === state.activeTab &&
-          (!b || String(l.industry||'').toLowerCase() === b || String(l.branche||'').toLowerCase() === b) &&
-          (!q || (String(l.name||'').toLowerCase().includes(q) || String(l.ceos||'').toLowerCase().includes(q) || String(l.region||'').toLowerCase().includes(q)))
-        );
+        .filter(({ l }) => {
+            const name = String(l.name||'').toLowerCase();
+            if (normalizeStatus(l.status) !== state.activeTab) return false;
+            if (q && !name.includes(q) && !l.industry?.toLowerCase().includes(q) && !l.region?.toLowerCase().includes(q)) return false;
+            if (b && getMainBranch(l.industry).toLowerCase() !== b) return false;
+            return true;
+        });
 
       if (checked) {
         visibleLeads.forEach(({ idx }) => state.selectedLeads.add(idx));
@@ -1701,7 +1732,7 @@
           .filter(({ l }) => normalizeStatus(l.status) === state.activeTab);
 
         if (b) {
-          filtered = filtered.filter(({ l }) => String(l.industry||'').toLowerCase() === b || String(l.branche||'').toLowerCase() === b);
+          filtered = filtered.filter(({ l }) => getMainBranch(l.industry).toLowerCase() === b);
         }
 
         if (q) {
@@ -1750,7 +1781,7 @@
           const note = String(l.note || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
           const name = String(l.name || '–').replace(/</g, '&lt;');
           const owner = String(l.ceos || l.ceoname || l.ansprechperson || l.owner || '–').replace(/</g, '&lt;');
-          const branch = String(l.industry || l.branche || '–').replace(/</g, '&lt;');
+          const branch = String(getMainBranch(l.industry)).replace(/</g, '&lt;');
           const city = String(l.region || l.city || '–').replace(/</g, '&lt;');
 
           return `
@@ -1766,9 +1797,15 @@
             <td><span style="font-size:12px;font-weight:600;">${branch}</span></td>
             <td><span style="font-size:12.5px;font-weight:500;color:var(--text-muted);">${city}</span></td>
             <td>
-              <div class="note-input" style="cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px; border:1px solid transparent; padding: 0.5rem;" onclick="openNoteModal(${idx})" title="Notizen bearbeiten">
-                ${note || '<span style="color:var(--text-muted);">Notiz...</span>'}
-              </div>
+              <select class="status-select-inline ${stCls}" onchange="saveLeadField(${idx}, 'status', this.value)">
+                ${opts}
+              </select>
+            </td>
+            <td>
+              <button class="note-btn" onclick="openNoteModal(${idx})" title="Notizen bearbeiten">
+                <i data-lucide="edit-3"></i>
+                <span>${l.note || l.notes ? 'Notiz öffnen' : 'Hinzufügen'}</span>
+              </button>
             </td>
             <td class="td-actions" style="padding-right:1.5rem;">
               <div class="action-group">

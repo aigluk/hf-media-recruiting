@@ -122,8 +122,9 @@
     .status-select-inline { appearance: none; height: 34px; padding: 0 28px 0 12px; border-radius: 99px; font-size: 0.75rem; font-weight: 700; border: none; cursor: pointer; text-align: center; outline: none; transition: all 0.2s; white-space: nowrap; width: 100%; min-width: 130px; box-sizing: border-box; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
     .status-select-inline:hover { opacity: 0.85; transform: scale(1.02); }
     
-    .note-cell-text { font-size: 0.82rem; color: var(--text-muted); cursor: pointer; transition: color 0.15s; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .note-cell-text:hover { color: var(--primary); text-decoration: underline; }
+    .note-btn { background: var(--primary); color: white !important; height: 28px; padding: 0 10px; border-radius: 99px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 600; border: none; transition: all 0.2s; white-space: nowrap; box-sizing: border-box; }
+    .note-btn:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(14,42,71,0.2); }
+    .note-btn i { width: 13px; height: 13px; stroke: white; flex-shrink: 0; }
 
     .pipeline-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 4px; }
     .pipeline-tab { padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.82rem; color: var(--text-muted); background: transparent; border-radius: 99px; cursor: pointer; transition: all 0.2s; flex-shrink: 0; border: 2px solid transparent; }
@@ -1809,17 +1810,18 @@
             </td>
             <td><div class="td-name" onclick="showLeadDetail(${idx})" style="cursor:pointer;" title="Popup öffnen">${name}</div></td>
             <td><div class="td-sub"><i data-lucide="user" style="width:14px;"></i>&nbsp;${owner}</div></td>
-            <td><span style="font-weight:600; color:var(--text);">${branch}</span></td>
-            <td><span style="color:var(--text-muted);">${city}</span></td>
+            <td style="padding-right:0.25rem;"><span style="font-weight:600; color:var(--text);">${branch}</span></td>
+            <td style="padding-left:0.25rem;"><span style="color:var(--text-muted);">${city}</span></td>
             <td>
               <select class="status-select-inline ${stCls}" onchange="saveLeadField(${idx}, 'status', this.value)">
                 ${opts}
               </select>
             </td>
             <td>
-              <div class="note-cell-text" onclick="openNoteModal(${idx})" title="Notiz bearbeiten">
-                ${l.note || l.notes || 'Notiz...'}
-              </div>
+              <button class="note-btn" onclick="openNoteModal(${idx})" title="Notiz bearbeiten">
+                <i data-lucide="edit-3"></i>
+                <span>${l.note || l.notes ? 'Öffnen' : 'Neu'}</span>
+              </button>
             </td>
             <td class="td-actions" style="padding-right:2.5rem;">
               <div class="action-group">

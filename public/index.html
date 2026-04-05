@@ -847,6 +847,16 @@
   <script>
     lucide.createIcons();
 
+    function formatDate(d) {
+      if (!d) return '—';
+      const date = new Date(d);
+      if (isNaN(date)) {
+        if (typeof d === 'string' && d.includes('.')) return d;
+        return '—';
+      }
+      return date.toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
+    }
+
     const PIPELINES = [
       { id: 'NEU', label: 'NEU / OFFEN', color: 'st-neu' },
       { id: 'IN KONTAKT', label: 'IN KONTAKT', color: 'st-inkontakt' },
@@ -966,7 +976,7 @@
       if (!lead) return;
       const oldStatus = lead.status;
       lead[field] = field === 'status' ? normalizeStatus(value) : value;
-      if (field === 'status' && lead.status !== oldStatus) {
+      if (field === 'status') {
         lead.statusDate = new Date().toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
       }
       updateKPIs();
@@ -2272,25 +2282,39 @@
       const ortFull = `${zip ? zip + ' ' : ''}${city}` || '–';
       addrStr = addrStr || '–';
 
-      const fields = [
-        ['Ansprechperson', l.ceos || l.owner || '–'],
+      const infoFields = [
+        ['Ansprechperson', l.ceos || l.ceoname || l.ansprechperson || l.owner || '–'],
         ['Branche', l.industry || l.branche || '–'],
         ['Ort / PLZ', ortFull],
         ['Hausanschrift', addrStr],
         ['Telefon', l.phone || l.tel || l.Phone || l.Telefon || l.phone_number || '–'],
         ['E-Mail', l.email || l.email_ceo || l.email_general || l.Email || l.mail || (l.emails ? String(l.emails).split(',')[0].trim() : '') || '–'],
-        ['Ansprechperson', l.ceos || l.ceoname || l.ansprechperson || l.owner || '–'],
         ['Website', webStr],
         ['CRM Status', l.status || '–'],
-        ['Status-Datum', l.statusDate || '—'],
-        ['Notizen', l.notes || l.note || l.description || '–'],
+        ['Status-Datum', l.statusDate || formatDate(l.createdAt)],
       ];
+      
       const grid = document.getElementById('leadModalGrid');
-      grid.innerHTML = fields.map(([label, val]) => `
+      const infoGridHtml = infoFields.map(([label, val]) => `
         <div class="modal-field">
           <label>${label}</label>
           <div class="val">${String(val).includes('<a') ? val : String(val).replace(/</g,'&lt;')}</div>
         </div>`).join('');
+      
+      const notes = (l.notes || l.note || l.description || '–').replace(/</g, '&lt;');
+
+      grid.innerHTML = `
+        <div class="modal-grid" style="grid-template-columns: repeat(3, 1fr); gap: 1.5rem 1rem; margin-bottom: 2rem;">
+          ${infoGridHtml}
+        </div>
+        <div class="modal-section" style="border-top: 1px solid var(--bg); padding-top: 1.5rem; margin-top: 2rem;">
+          <div class="modal-field" style="width: 100%;">
+            <label>Notizen</label>
+            <div class="val" style="white-space: pre-wrap; line-height: 1.6; font-size: 0.92rem; color: var(--text); margin-top: 0.75rem;">${notes}</div>
+          </div>
+        </div>
+      `;
+
       const actions = document.getElementById('leadModalActions');
       const phone = (l.phone || l.tel || l.Phone || l.Telefon || l.phone_number || '').replace(/[^\d+]/g,'');
       const email = l.email || l.email_ceo || l.email_general || l.Email || l.mail || (l.emails ? String(l.emails).split(',')[0].trim() : '') || '';

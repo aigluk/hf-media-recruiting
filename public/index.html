@@ -1886,19 +1886,20 @@
       const slotMap = {};
       termins.forEach((l) => {
         if (l.appointmentDate === dayDate && l.appointmentHour !== null && l.appointmentHour !== undefined) {
-          slotMap[parseInt(l.appointmentHour)] = { l, idx: state.leads.indexOf(l) };
+          const h = parseInt(l.appointmentHour);
+          if (!slotMap[h]) slotMap[h] = [];
+          slotMap[h].push({ l, idx: state.leads.indexOf(l) });
         }
       });
       const rows = HOURS.map((h) => {
         const isCurr = (today.getHours() === h && year === today.getFullYear() && month === today.getMonth() && day === today.getDate());
         const timeStr = `${String(h).padStart(2,'0')}:00`;
-        const ev = slotMap[h];
-        let evHtml = '';
-        if (ev) {
+        const evs = slotMap[h] || [];
+        let evHtml = evs.map(ev => {
           const name = String(ev.l.name || '–').replace(/</g, '&lt;');
-          evHtml = `<div class="cal-slot-event orange" onclick="event.stopPropagation(); showLeadDetail(${ev.idx})" title="Termin: ${name}">${name}</div>`;
-        }
-        return `<div class="cal-hour-label" style="${isCurr ? 'color:var(--primary);font-weight:800;' : ''}">${timeStr}</div><div class="cal-hour-slot" onclick="openApptModal(undefined, '${dayDate}', ${h})">${evHtml}</div>`;
+          return `<div class="cal-slot-event orange" style="margin-bottom:2px;" onclick="event.stopPropagation(); showLeadDetail(${ev.idx})" title="Termin: ${name}">${name}</div>`;
+        }).join('');
+        return `<div class="cal-hour-label" style="${isCurr ? 'color:var(--primary);font-weight:800;' : ''}">${timeStr}</div><div class="cal-hour-slot" style="display:flex;flex-direction:column;" onclick="openApptModal(undefined, '${dayDate}', ${h})">${evHtml}</div>`;
       }).join('');
       grid.innerHTML = `<div class="cal-day-grid">${rows}</div>`;
     }
@@ -1917,7 +1918,7 @@
 
       // Only TERMIN FIXIERT leads, matched by appointmentDate to their correct day in this week
       const terminLeads = state.leads.filter(l => normalizeStatus(l.status) === 'TERMIN FIXIERT');
-      const weekEvents = {}; // { 'dayIdx_hour': { name, idx, orange } }
+      const weekEvents = {}; // { 'dayIdx_hour': [{ name, idx, orange }] }
       terminLeads.forEach((l) => {
         const apptDateStr = l.appointmentDate;
         const apptH = l.appointmentHour ? parseInt(l.appointmentHour) : null;
@@ -1929,7 +1930,8 @@
           if (di >= 0) {
             const h = apptH;
             const key = `${di}_${h}`;
-            if (!weekEvents[key]) weekEvents[key] = { name: l.name, idx: state.leads.indexOf(l), orange: true };
+            if (!weekEvents[key]) weekEvents[key] = [];
+            weekEvents[key].push({ name: l.name, idx: state.leads.indexOf(l), orange: true });
           }
         }
       });
@@ -1950,14 +1952,13 @@
         gridHtml += `<div class="cal-week-label">${String(h).padStart(2,'0')}:00</div>`;
         weekDays.forEach((d, di) => {
           const key = `${di}_${h}`;
-          const ev = weekEvents[key];
-          let evHtml = '';
-          if (ev) {
+          const evs = weekEvents[key] || [];
+          let evHtml = evs.map(ev => {
             const name = String(ev.name || '').replace(/</g, '&lt;').substring(0, 20);
-            evHtml = `<div class="cal-week-event orange" onclick="event.stopPropagation(); showLeadDetail(${ev.idx})" title="Details">${name}</div>`;
-          }
+            return `<div class="cal-week-event orange" style="margin-bottom:2px;" onclick="event.stopPropagation(); showLeadDetail(${ev.idx})" title="Details">${name}</div>`;
+          }).join('');
           const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-          gridHtml += `<div class="cal-week-col" onclick="openApptModal(undefined, '${ds}', ${h})">${evHtml}</div>`;
+          gridHtml += `<div class="cal-week-col" style="display:flex;flex-direction:column;" onclick="openApptModal(undefined, '${ds}', ${h})">${evHtml}</div>`;
         });
       });
       grid.innerHTML = `<div class="cal-week-grid">${gridHtml}</div>`;
@@ -2464,7 +2465,7 @@
           </div>
         </div>
         <div>
-          <label style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:4px;">Notiz / Agenda</label>
+          <label style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:4px;">Notiz</label>
           <textarea id="apptNote" rows="3" placeholder="Gesprächspunkte, Ziele..."></textarea>
         </div>
         <div style="display:flex;gap:0.75rem;margin-top:0.5rem;">
@@ -2834,48 +2835,11 @@
           <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:1px;">CRM Status</label><div class="val" style="font-size:0.85rem;">${l.status || '–'}</div></div>
           <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:1px;">Status-Datum</label><div class="val" style="font-size:0.85rem;">${l.statusDate || '04.04.2026'}</div></div>
         </div>
-        <div style="border-top: 1px solid var(--bg); padding-top: 0.75rem;">
-          <div class="modal-field">
-            <label style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Termin & Notizen bearbeiten</label>
-            <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
-              <div style="flex:1;">
-                <div style="position:relative;">
-                  <input type="date" id="editApptDate" class="custom-picker" value="${l.appointmentDate || ''}" style="width:100%; font-size:0.8rem; padding:0.4rem; padding-right:24px; border:1px solid var(--border); border-radius:6px; background:var(--bg); position:relative; z-index:2;">
-                  <i data-lucide="calendar-days" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); width:14px; height:14px; color:var(--text-muted); z-index:1;"></i>
-                </div>
-              </div>
-              <div style="flex:1;">
-                <div style="position:relative;">
-                  <input type="time" id="editApptFrom" class="custom-picker" value="${l.appointmentFrom || ''}" style="width:100%; font-size:0.8rem; padding:0.4rem; padding-right:24px; border:1px solid var(--border); border-radius:6px; background:var(--bg); position:relative; z-index:2;">
-                  <i data-lucide="clock" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); width:14px; height:14px; color:var(--text-muted); z-index:1;"></i>
-                </div>
-              </div>
-              <div style="flex:1;">
-                <div style="position:relative;">
-                  <input type="time" id="editApptTo" class="custom-picker" value="${l.appointmentTo || ''}" style="width:100%; font-size:0.8rem; padding:0.4rem; padding-right:24px; border:1px solid var(--border); border-radius:6px; background:var(--bg); position:relative; z-index:2;">
-                  <i data-lucide="clock" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); width:14px; height:14px; color:var(--text-muted); z-index:1;"></i>
-                </div>
-              </div>
-            </div>
-            <textarea id="editLeadNotes" rows="4" style="width:100%; margin-top:0.5rem; font-size:0.85rem; padding:0.5rem; border:1px solid var(--border); border-radius:6px; resize:vertical; background:var(--bg);">${notesRaw}</textarea>
-            <button class="btn btn-outline" style="margin-top:0.5rem; width:100%; justify-content:center; font-size:0.82rem;" onclick="updateLeadQuick(${idx})">
-              <i data-lucide="save" style="width:15px;height:15px;"></i> Änderungen Speichern
-            </button>
-          </div>
         </div>
       `;
 
       const actions = document.getElementById('leadModalActions');
-      actions.innerHTML = `
-        <div style="display:flex; justify-content: flex-end; align-items:center; margin-top:0.5rem; flex-wrap:nowrap; gap:0.5rem; border-top:1px solid var(--bg); padding-top:0.75rem; overflow-x:auto;">
-          <button class="btn btn-outline" style="width:auto; flex:none; padding:0.45rem 0.5rem; font-size:0.8rem; white-space:nowrap;" onclick="closeModal('leadModal'); openApptModal(${idx});">
-            <i data-lucide="calendar-plus" style="width:15px;height:15px; flex-shrink:0;"></i> Neuer Termin
-          </button>
-          <button class="btn btn-primary" style="width:auto; flex:none; padding:0.45rem 0.5rem; font-size:0.8rem; white-space:nowrap;" onclick="sendInvite(${idx})">
-            <i data-lucide="send" style="width:15px;height:15px; flex-shrink:0;"></i> Einladung
-          </button>
-          ${l.appointmentDate ? `<button class="btn btn-outline" style="width:auto; flex:none; padding:0.45rem 0.5rem; border-color:#ef4444; color:#ef4444; background:transparent; white-space:nowrap;" title="Termin löschen" onclick="deleteAppt(${idx})"><i data-lucide="trash-2" style="width:15px;height:15px; flex-shrink:0;"></i></button>` : ''}
-        </div>`;
+      actions.innerHTML = '';
       openModal('leadModal');
     }
 
@@ -2938,9 +2902,11 @@
       const sel = document.getElementById('apptLead');
       if (idx !== null && idx !== undefined && typeof idx !== 'object') {
         sel.innerHTML = `<option value="${idx}">${state.leads[idx].name}</option>`;
+        document.getElementById('apptNote').value = String(state.leads[idx].note || state.leads[idx].notes || '').replace(/&quot;/g,'"').replace(/&lt;/g,'<');
       } else {
         sel.innerHTML = '<option value="">— Lead wählen —</option>' + 
           state.leads.map((l,i) => `<option value="${i}">${String(l.name||'Lead '+i).replace(/</g,'&lt;')}</option>`).join('');
+        document.getElementById('apptNote').value = "";
       }
       
       if (dateStr && typeof dateStr === 'string') {
@@ -3009,17 +2975,28 @@
         lead.appointmentDate = date;
         lead.appointmentFrom = from;
         lead.appointmentTo = to;
-        lead.appointmentHour = (from || '10:00').split(':')[0];
+        
+        const hour = (from || '10:00').split(':')[0];
+        lead.appointmentHour = hour;
+
+        const overlaps = state.leads.filter(x => x !== lead && normalizeStatus(x.status) === 'TERMIN FIXIERT' && x.appointmentDate === date && parseInt(x.appointmentHour) === parseInt(hour));
+
         if (note.trim().length > 0) {
-          lead.notes = (lead.notes || '') + (lead.notes ? '\n' : '') + `Agenda: ${note}`;
+          lead.notes = (lead.notes || '') + (lead.notes ? '\n' : '') + `Notiz: ${note}`;
         }
+
         fetch('/api/leads', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ leads: [lead] })
         }).then(res => {
           if (!res.ok) throw new Error('Sync Fehler');
-          showToast(`Termin für ${lead.name} gespeichert!`, '#16a34a');
+          if (overlaps.length > 0) {
+             const names = overlaps.map(o => o.name).join(', ');
+             showToast(`Achtung: Termin überschneidet sich mit ${names} um ${hour}:00 Uhr. Termin wurde trotzdem gespeichert!`, '#f97316');
+          } else {
+             showToast(`Termin für ${lead.name} gespeichert!`, '#16a34a');
+          }
           updateKPIs(); renderTable(); renderCalendar(); renderActivityFeed();
           closeModal('apptModal');
         }).catch(err => {

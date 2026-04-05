@@ -31,17 +31,26 @@
     }
     button, input, select { font-family: inherit; }
 
-    #authOverlay { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-    .auth-box { background: var(--surface); padding: 3rem; border-radius: var(--radius); box-shadow: var(--shadow); width: 100%; max-width: 420px; text-align: center; }
-    .auth-box h2 { margin-bottom: 1.5rem; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 8px;}
-    .input-field { width: 100%; padding: 0.875rem 1rem; background: var(--bg); border: none; border-radius: var(--radius); font-size: 0.875rem; margin-bottom: 1rem; outline: none; transition: background 0.2s; color: var(--text); }
-    select.input-field { padding-right: 2rem !important; appearance: none; background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230E2A47%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22/></svg>'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 16px; }
-    .input-field:focus { background: #e2e8f0; }
-    .btn { padding: 0.875rem 1.5rem; border: none; border-radius: var(--radius); font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 0.75rem; }
-    .btn-primary { background: var(--primary); color: white; width: 100%; }
-    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
-    .btn-outline { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
-    .btn-outline:hover { background: var(--surface-hover); transform: translateY(-1px); }
+    #authOverlay { position: fixed; inset: 0; background: var(--primary); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+    .auth-box { background: transparent; padding: 4rem 2rem; width: 100%; max-width: 400px; text-align: center; color: white; }
+    .auth-box h2 { margin-bottom: 2.5rem; font-size: 1.85rem; font-weight: 700; color: white; display: flex; align-items: center; justify-content: center; gap: 10px; letter-spacing: -0.02em; }
+    .auth-input-group { margin-bottom: 1.5rem; text-align: left; }
+    .auth-input-group label { display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; opacity: 0.8; }
+    .auth-box .input-field { 
+      width: 100%; padding: 1rem 1.25rem; 
+      background: rgba(255,255,255,0.08); 
+      border: 1px solid rgba(255,255,255,0.2); 
+      border-radius: 12px; font-size: 0.95rem; color: white; 
+      outline: none; transition: all 0.2s; 
+    }
+    .auth-box .input-field::placeholder { color: rgba(255,255,255,0.4); }
+    .auth-box .input-field:focus { background: rgba(255,255,255,0.15); border-color: white; }
+    .auth-box .btn-primary { 
+      background: white; color: var(--primary); 
+      width: 100%; padding: 1rem; font-size: 1rem; border-radius: 12px; margin-top: 1rem; 
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    .auth-box .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(0,0,0,0.15); }
 
     .app-layout { display: flex; height: 100vh; overflow: hidden; opacity: 0; transition: opacity 0.3s; }
     .app-layout.loaded { opacity: 1; }
@@ -341,16 +350,21 @@
 
   <div id="authOverlay">
     <div class="auth-box">
-      <h2 style="font-size:1.75rem;font-weight:700;margin-bottom:0.5rem;"><i data-lucide="lock" style="width:26px;height:26px;"></i> CRM Login</h2>
-      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem;">Bitte gib das Master-Passwort ein, um auf die zentrale Datenbank zuzugreifen.</p>
-      <div style="position:relative;margin-bottom:1.25rem;">
-        <input type="password" id="passInput" class="input-field" style="margin:0;padding-right:3rem;" placeholder="Passwort eingeben..." onkeydown="if(event.key==='Enter') login()">
-        <button onclick="(function(){var i=document.getElementById('passInput');var b=document.getElementById('eyeIcon');if(i.type==='password'){i.type='text';b.setAttribute('data-lucide','eye-off');}else{i.type='password';b.setAttribute('data-lucide','eye');}lucide.createIcons();})()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);display:flex;align-items:center;padding:0;" type="button">
-          <i data-lucide="eye" id="eyeIcon" style="width:18px;height:18px;"></i>
-        </button>
+      <h2><i data-lucide="shield-check"></i> CRM Login Dashboard</h2>
+      <p style="color: rgba(255,255,255,0.7); font-size: 0.95rem; margin-bottom: 2.5rem; font-weight: 500;">HF Media Zentrale Datenbank</p>
+      
+      <div class="auth-input-group">
+        <label>Master Passwort</label>
+        <div style="position:relative;">
+          <input type="password" id="passInput" class="input-field" placeholder="••••••••" onkeydown="if(event.key==='Enter') login()">
+          <button onclick="(function(){var i=document.getElementById('passInput');var b=document.getElementById('eyeIcon');if(i.type==='password'){i.type='text';b.setAttribute('data-lucide','eye-off');}else{i.type='password';b.setAttribute('data-lucide','eye');}lucide.createIcons();})()" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.6);display:flex;align-items:center;padding:0;" type="button">
+            <i data-lucide="eye" id="eyeIcon" style="width:18px;height:18px;"></i>
+          </button>
+        </div>
       </div>
-      <button class="btn btn-primary" onclick="login()" style="width:100%;justify-content:center;margin-bottom:0;">Einloggen</button>
-      <div id="authError" style="color: var(--danger); font-size: 0.875rem; margin-top: 1rem; display: none;">Falsches Passwort!</div>
+      
+      <button class="btn btn-primary" onclick="login()">Einloggen</button>
+      <div id="authError" style="display:none; color:#ff4d4d; font-size:0.85rem; margin-top:1.25rem; font-weight:600; background:rgba(255,0,0,0.1); padding:8px; border-radius:8px;">Ungültiges Passwort.</div>
     </div>
   </div>
 

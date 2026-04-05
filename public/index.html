@@ -228,7 +228,7 @@
     .reports-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
 
     /* Activity Feed */
-    .activity-item { display: flex; align-items: flex-start; gap: 12px; padding: 0.875rem 0; border-bottom: 1px solid var(--bg); }
+    .activity-item { display: flex; align-items: flex-start; gap: 18px; padding: 1rem 0; border-bottom: 1px solid var(--bg); position: relative; }
     .activity-item:last-child { border-bottom: none; }
     .activity-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
     .activity-dot.blue { background: var(--primary); }
@@ -1596,7 +1596,10 @@
         const name = String(l.name || '–').replace(/</g, '&lt;');
         const region = String(l.region || '').replace(/</g, '&lt;');
         const orgIdx = state.leads.indexOf(l);
-        return `<div class="activity-item" style="cursor:pointer; transition:background 0.15s;" onmouseover="this.style.background='#f1f5f9';" onmouseout="this.style.background='transparent';" onclick="showLeadDetail(${orgIdx})">
+        const notePrev = String(l.note || l.notes || 'Keine Notiz').replace(/"/g, '&quot;');
+        const tooltip = `Unternehmen: ${name}\nStatus: ${label}\nNotiz: ${notePrev}`;
+        
+        return `<div class="activity-item" title="${tooltip}" style="cursor:pointer; transition:background 0.15s;" onmouseover="this.style.background='#f1f5f9';" onmouseout="this.style.background='transparent';" onclick="showLeadDetail(${orgIdx})">
           <div class="activity-dot ${dot}"></div>
           <div class="activity-body">
             <div class="activity-name">${name}</div>

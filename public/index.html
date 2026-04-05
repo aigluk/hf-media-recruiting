@@ -1501,7 +1501,7 @@
       const isJobTitle = v => /^(vertrieb|verkauf|marketing|leitung|direktor|manager|berater|consultant|account|abteilung|assistenz|verwaltung|buchhaltung|sekretariat|sachbearbeiter|projektleiter)/i.test(v);
       const isGenericCol = col => /^(spalte|column|col|field|__empty|feld|var|v)\s*\d*$/i.test(col.trim()) || /^\d+$/.test(col.trim());
       const hasLetters = v => /[a-zA-ZäöüÄÖÜß]{2,}/.test(v);
-      const isCompanyName = v => v.length >= 3 && !isPureNum(v) && !isJunkHeader(v) && !isEmail(v) && !isPhone(v) && hasLetters(v);
+      const isCompanyName = v => v.length >= 3 && !isPureNum(v) && !isJunkHeader(v) && !isEmail(v) && !isPhone(v) && hasLetters(v) && !isJobTitle(v);
 
       const allGeneric = entries.every(([col]) => isGenericCol(col));
 
@@ -1589,6 +1589,7 @@
         const countryLine = (country && !['austria','österreich','at','de','germany','ch','schweiz','deutschland'].includes(country.toLowerCase())) ? country : '';
         region = [streetLine, cityLine, countryLine].filter(Boolean).join(', ');
       }
+      if (region && !hasLetters(region)) region = '';
 
       // CEO — must have letters, ideally first+last name
       const ceo = find(v => hasLetters(v) && !isPureNum(v) && !isJobTitle(v), 'geschäftsführer','geschäftsführerin','gf','ceo','inhaber','inhaberin','eigentümer','eigentümerin','leiter','leiterin','direktor','direktorin','vorstand','gründer','gründerin','owner','founder','president','ansprechperson','ansprechpartner','kontaktperson','hauptkontakt','kontakt','ansprechparter');

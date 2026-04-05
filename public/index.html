@@ -6,7 +6,6 @@
   <title>Lead Gen Engine</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     :root {
@@ -833,8 +832,8 @@
                   <i data-lucide="upload" style="width:28px; height:28px;"></i>
                 </div>
                 <h3 style="font-size:1.125rem; font-weight:700; margin-bottom:0.5rem;">Datei hochladen</h3>
-                <p style="color:var(--text-muted); font-size:0.875rem; margin-bottom:1.25rem;">.CSV, .XLSX, .PDF oder .DOCX</p>
-                <input type="file" id="importFile" style="display:none;" accept=".csv,.xlsx,.xls,.pdf,.docx,.doc" onchange="handleFileSelect(event)">
+                <p style="color:var(--text-muted); font-size:0.875rem; margin-bottom:1.25rem;">.CSV oder .XLSX</p>
+                <input type="file" id="importFile" style="display:none;" accept=".csv,.xlsx,.xls" onchange="handleFileSelect(event)">
                 <button class="btn btn-primary" onclick="document.getElementById('importFile').click()">Eigene Datei wählen</button>
                 <div id="selectedFileName" style="margin-top:1rem; font-weight:600; color:var(--primary); font-size:0.9rem; word-break:break-all;"></div>
               </div>
@@ -1280,234 +1279,7 @@
       closeModal('calConnectModal');
     }
 
-    // ── SMART FILE IMPORT ────────────────────────────────────────────────────
-    let _importedLeads = [];
-
-    function handleFileDrop(ev) {
-      ev.preventDefault();
-      document.getElementById('dropZone').style.borderColor = 'var(--border)';
-      const file = ev.dataTransfer?.files?.[0];
-      if (file) processImportFile(file);
-    }
-
-    function handleFileSelect(ev) {
-      const file = ev.target.files?.[0];
-      if (file) processImportFile(file);
-      ev.target.value = ''; // allow re-selecting same file
-    }
-
-    async function processImportFile(file) {
-      const ext = file.name.split('.').pop().toLowerCase();
-      showLoader('Analysiere Datei...');
-      try {
-        let rawLeads = [];
-        if (ext === 'xlsx' || ext === 'xls') {
-          rawLeads = await parseExcel(file);
-        } else if (ext === 'csv') {
-          rawLeads = await parseCSV(file);
-        } else if (ext === 'pdf') {
-          rawLeads = await parsePDF(file);
-        } else if (ext === 'docx' || ext === 'doc') {
-          rawLeads = await parseDOCX(file);
-        } else {
-          showToast('Nicht unterstütztes Format. Bitte CSV, XLSX, PDF oder DOCX verwenden.', '#ef4444');
-          hideLoader(); return;
-        }
-
-        if (!rawLeads.length) {
-          showToast('Keine Leads in der Datei gefunden. Bitte Format prüfen.', '#f97316');
-          hideLoader(); return;
-        }
-
-        // Dedup check against existing database
-        const existingKeys = new Set(state.leads.map(l =>
-          ((l.name||'').toLowerCase().trim() + '|' + (l.region||l.city||'').toLowerCase().trim())
-        ));
-        const newLeads = [];
-        const duplicates = [];
-        rawLeads.forEach(l => {
-          const key = ((l.name||'').toLowerCase().trim() + '|' + (l.region||'').toLowerCase().trim());
-          if (existingKeys.has(key)) duplicates.push(l.name);
-          else newLeads.push(l);
-        });
-
-        _importedLeads = newLeads;
-
-        // Render preview table
-        const previewBody = document.getElementById('importPreviewBody');
-        previewBody.innerHTML = newLeads.slice(0, 15).map(l => `
-          <tr>
-            <td style="padding:0.5rem 0.75rem;border-bottom:1px solid #f0f0f0;font-weight:600;">${l.name||'–'}</td>
-            <td style="padding:0.5rem 0.75rem;border-bottom:1px solid #f0f0f0;color:var(--text-muted);">${l.region||'–'}</td>
-            <td style="padding:0.5rem 0.75rem;border-bottom:1px solid #f0f0f0;color:var(--text-muted);">${l.email_general||l.emails||'–'}</td>
-          </tr>`).join('');
-        document.getElementById('importPreview').style.display = 'block';
-
-        // Duplicate warning
-        const dupBox = document.getElementById('importDuplicateCheck');
-        const dupList = document.getElementById('duplicateList');
-        if (duplicates.length > 0) {
-          dupBox.style.display = 'block';
-          dupList.innerHTML = duplicates.slice(0, 10).map(n => `<span>• ${n}</span>`).join('');
-        } else {
-          dupBox.style.display = 'none';
-        }
-
-        // Progress bar
-        const total = rawLeads.length;
-        const pct = Math.round((newLeads.length / total) * 100);
-        document.getElementById('importProgressBar').style.width = pct + '%';
-        document.getElementById('importStatsText').textContent = `${newLeads.length} neu / ${duplicates.length} Duplikate`;
-        document.getElementById('totalLeadsCount').textContent = state.leads.length;
-
-        // Quality score
-        const withEmail = newLeads.filter(l => l.email_general || l.emails).length;
-        const withPhone = newLeads.filter(l => l.phone).length;
-        const withCeo = newLeads.filter(l => l.ceos || l.owner).length;
-        const score = newLeads.length ? Math.round(((withEmail + withPhone + withCeo) / (newLeads.length * 3)) * 100) : 100;
-        document.getElementById('cleanlinessScore').textContent = score + '%';
-        document.getElementById('dataScoreBar').style.width = score + '%';
-        document.getElementById('dataScoreBar').style.background = score > 70 ? '#16a34a' : score > 40 ? '#f97316' : '#ef4444';
-
-        showToast(`${newLeads.length} Leads bereit zum Import${duplicates.length > 0 ? `, ${duplicates.length} Duplikate übersprungen` : ''}.`, '#16a34a');
-      } catch (e) {
-        showToast('Fehler beim Verarbeiten: ' + e.message, '#ef4444');
-        console.error(e);
-      }
-      hideLoader();
-    }
-
-    async function parseExcel(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => {
-          try {
-            const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-            const ws = wb.Sheets[wb.SheetNames[0]];
-            const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-            resolve(rows.map(mapRowToLead).filter(l => l.name));
-          } catch(err) { reject(err); }
-        };
-        reader.onerror = reject;
-        reader.readAsArrayBuffer(file);
-      });
-    }
-
-    async function parseCSV(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => {
-          try {
-            const lines = e.target.result.split(/\r?\n/).filter(l => l.trim());
-            if (lines.length < 2) { resolve([]); return; }
-            const sep = lines[0].includes(';') ? ';' : ',';
-            const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g,''));
-            const rows = lines.slice(1).map(line => {
-              const vals = line.split(sep).map(v => v.trim().replace(/^"|"$/g,''));
-              const obj = {};
-              headers.forEach((h, i) => { obj[h] = vals[i] || ''; });
-              return obj;
-            });
-            resolve(rows.map(mapRowToLead).filter(l => l.name));
-          } catch(err) { reject(err); }
-        };
-        reader.onerror = reject;
-        reader.readAsText(file, 'UTF-8');
-      });
-    }
-
-    async function parsePDF(file) {
-      if (typeof pdfjsLib === 'undefined') {
-        throw new Error('PDF.js Bibliothek ist nicht geladen.');
-      }
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          try {
-            const typedarray = new Uint8Array(e.target.result);
-            const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
-            let fullText = '';
-            for (let i = 1; i <= pdf.numPages; i++) {
-              const page = await pdf.getPage(i);
-              const textContent = await page.getTextContent();
-              let lastY = -1;
-              let pageText = '';
-              for (const item of textContent.items) {
-                 if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 2) {
-                    pageText += '\n';
-                 }
-                 pageText += item.str + ' ';
-                 lastY = item.transform[5];
-              }
-              fullText += pageText + '\n\n';
-            }
-            resolve(extractLeadsFromText(fullText));
-          } catch(err) {
-            reject(new Error('Fehler beim Extrahieren von PDF-Text: ' + err.message));
-          }
-        };
-        reader.onerror = reject;
-        reader.readAsArrayBuffer(file);
-      });
-    }
-
-    async function parseDOCX(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => {
-          try {
-            // DOCX is a ZIP. Extract word/document.xml text
-            const bytes = new Uint8Array(e.target.result);
-            // Simple text extraction: find XML text content between <w:t> tags
-            let xmlText = '';
-            for (let i = 0; i < bytes.length - 3; i++) {
-              if (bytes[i] === 60 && bytes[i+1] === 119 && bytes[i+2] === 58 && bytes[i+3] === 116) {
-                // Found '<w:t'
-                let j = i;
-                while (j < bytes.length && bytes[j] !== 62) j++; // skip to '>'
-                j++;
-                while (j < bytes.length) {
-                  if (bytes[j] === 60) break; // '<' ends value
-                  if (bytes[j] >= 32) xmlText += String.fromCharCode(bytes[j]);
-                  j++;
-                }
-                xmlText += ' ';
-              }
-            }
-            resolve(extractLeadsFromText(xmlText));
-          } catch(err) { reject(err); }
-        };
-        reader.onerror = reject;
-        reader.readAsArrayBuffer(file);
-      });
-    }
-
-    function extractLeadsFromText(text) {
-      const leads = [];
-      const emailRe = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
-      const phoneRe = /(?:\+43|0043|0)[\s\-]?[1-9][\d\s\-]{6,14}/g;
-      const emails = [...new Set(text.match(emailRe) || [])];
-      const phones = [...new Set(text.match(phoneRe) || [])];
-      // Try to find company names: lines that look like company names (capitalized, 2+ words)
-      const lines = text.split(/\n/).map(l => l.trim()).filter(l => l.length > 3 && l.length < 80);
-      const companyLines = lines.filter(l => /^[A-ZÄÖÜ]/.test(l) && !/^(Tel|Fax|Mail|Email|www|http)/i.test(l));
-      if (emails.length === 0 && phones.length === 0) return [];
-      // Best-effort: create one lead per email found, match with nearby company name
-      emails.forEach((email, i) => {
-        const emailIdx = text.indexOf(email);
-        const nearby = text.substring(Math.max(0, emailIdx - 200), emailIdx);
-        const nearbyLines = nearby.split(/\n/).map(l=>l.trim()).filter(l=>l.length>2);
-        const name = nearbyLines.filter(l => /^[A-ZÄÖÜ]/.test(l) && l.length > 3).pop() || companyLines[i] || email.split('@')[1].split('.')[0];
-        const phone = phones[i] || '';
-        // Extract address: look for PLZ pattern
-        const plzMatch = nearby.match(/\b([1-9]\d{3,4})\s+([A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+)?)\b/);
-        const region = plzMatch ? `${plzMatch[1]} ${plzMatch[2]}` : '';
-        leads.push({ name, email_general: email, emails: email, phone, region, status: 'NEU', statusDate: new Date().toLocaleDateString('de-AT', {day:'2-digit',month:'2-digit',year:'numeric'}) });
-      });
-      return leads;
-    }
+    // ── BULLETPROOF field mapper — validates EVERY value before assignment ──
 
     // ── BULLETPROOF field mapper — validates EVERY value before assignment ──
     function mapRowToLead(row) {
@@ -2823,14 +2595,10 @@
       const ext = file.name.split('.').pop().toLowerCase();
       
       try {
-        if (ext === 'pdf') {
-          pendingLeads = await parsePDF(file);
-        } else if (ext === 'docx' || ext === 'doc') {
-          pendingLeads = await parseDOCX(file);
-        } else if (ext === 'csv' || ext === 'xlsx' || ext === 'xls') {
+        if (ext === 'csv' || ext === 'xlsx' || ext === 'xls') {
           pendingLeads = await parseExcelOrCsv(file, ext === 'csv');
         } else {
-          throw new Error('Nicht unterstütztes Format. Bitte .csv, .xlsx, .pdf oder .docx hochladen.');
+          throw new Error('Nicht unterstütztes Format. Bitte nur .CSV oder .XLSX hochladen.');
         }
 
         if (!pendingLeads || pendingLeads.length === 0) {

@@ -1052,7 +1052,7 @@
         if (data.error) throw new Error(data.error);
         // Normalize statuses on load so filter always works
         // Normalize statuses and BACKFILL dates on load (dynamic for legacy leads)
-        const todayStr = new Date().toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
+        const todayStr = new Date().toLocaleString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
         state.leads = (Array.isArray(data.leads) ? data.leads : []).map(l => ({
           ...l,
           status: normalizeStatus(l.status),
@@ -1081,7 +1081,7 @@
       lead[field] = field === 'status' ? normalizeStatus(value) : value;
       if (field === 'status') {
         const today = new Date();
-        lead.statusDate = today.toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
+        lead.statusDate = today.toLocaleString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
       }
       updateKPIs();
       if (field === 'status' || field === 'note') { renderTable(); }
@@ -2758,11 +2758,11 @@
       }
 
       showLoader(`${toImport.length} Leads werden importiert...`);
-      const today = new Date().toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
+      const todayStr = new Date().toLocaleString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
       const now = new Date().toISOString();
       toImport.forEach(l => { 
         l.status = 'NEU';
-        l.statusDate = today; 
+        l.statusDate = todayStr; 
         l.createdAt = now;
       });
       state.leads = [...toImport, ...state.leads];
@@ -2850,7 +2850,7 @@
           <div class="modal-field" style="grid-column: span 2;"><label style="font-size:0.65rem;margin-bottom:1px;">Website</label><div class="val" style="font-size:0.85rem;word-break:break-all;">${webStr}</div></div>
           
           <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:1px;">CRM Status</label><div class="val" style="font-size:0.85rem;">${l.status || '–'}</div></div>
-          <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:1px;">Status-Datum</label><div class="val" style="font-size:0.85rem;">${l.statusDate || new Date().toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' })}</div></div>
+          <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:1px;">Status-Datum</label><div class="val" style="font-size:0.85rem;">${l.statusDate || new Date().toLocaleString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })}</div></div>
         </div>
       `;
 
@@ -3054,9 +3054,9 @@
       // Update lead status to TERMIN FIXIERT and save note
       const lead = state.leads[idx];
       if (lead) {
-        const today = new Date().toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
+        const todayStr = new Date().toLocaleString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
         lead.status = 'TERMIN FIXIERT';
-        lead.statusDate = today;
+        lead.statusDate = todayStr;
         lead.appointmentDate = date;
         lead.appointmentFrom = from;
         lead.appointmentTo = to;

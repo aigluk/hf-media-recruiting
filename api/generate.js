@@ -288,7 +288,7 @@ export default async function handler(req, res) {
         reviews: place.reviews || 0,
         google_verified: true,
         createdAt: new Date().toISOString(),
-        statusDate: new Date().toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' })
+        statusDate: new Date().toLocaleString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })
       };
     });
 

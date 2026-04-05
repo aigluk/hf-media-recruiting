@@ -1342,7 +1342,8 @@
       }
 
       // Mini calendar
-      buildMiniCalendar(today, year, month, selectedDay);
+      const miniCont = document.getElementById('miniCalContainer');
+      buildMiniCalendar(miniCont, today, year, month, selectedDay);
 
       // Main grid
       const grid = document.getElementById('calendarAgendaGrid');
@@ -1355,10 +1356,16 @@
       lucide.createIcons();
     }
 
-    function buildMiniCalendar(today, year, month, selectedDay) {
-      const miniCont = document.getElementById('miniCalContainer');
+    function buildMiniCalendar(miniCont, today, year, month, selectedDay) {
       if (!miniCont) return;
-      const termins = new Set(state.leads.filter(l => normalizeStatus(l.status) === 'TERMIN FIXIERT').map((_, i) => (i % 28) + 1));
+      const termins = new Set();
+      state.leads.filter(l => normalizeStatus(l.status) === 'TERMIN FIXIERT').forEach(l => {
+        if (!l.appointmentDate) return;
+        const [y, m, d] = l.appointmentDate.split('-').map(Number);
+        if (y === year && m === (month + 1)) {
+          termins.add(d);
+        }
+      });
       const firstDay = new Date(year, month, 1).getDay();
       const startOffset = (firstDay === 0 ? 6 : firstDay - 1);
       const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -1379,6 +1386,7 @@
           <div style="display:flex;gap:4px;">
             <button onclick="calNav(-1)"><i data-lucide="chevron-left" style="width:15px;"></i></button>
             <button onclick="calNav(1)"><i data-lucide="chevron-right" style="width:15px;"></i></button>
+          </div>
         </div>
         <div class="mini-cal-grid">${daysHtml}</div>`;
     }

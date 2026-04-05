@@ -122,8 +122,10 @@
     .status-select-inline { appearance: none; height: 34px; padding: 0 28px 0 12px; border-radius: 99px; font-size: 0.75rem; font-weight: 700; border: none; cursor: pointer; text-align: center; outline: none; transition: all 0.2s; white-space: nowrap; width: 100%; min-width: 130px; box-sizing: border-box; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
     .status-select-inline:hover { opacity: 0.85; transform: scale(1.02); }
     
-    .note-btn { background: var(--primary); color: white !important; height: 28px; padding: 0 10px; border-radius: 99px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 600; border: none; transition: all 0.2s; white-space: nowrap; box-sizing: border-box; min-width: 78px; }
-    .note-btn:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(14,42,71,0.2); }
+    .note-btn { background: var(--primary); color: white !important; height: 28px; padding: 0 10px; border-radius: 99px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font-size: 0.72rem; font-weight: 700; border: none; transition: all 0.2s; white-space: nowrap; box-sizing: border-box; min-width: 92px; }
+    .note-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .note-btn.has-note { background: #e0f2fe !important; color: #0369a1 !important; border: 1px solid #bae6fd; }
+    .note-btn.has-note i { stroke: #0369a1 !important; }
     .note-btn i { width: 11px; height: 11px; stroke: white; flex-shrink: 0; }
 
     .pipeline-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 4px; }
@@ -1818,9 +1820,9 @@
               </select>
             </td>
             <td>
-              <button class="note-btn" onclick="openNoteModal(${idx})" title="Notiz bearbeiten">
+              <button class="note-btn ${l.note || l.notes ? 'has-note' : ''}" onclick="openNoteModal(${idx})" title="Notiz bearbeiten">
                 <i data-lucide="edit-3"></i>
-                <span>${l.note || l.notes ? 'Öffnen' : 'Neu'}</span>
+                <span>Notizen</span>
               </button>
             </td>
             <td class="td-actions" style="padding-right:2.5rem;">

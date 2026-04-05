@@ -717,111 +717,96 @@
 
       <!-- META SYNC VIEW -->
       <div id="view-metasync" class="view-section">
-        <!-- SETUP GUIDE (shown when not connected) -->
-        <div id="metaSetupGuide" style="display:none;">
-          <div class="panel" style="max-width:680px;margin:0 auto;">
-            <div style="text-align:center;padding:1.5rem 0 2rem;">
-              <div style="width:64px;height:64px;background:linear-gradient(135deg,#1877F2,#42a5f5);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;font-size:2rem;">📘</div>
-              <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:0.5rem;">Meta Business verbinden</h2>
-              <p style="color:var(--text-muted);font-size:0.9rem;">Verbinde deinen Meta Business Account in 3 einfachen Schritten.</p>
-            </div>
-            <div style="display:flex;margin-bottom:2.5rem;border-radius:12px;overflow:hidden;">
-              <div id="ms-step1" style="flex:1;text-align:center;padding:1rem;background:var(--primary);color:white;">
-                <div style="font-size:1.25rem;font-weight:800;">1</div><div style="font-size:0.72rem;font-weight:600;margin-top:2px;">Vorbereitung</div>
+        <div id="metaDashboard">
+          <div class="panel" style="padding: 1.5rem 2rem; margin-bottom: 2rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:20px; flex-wrap:wrap;">
+              <div id="metaStatusHeader" style="display:flex; align-items:center; gap:12px;">
+                <div style="width:10px; height:10px; background:#ef4444; border-radius:50%; box-shadow:0 0 10px rgba(239,68,68,0.5);"></div>
+                <span style="font-weight:700; font-size:0.9rem; color:var(--text);">Status: <span style="color:#ef4444;">Nicht verbunden</span></span>
               </div>
-              <div id="ms-step2" style="flex:1;text-align:center;padding:1rem;background:#f1f5f9;color:var(--text-muted);border-left:2px solid white;">
-                <div style="font-size:1.25rem;font-weight:800;">2</div><div style="font-size:0.72rem;font-weight:600;margin-top:2px;">App erstellen</div>
-              </div>
-              <div id="ms-step3" style="flex:1;text-align:center;padding:1rem;background:#f1f5f9;color:var(--text-muted);border-left:2px solid white;">
-                <div style="font-size:1.25rem;font-weight:800;">3</div><div style="font-size:0.72rem;font-weight:600;margin-top:2px;">Verbinden</div>
-              </div>
-            </div>
-            <div id="metaStep1Content">
-              <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:1.25rem;display:flex;align-items:center;gap:8px;"><i data-lucide="check-circle" style="color:#16a34a;width:20px;"></i> Was du brauchst</h3>
-              <div style="display:flex;flex-direction:column;gap:0.75rem;margin-bottom:2rem;">
-                <div style="display:flex;align-items:center;gap:0.75rem;padding:1rem;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;">
-                  <span style="font-size:1.25rem;">📱</span><div><div style="font-weight:700;font-size:0.9rem;">Meta Business Manager Account</div><div style="color:var(--text-muted);font-size:0.8rem;">→ business.facebook.com, kostenlos</div></div>
-                  <a href="https://business.facebook.com" target="_blank" style="margin-left:auto;font-size:0.78rem;color:var(--primary);font-weight:600;">Öffnen →</a>
-                </div>
-                <div style="display:flex;align-items:center;gap:0.75rem;padding:1rem;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;">
-                  <span style="font-size:1.25rem;">💳</span><div><div style="font-weight:700;font-size:0.9rem;">Mindestens ein aktives Meta Ad Account</div><div style="color:var(--text-muted);font-size:0.8rem;">Werbekonto im Business Manager</div></div>
-                </div>
-                <div style="display:flex;align-items:center;gap:0.75rem;padding:1rem;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;">
-                  <span style="font-size:1.25rem;">🔑</span><div><div style="font-weight:700;font-size:0.9rem;">Meta App (App ID + Secret)</div><div style="color:var(--text-muted);font-size:0.8rem;">→ developers.facebook.com, Schritt 2</div></div>
-                </div>
-              </div>
-              <button class="btn btn-primary" onclick="metaSetupNext(2)" style="width:100%;justify-content:center;">Weiter zu Schritt 2 <i data-lucide="arrow-right" style="width:16px;"></i></button>
-            </div>
-            <div id="metaStep2Content" style="display:none;">
-              <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:1.25rem;display:flex;align-items:center;gap:8px;"><i data-lucide="code" style="color:var(--primary);width:20px;"></i> Meta Developer App einrichten</h3>
-              <ol style="display:flex;flex-direction:column;gap:1rem;list-style:none;padding:0;margin-bottom:2rem;">
-                <li style="display:flex;gap:1rem;align-items:flex-start;">
-                  <div style="width:28px;height:28px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;flex-shrink:0;">1</div>
-                  <div><div style="font-weight:700;"><a href="https://developers.facebook.com/apps" target="_blank" style="color:var(--primary);">developers.facebook.com/apps</a> → „Neue App erstellen"</div><div style="color:var(--text-muted);font-size:0.82rem;">Typ: <strong>Business</strong> wählen, Name beliebig</div></div>
-                </li>
-                <li style="display:flex;gap:1rem;align-items:flex-start;">
-                  <div style="width:28px;height:28px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;flex-shrink:0;">2</div>
-                  <div><div style="font-weight:700;">„Produkte hinzufügen" → Marketing API + Facebook Login aktivieren</div></div>
-                </li>
-                <li style="display:flex;gap:1rem;align-items:flex-start;">
-                  <div style="width:28px;height:28px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;flex-shrink:0;">3</div>
-                  <div><div style="font-weight:700;">Facebook Login → Einstellungen → Redirect URI eintragen:</div><div style="background:#f1f5f9;border-radius:8px;padding:8px 12px;margin-top:6px;font-family:monospace;font-size:0.72rem;word-break:break-all;">https://hf-media-recruiting.vercel.app/api/meta/callback</div></div>
-                </li>
-                <li style="display:flex;gap:1rem;align-items:flex-start;">
-                  <div style="width:28px;height:28px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;flex-shrink:0;">4</div>
-                  <div><div style="font-weight:700;">Vercel Dashboard → Settings → Environment Variables:</div><div style="background:#f1f5f9;border-radius:8px;padding:8px 12px;margin-top:6px;font-family:monospace;font-size:0.72rem;">META_APP_ID = deine_app_id<br>META_APP_SECRET = dein_app_secret<br>META_REDIRECT_URI = https://hf-media-recruiting.vercel.app/api/meta/callback</div></div>
-                </li>
-              </ol>
-              <div style="display:flex;gap:0.75rem;">
-                <button class="btn btn-outline" onclick="metaSetupNext(1)" style="flex:1;justify-content:center;"><i data-lucide="arrow-left" style="width:16px;"></i> Zurück</button>
-                <button class="btn btn-primary" onclick="metaSetupNext(3)" style="flex:1;justify-content:center;">Weiter <i data-lucide="arrow-right" style="width:16px;"></i></button>
-              </div>
-            </div>
-            <div id="metaStep3Content" style="display:none;">
-              <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:0.75rem;display:flex;align-items:center;gap:8px;"><i data-lucide="link" style="color:var(--primary);width:20px;"></i> Mit Meta verbinden</h3>
-              <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1.5rem;">Wenn App-ID und Secret in Vercel gesetzt sind, klicke auf <strong>„Mit Meta verbinden"</strong>. Ein Facebook-Login Popup öffnet sich zur Autorisierung.</p>
-              <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:1.25rem;margin-bottom:1.5rem;">
-                <div style="font-weight:700;font-size:0.875rem;color:#1e40af;margin-bottom:0.5rem;">ℹ️ Benötigte Berechtigungen</div>
-                <div style="font-size:0.82rem;color:#1e40af;">• <code>ads_management</code> &nbsp;• <code>ads_read</code> &nbsp;• <code>business_management</code></div>
-              </div>
-              <button id="metaConnectBtn" class="btn btn-primary" onclick="startMetaOAuth()" style="width:100%;justify-content:center;background:linear-gradient(135deg,#1877F2,#42a5f5);font-size:1rem;padding:1rem 1.5rem;gap:0.75rem;">
-                <span style="font-size:1.25rem;">📘</span> Mit Meta verbinden
-              </button>
-              <div id="metaConnectStatus" style="margin-top:1rem;font-size:0.82rem;color:var(--text-muted);text-align:center;min-height:1.2rem;"></div>
-              <button class="btn btn-outline" onclick="metaSetupNext(2)" style="width:100%;justify-content:center;margin-top:0.75rem;"><i data-lucide="arrow-left" style="width:16px;"></i> Zurück</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- CONNECTED DASHBOARD (shown when connected) -->
-        <div id="metaDashboard" style="display:none;">
-          <div class="panel" style="padding:1.5rem 2rem;margin-bottom:2rem;">
-            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
-              <div style="display:flex;align-items:center;gap:12px;">
-                <div style="width:10px;height:10px;background:#22c55e;border-radius:50%;"></div>
-                <span style="font-weight:700;">Verbunden mit Meta Business</span>
-                <span style="color:var(--text-muted);font-size:0.82rem;" id="metaUserTag"></span>
-              </div>
-              <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
-                <select id="metaAccountSelect" class="input-field" style="width:auto;margin:0;padding:0.6rem 1rem;border-radius:10px;font-weight:700;font-size:0.85rem;" onchange="loadMetaAccountData()">
-                  <option value="">Ad Account wählen</option>
+              <div style="display:flex; gap:12px; flex:1; justify-content:flex-end; min-width:320px;">
+                <select id="metaAccountSelect" class="input-field" style="width:auto; margin:0; padding:0.6rem 2.2rem 0.6rem 1rem; border-radius:12px; font-weight:700; font-size:0.85rem; border-color:var(--border);" onchange="loadMetaAccountData()">
+                   <option value="">Ad Account wählen</option>
                 </select>
-                <button class="btn btn-outline" onclick="disconnectMeta()" style="padding:0.5rem 1rem;font-size:0.82rem;color:#ef4444;border-color:#ef4444;">
-                  <i data-lucide="unlink" style="width:15px;"></i> Trennen
-                </button>
+                <select id="metaCampaignSelect" class="input-field" style="width:auto; margin:0; padding:0.6rem 2.2rem 0.6rem 1rem; border-radius:12px; font-weight:700; font-size:0.85rem; border-color:var(--border);">
+                   <option value="">Kampagne wählen</option>
+                </select>
+                <button id="metaActionBtn" class="btn btn-primary" onclick="openModal('metaSetupModal')" style="padding:0.6rem 1.5rem; border-radius:12px;"><i data-lucide="zap" style="width:18px; height:18px;"></i> Verbinden</button>
               </div>
             </div>
           </div>
-          <div class="metrics-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:2rem;">
-            <div class="metric-card"><div class="metric-title" style="font-size:0.7rem;font-weight:800;text-transform:uppercase;">Impressions</div><div class="metric-value" id="metaImpressionsKPI" style="font-size:1.75rem;color:var(--primary);">–</div><div class="metric-sub">Letzte 30 Tage</div></div>
-            <div class="metric-card"><div class="metric-title" style="font-size:0.7rem;font-weight:800;text-transform:uppercase;">Link Clicks</div><div class="metric-value" id="metaClicksKPI" style="font-size:1.75rem;">–</div><div class="metric-sub">Letzte 30 Tage</div></div>
-            <div class="metric-card"><div class="metric-title" style="font-size:0.7rem;font-weight:800;text-transform:uppercase;">Total Spend</div><div class="metric-value" id="metaSpendKPI" style="font-size:1.75rem;">€–</div><div class="metric-sub">Monatsbudget</div></div>
-            <div class="metric-card"><div class="metric-title" style="font-size:0.7rem;font-weight:800;text-transform:uppercase;">Ø CPC</div><div class="metric-value" id="metaCPCKPI" style="font-size:1.75rem;">€–</div><div class="metric-sub">Cost per Click</div></div>
-            <div class="metric-card"><div class="metric-title" style="font-size:0.7rem;font-weight:800;text-transform:uppercase;">Reach</div><div class="metric-value" id="metaReachKPI" style="font-size:1.75rem;">–</div><div class="metric-sub">Unique Personen</div></div>
+
+          <!-- KPI Scorecard -->
+          <div class="metrics-grid" style="grid-template-columns: repeat(5, 1fr); margin-bottom:2.5rem;">
+            <div class="metric-card" style="border: 2px solid transparent; transition: border 0.3s;">
+              <div class="metric-title" style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;">Total Leads</div>
+              <div class="metric-value" id="metaTotalLeads" style="font-size:2rem; color:var(--primary);">–</div>
+              <div class="metric-sub" id="metaTotalSub">Account koppeln</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-title" style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;">Ø CPL</div>
+              <div class="metric-value" id="metaCPL" style="font-size:2rem;">–</div>
+              <div class="metric-sub">Kosten pro Lead</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-title" style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;">Total Spend</div>
+              <div class="metric-value" id="metaSpend" style="font-size:2rem;">–</div>
+              <div class="metric-sub" id="metaSpendSub">Keine Daten</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-title" style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;">Conv. %</div>
+              <div class="metric-value" id="metaCR" style="font-size:2rem;">–</div>
+              <div class="metric-sub">Conversion Rate</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-title" style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;">Active Ads</div>
+              <div class="metric-value" id="metaAds" style="font-size:2rem;">–</div>
+              <div class="metric-sub">Live Schaltung</div>
+            </div>
           </div>
-          <div class="panel">
-            <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:1.5rem;display:flex;align-items:center;gap:8px;"><i data-lucide="bar-chart-3" style="color:var(--primary);"></i> Kampagnen</h3>
-            <div id="metaCampaignsTable" style="color:var(--text-muted);font-size:0.9rem;text-align:center;padding:2rem;">Ad Account wählen um Kampagnen zu laden...</div>
+
+          <div style="display:grid; grid-template-columns: 1fr 2fr; gap:2.5rem;">
+             <!-- Left: Real-time Insights -->
+             <div class="panel" style="margin:0;">
+                <h3 style="font-size: 1.1rem; font-weight:bold; margin-bottom:1.5rem; display:flex; align-items:center; gap:8px;"><i data-lucide="bar-chart-3" style="color:var(--primary);"></i> Real-time Insights</h3>
+                <div style="display:flex; flex-direction:column; gap:1.25rem;">
+                   <div style="padding:1rem; background:#f8fafc; border-radius:12px; border:1px solid var(--border);">
+                      <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); margin-bottom:6px;">Impressions</div>
+                      <div style="font-size:1.5rem; font-weight:800;" id="metaImpressions">–</div>
+                   </div>
+                   <div style="padding:1rem; background:#f8fafc; border-radius:12px; border:1px solid var(--border);">
+                      <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); margin-bottom:6px;">Link Clicks</div>
+                      <div style="font-size:1.5rem; font-weight:800;" id="metaClicks">–</div>
+                   </div>
+                   <div style="padding:1rem; background:#f8fafc; border-radius:12px; border:1px solid var(--border);">
+                      <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); margin-bottom:6px;">Avg. CPC</div>
+                      <div style="font-size:1.5rem; font-weight:800;" id="metaCPC">–</div>
+                   </div>
+                </div>
+             </div>
+
+             <!-- Right: Live Feed -->
+             <div class="panel" style="margin:0;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                   <h3 style="font-size: 1.1rem; font-weight:bold; margin:0; display:flex; align-items:center; gap:8px;"><i data-lucide="activity" style="color:var(--primary);"></i> Meta Business Sync Feed</h3>
+                </div>
+                <div class="table-container" style="border:1px solid var(--border); border-radius:12px; overflow:hidden;">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Lead Name</th>
+                        <th>Kontakt</th>
+                        <th>Zeitpunkt</th>
+                        <th>Status</th>
+                        <th style="text-align:right;">Aktion</th>
+                      </tr>
+                    </thead>
+                    <tbody id="metaLeadsTable">
+                      <tr><td colspan="5" style="padding:4rem; text-align:center; color:var(--text-muted); font-size:0.9rem;">Bitte verbinde deinen Meta Business Account, um Leads zu sehen.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+             </div>
           </div>
         </div>
       </div>
@@ -1501,12 +1486,18 @@
       return leads;
     }
 
-    // ── Senior-grade field mapper: handles ANY column layout, German & English ──
+    // ── Senior-grade field mapper: handles ANY column layout including generic ones ──
     function mapRowToLead(row) {
-      // Fuzzy column finder: returns first matching value for a list of keyword fragments
+      const entries = Object.entries(row);
+      // Detect if columns are generic (Spalte1, Column1, Field1, __EMPTY, etc.)
+      const isGenericCol = (col) => /^(spalte|column|col|field|__empty|feld|var|v)\s*\d*$/i.test(col.trim()) || /^\d+$/.test(col.trim());
+      const allGeneric = entries.every(([col]) => isGenericCol(col)) || entries.length <= 1;
+
+      // ─── NAMED COLUMNS: use keyword matching ───
       const find = (...keys) => {
         for (const k of keys) {
-          for (const [col, val] of Object.entries(row)) {
+          for (const [col, val] of entries) {
+            if (isGenericCol(col)) continue; // skip generic columns in keyword mode
             const normCol = col.toLowerCase().replace(/[\s_\-\.\(\)\/]/g, '');
             const normKey = k.toLowerCase().replace(/[\s_\-\.\(\)\/]/g, '');
             if (normCol.includes(normKey) && val !== null && val !== undefined && String(val).trim() !== '') {
@@ -1517,79 +1508,80 @@
         return '';
       };
 
-      // ── Company name ──
-      const name = find(
-        'firmenname','firma','unternehmensname','unternehmen','betrieb','geschäft','company','organisation',
-        'organization','businessname','business','name'
-      );
-      if (!name || name.length < 2) return null;
+      // Value analysis helpers
+      const emailRe = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+      const phoneRe = /^[\+]?[\d\s\-\/\(\)]{7,20}$/;
+      const urlRe = /^(https?:\/\/|www\.)/i;
+      const plzCityRe = /^\d{4,5}\s+[A-ZÄÖÜa-zäöüß]/;
+      const addrRe = /\d+.*(?:straße|strasse|gasse|weg|platz|ring|allee|boulevard)/i;
+      const junkNames = /^(spalte|column|col|field|nr|id|lfd|row|zeile|index|datum|date|status|typ|type|#|unnamed|__empty)/i;
 
-      // ── Email — strict validation ──
-      const emailRaw = find(
-        'email','e-mail','mail','emailadresse','kontaktemail','contactemail','geschäftsemail','businessemail'
-      );
+      // ─── CONTENT-BASED DETECTION for generic/unknown columns ───
+      if (allGeneric) {
+        const vals = entries.map(([,v]) => v !== null && v !== undefined ? String(v).trim() : '').filter(Boolean);
+        let name = '', email = '', phone = '', region = '', website = '', ceo = '';
+        for (const v of vals) {
+          if (!v || v.length < 2) continue;
+          if (emailRe.test(v)) { if (!email) email = v.toLowerCase(); }
+          else if (phoneRe.test(v) && v.replace(/\D/g,'').length >= 7) { if (!phone) phone = v; }
+          else if (urlRe.test(v)) { if (!website) website = v; }
+          else if (plzCityRe.test(v) || addrRe.test(v)) { if (!region) region = v; }
+          else if (!name && v.length >= 3 && !junkNames.test(v) && !/^\d+$/.test(v)) { name = v; }
+          else if (name && !ceo && !emailRe.test(v) && !phoneRe.test(v) && !plzCityRe.test(v) && v.length >= 3 && /^[A-ZÄÖÜa-zäöüß]/.test(v)) {
+            // Could be CEO, address, or industry — try to classify
+            if (/\d/.test(v) && (v.includes(' ') || addrRe.test(v))) { if (!region) region = v; }
+            else { if (!ceo) ceo = v; }
+          }
+        }
+        if (!name || name.length < 3) return null;
+        if (!email && !phone && !region) return null; // need at least one contact/location field
+        return { name, email_general: email, emails: email, phone, region: region.substring(0,300), ceos: ceo, owner: ceo, status: 'NEU', statusDate: new Date().toLocaleDateString('de-AT',{day:'2-digit',month:'2-digit',year:'numeric'}), createdAt: new Date().toISOString(), industry:'', notes:'', website: website && !/^https?/i.test(website) ? 'https://'+website : website, description:'' };
+      }
+
+      // ─── NAMED COLUMNS MODE ───
+      const name = find('firmenname','firma','unternehmensname','unternehmen','betrieb','geschäft','company','organisation','organization','businessname','business','name');
+      if (!name || name.length < 3 || junkNames.test(name) || /^\d+$/.test(name)) return null;
+
+      const emailRaw = find('email','e-mail','mail','emailadresse','kontaktemail','contactemail','geschäftsemail','businessemail');
       const emailMatch = emailRaw.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
       const emailClean = emailMatch ? emailMatch[0].toLowerCase() : '';
 
-      // ── Phone — clean but preserve international format ──
-      const phoneRaw = find(
-        'telefon','tel','phone','mobil','mobiltelefon','handynummer','mobile','fon','rufnummer','nummer',
-        'direktwahl','geschäftstelefon','kontaktnummer'
-      );
+      const phoneRaw = find('telefon','tel','phone','mobil','mobiltelefon','handynummer','mobile','fon','rufnummer','nummer','direktwahl','geschäftstelefon','kontaktnummer');
       const phoneClean = phoneRaw.replace(/[^\d\s+\-\/()]/g, '').trim().replace(/\s+/g, ' ');
 
-      // ── Full address — priority: (1) full field, (2) compose from parts ──
-      const fullAddrField = find(
-        'vollständigeadresse','volladresse','anschrift','adresse','address','vollständigeadresse',
-        'standortadresse','firmenadresse','rechnungsadresse','kontaktadresse'
-      );
-
-      // Components
-      const street    = find('straße','strasse','street','strassehausnummer','strassenname','weg','gasse','allee','boulevard','ring');
-      const houseNum  = find('hausnummer','hnr','hausnr','nr','number','streetnumber','streetno');
-      const zip       = find('plz','postleitzahl','zip','zipcode','postalcode','postcode','pz');
-      const city      = find('ort','stadt','city','gemeinde','standort','location','bezirk','town','place');
-      const country   = find('land','country','staat','nation');
+      const fullAddrField = find('vollständigeadresse','volladresse','anschrift','adresse','address','standortadresse','firmenadresse','rechnungsadresse','kontaktadresse');
+      const street = find('straße','strasse','street','strassehausnummer','strassenname','weg','gasse','allee');
+      const houseNum = find('hausnummer','hnr','hausnr');
+      const zip = find('plz','postleitzahl','zip','zipcode','postalcode','postcode');
+      const city = find('ort','stadt','city','gemeinde','standort','location','bezirk','town','place');
+      const country = find('land','country','staat','nation');
 
       let region = '';
       if (fullAddrField && fullAddrField.length > 3) {
-        // Use the ready-made full address
         region = fullAddrField;
       } else {
-        // Compose from parts — proper order: Straße HausNr, PLZ Stadt, Land
         const streetLine = [street, houseNum].filter(Boolean).join(' ').trim();
-        const cityLine   = [zip, city].filter(Boolean).join(' ').trim();
+        const cityLine = [zip, city].filter(Boolean).join(' ').trim();
         const countryLine = (country && !['austria','österreich','at','de','germany','ch'].includes(country.toLowerCase())) ? country : '';
         region = [streetLine, cityLine, countryLine].filter(Boolean).join(', ');
       }
 
-      // ── CEO/GF — broad title matching ──
-      const ceo = find(
-        'geschäftsführer','geschäftsführerin','gf','ceo','inhaber','inhaberin','eigentümer','eigentümerin',
-        'leiter','leiterin','direktor','direktorin','vorstand','vorständin','gründer','gründerin',
-        'owner','founder','president','managing director','md','ansprechperson','ansprechpartner',
-        'contact person','hauptkontakt'
-      );
+      const ceo = find('geschäftsführer','geschäftsführerin','gf','ceo','inhaber','inhaberin','eigentümer','eigentümerin','leiter','leiterin','direktor','direktorin','vorstand','gründer','gründerin','owner','founder','president','ansprechperson','ansprechpartner','kontaktperson','hauptkontakt');
 
-      // ── Website — strip tracking params ──
       let website = find('website','web','url','homepage','internetadresse','webseite','www');
       if (website && !/^https?:\/\//i.test(website)) website = 'https://' + website.replace(/^\/\//, '');
 
+      // Require at least company name + one data field
+      if (!emailClean && !phoneClean && !region && !ceo) return null;
+
       return {
-        name,
-        email_general: emailClean,
-        emails: emailClean,
-        phone: phoneClean,
-        region: region.substring(0, 300),
-        ceos: ceo,
-        owner: ceo,
-        status: 'NEU',
-        statusDate: new Date().toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' }),
+        name, email_general: emailClean, emails: emailClean, phone: phoneClean,
+        region: region.substring(0, 300), ceos: ceo, owner: ceo,
+        status: 'NEU', statusDate: new Date().toLocaleDateString('de-AT',{day:'2-digit',month:'2-digit',year:'numeric'}),
         createdAt: new Date().toISOString(),
-        industry: find('branche','industry','geschäftsfeld','geschäftsbereich','sektor','typ','kategorie','sector','type') || '',
-        notes: find('notiz','notizen','note','notes','anmerkung','anmerkungen','bemerkung','bemerkungen','kommentar','info') || '',
-        website,
-        description: find('beschreibung','description','zusammenfassung','summary','profil','über','about') || '',
+        industry: find('branche','industry','geschäftsfeld','sektor','typ','kategorie','sector','type') || '',
+        notes: find('notiz','notizen','note','notes','anmerkung','bemerkung','kommentar','info') || '',
+        website, description: find('beschreibung','description','zusammenfassung','summary','profil','über','about') || '',
       };
     }
 
@@ -1738,44 +1730,69 @@
     let _metaStatusCache = null;
 
     async function updateMetaStats() {
+      const header = document.getElementById('metaStatusHeader');
+      const actionBtn = document.getElementById('metaActionBtn');
+      const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
       try {
         const res = await fetch('/api/meta/status', {
           headers: { 'Authorization': `Bearer ${state.token}` }
         });
-        if (!res.ok) return;
+        if (!res.ok) throw new Error('API error');
         const data = await res.json();
         _metaStatusCache = data;
 
-        const guide = document.getElementById('metaSetupGuide');
-        const dashboard = document.getElementById('metaDashboard');
-        if (!guide || !dashboard) return;
-
         if (data.connected) {
-          guide.style.display = 'none';
-          dashboard.style.display = 'block';
-          // Populate connected state
-          const userTag = document.getElementById('metaUserTag');
-          if (userTag) userTag.textContent = data.userName ? `(${data.userName})` : '';
+          // Connected state
+          if (header) header.innerHTML = `
+            <div style="width:10px;height:10px;background:#16a34a;border-radius:50%;box-shadow:0 0 10px rgba(22,163,74,0.5);"></div>
+            <span style="font-weight:700;font-size:0.9rem;">Live Status: <span style="color:#16a34a;">Verbunden</span></span>
+            <span style="color:var(--text-muted);font-size:0.82rem;">${data.userName ? '(' + data.userName + ')' : ''}</span>
+          `;
+          if (actionBtn) { actionBtn.innerHTML = '<i data-lucide="refresh-cw" style="width:18px;height:18px;"></i> Sync'; actionBtn.onclick = () => updateMetaStats(); }
+
           // Populate Ad Account dropdown
           const acctSel = document.getElementById('metaAccountSelect');
           if (acctSel && data.adAccounts?.length) {
             acctSel.innerHTML = '<option value="">Ad Account wählen</option>' +
               data.adAccounts.map(a => `<option value="${a.id}">${a.name || a.id}</option>`).join('');
           }
-          // If insights already in cache (after account selection), populate KPIs
-          if (data.insights) populateMetaKPIs(data.insights);
+          // Populate KPIs if insights available
+          if (data.insights) {
+            const ins = data.insights;
+            set('metaTotalLeads', ins.actions?.find(a => a.action_type === 'lead')?.value || '0');
+            set('metaSpend', '€ ' + (parseFloat(ins.spend)||0).toLocaleString('de-DE',{minimumFractionDigits:2}));
+            set('metaCPL', ins.actions ? '€ ' + ((parseFloat(ins.spend)||0) / Math.max(1, parseInt(ins.actions?.find(a => a.action_type === 'lead')?.value || 1))).toLocaleString('de-DE',{minimumFractionDigits:2}) : '–');
+            set('metaCR', ins.clicks > 0 ? ((parseInt(ins.actions?.find(a => a.action_type === 'lead')?.value || 0) / parseInt(ins.clicks) * 100).toFixed(1) + '%') : '–');
+            set('metaAds', data.campaigns?.filter(c => c.status === 'ACTIVE').length || '0');
+            set('metaImpressions', parseInt(ins.impressions || 0).toLocaleString());
+            set('metaClicks', parseInt(ins.clicks || 0).toLocaleString());
+            set('metaCPC', '€ ' + (parseFloat(ins.cpc)||0).toLocaleString('de-DE',{minimumFractionDigits:2}));
+            set('metaTotalSub', 'Letzte 30 Tage');
+            set('metaSpendSub', 'Monatsbudget');
+          }
           if (data.campaigns?.length) renderMetaCampaigns(data.campaigns);
+          // Close modal if was open
+          closeModal('metaSetupModal');
         } else {
-          guide.style.display = 'block';
-          dashboard.style.display = 'none';
+          // Not connected — show defaults
+          if (header) header.innerHTML = `
+            <div style="width:10px;height:10px;background:#ef4444;border-radius:50%;box-shadow:0 0 10px rgba(239,68,68,0.5);"></div>
+            <span style="font-weight:700;font-size:0.9rem;">Status: <span style="color:#ef4444;">Nicht verbunden</span></span>
+          `;
+          if (actionBtn) { actionBtn.innerHTML = '<i data-lucide="zap" style="width:18px;height:18px;"></i> Verbinden'; actionBtn.onclick = () => openModal('metaSetupModal'); }
+          ['metaTotalLeads','metaCPL','metaSpend','metaCR','metaAds','metaImpressions','metaClicks','metaCPC'].forEach(id => set(id, '–'));
+          set('metaTotalSub', 'Account koppeln');
+          set('metaSpendSub', 'Keine Daten');
         }
         lucide.createIcons();
       } catch(e) {
-        // If backend not configured yet, just show the setup guide
-        const guide = document.getElementById('metaSetupGuide');
-        const dashboard = document.getElementById('metaDashboard');
-        if (guide) guide.style.display = 'block';
-        if (dashboard) dashboard.style.display = 'none';
+        // Backend not ready — show not connected state
+        if (header) header.innerHTML = `
+          <div style="width:10px;height:10px;background:#ef4444;border-radius:50%;box-shadow:0 0 10px rgba(239,68,68,0.5);"></div>
+          <span style="font-weight:700;font-size:0.9rem;">Status: <span style="color:#ef4444;">Nicht verbunden</span></span>
+        `;
+        if (actionBtn) { actionBtn.innerHTML = '<i data-lucide="zap" style="width:18px;height:18px;"></i> Verbinden'; actionBtn.onclick = () => openModal('metaSetupModal'); }
         lucide.createIcons();
       }
     }
@@ -2583,6 +2600,66 @@
           </button>
           <button class="btn btn-outline" style="justify-content:center;" onclick="closeModal('apptModal')">Abbrechen</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- META SETUP MODAL -->
+  <div class="modal-overlay" id="metaSetupModal" onclick="if(event.target===this)closeModal('metaSetupModal')">
+    <div class="modal-box" style="max-width:640px;">
+      <button class="modal-close" onclick="closeModal('metaSetupModal')"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+      <div class="modal-title" style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;">
+        <i data-lucide="link" style="color:var(--primary);width:22px;height:22px;"></i> Meta Business verbinden
+      </div>
+      <div style="display:flex;margin-bottom:2rem;border-radius:10px;overflow:hidden;">
+        <div id="ms-step1" style="flex:1;text-align:center;padding:0.7rem;background:var(--primary);color:white;font-weight:700;font-size:0.82rem;">1. Vorbereitung</div>
+        <div id="ms-step2" style="flex:1;text-align:center;padding:0.7rem;background:#f1f5f9;color:var(--text-muted);font-weight:700;font-size:0.82rem;border-left:2px solid white;">2. App Setup</div>
+        <div id="ms-step3" style="flex:1;text-align:center;padding:0.7rem;background:#f1f5f9;color:var(--text-muted);font-weight:700;font-size:0.82rem;border-left:2px solid white;">3. Verbinden</div>
+      </div>
+      <div id="metaStep1Content">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:8px;"><i data-lucide="check-circle" style="color:#16a34a;width:18px;"></i> Was du brauchst</h3>
+        <div style="display:flex;flex-direction:column;gap:0.6rem;margin-bottom:1.5rem;">
+          <div style="display:flex;align-items:center;gap:0.75rem;padding:0.85rem 1rem;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;">
+            <i data-lucide="monitor" style="color:var(--primary);width:20px;flex-shrink:0;"></i>
+            <div><div style="font-weight:700;font-size:0.85rem;">Meta Business Manager Account</div><div style="color:var(--text-muted);font-size:0.78rem;">business.facebook.com, kostenlos</div></div>
+            <a href="https://business.facebook.com" target="_blank" style="margin-left:auto;font-size:0.75rem;color:var(--primary);font-weight:600;">Öffnen</a>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.75rem;padding:0.85rem 1rem;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;">
+            <i data-lucide="credit-card" style="color:var(--primary);width:20px;flex-shrink:0;"></i>
+            <div><div style="font-weight:700;font-size:0.85rem;">Mindestens ein aktives Ad Account</div><div style="color:var(--text-muted);font-size:0.78rem;">Werbekonto im Business Manager</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.75rem;padding:0.85rem 1rem;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;">
+            <i data-lucide="key" style="color:var(--primary);width:20px;flex-shrink:0;"></i>
+            <div><div style="font-weight:700;font-size:0.85rem;">Meta App (App ID + Secret)</div><div style="color:var(--text-muted);font-size:0.78rem;">developers.facebook.com</div></div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="metaSetupNext(2)" style="width:100%;justify-content:center;">Weiter <i data-lucide="arrow-right" style="width:16px;"></i></button>
+      </div>
+      <div id="metaStep2Content" style="display:none;">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:8px;"><i data-lucide="code" style="color:var(--primary);width:18px;"></i> Meta Developer App einrichten</h3>
+        <ol style="display:flex;flex-direction:column;gap:0.85rem;list-style:none;padding:0;margin-bottom:1.5rem;">
+          <li style="display:flex;gap:0.75rem;align-items:flex-start;"><div style="width:24px;height:24px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.8rem;flex-shrink:0;">1</div><div><a href="https://developers.facebook.com/apps" target="_blank" style="color:var(--primary);font-weight:700;">developers.facebook.com/apps</a> — Neue App (Typ: Business)</div></li>
+          <li style="display:flex;gap:0.75rem;align-items:flex-start;"><div style="width:24px;height:24px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.8rem;flex-shrink:0;">2</div><div>Marketing API + Facebook Login aktivieren</div></li>
+          <li style="display:flex;gap:0.75rem;align-items:flex-start;"><div style="width:24px;height:24px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.8rem;flex-shrink:0;">3</div><div>Redirect URI setzen:<br><code style="background:#f1f5f9;padding:4px 8px;border-radius:6px;font-size:0.72rem;">https://hf-media-recruiting.vercel.app/api/meta/callback</code></div></li>
+          <li style="display:flex;gap:0.75rem;align-items:flex-start;"><div style="width:24px;height:24px;background:var(--primary);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.8rem;flex-shrink:0;">4</div><div>Vercel Env Vars setzen:<br><code style="background:#f1f5f9;padding:4px 8px;border-radius:6px;font-size:0.72rem;">META_APP_ID / META_APP_SECRET / META_REDIRECT_URI</code></div></li>
+        </ol>
+        <div style="display:flex;gap:0.75rem;">
+          <button class="btn btn-outline" onclick="metaSetupNext(1)" style="flex:1;justify-content:center;"><i data-lucide="arrow-left" style="width:16px;"></i> Zurück</button>
+          <button class="btn btn-primary" onclick="metaSetupNext(3)" style="flex:1;justify-content:center;">Weiter <i data-lucide="arrow-right" style="width:16px;"></i></button>
+        </div>
+      </div>
+      <div id="metaStep3Content" style="display:none;">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:0.75rem;display:flex;align-items:center;gap:8px;"><i data-lucide="external-link" style="color:var(--primary);width:18px;"></i> Mit Meta verbinden</h3>
+        <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1.25rem;">Klicke auf den Button um das Facebook Login Popup zu öffnen und den Zugriff zu autorisieren.</p>
+        <div style="background:#f1f5f9;border-radius:10px;padding:1rem;margin-bottom:1.25rem;font-size:0.8rem;color:var(--text-muted);">
+          <div style="font-weight:700;margin-bottom:4px;">Benötigte Berechtigungen:</div>
+          <code>ads_management</code>, <code>ads_read</code>, <code>business_management</code>
+        </div>
+        <button id="metaConnectBtn" class="btn btn-primary" onclick="startMetaOAuth()" style="width:100%;justify-content:center;background:linear-gradient(135deg,#1877F2,#42a5f5);font-size:1rem;padding:0.9rem 1.5rem;gap:0.5rem;">
+          <i data-lucide="external-link" style="width:20px;"></i> Mit Meta verbinden
+        </button>
+        <div id="metaConnectStatus" style="margin-top:0.75rem;font-size:0.82rem;color:var(--text-muted);text-align:center;min-height:1.2rem;"></div>
+        <button class="btn btn-outline" onclick="metaSetupNext(2)" style="width:100%;justify-content:center;margin-top:0.75rem;"><i data-lucide="arrow-left" style="width:16px;"></i> Zurück</button>
       </div>
     </div>
   </div>

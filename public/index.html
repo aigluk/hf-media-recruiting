@@ -39,7 +39,7 @@
     .btn-outline { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
     .btn-outline:hover { background: var(--surface-hover); transform: translateY(-1px); }
 
-    .app-layout { display: flex; min-height: 100vh; overflow: hidden; opacity: 0; transition: opacity 0.3s; }
+    .app-layout { display: flex; height: 100vh; overflow: hidden; opacity: 0; transition: opacity 0.3s; }
     .app-layout.loaded { opacity: 1; }
 
     .sidebar { 
@@ -54,7 +54,12 @@
     .nav-item:hover { background: var(--surface-hover); color: var(--text); }
     .nav-item.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(37,99,235,0.2); }
 
-    .main-content { flex: 1; padding: 2rem 2.5rem; overflow-x: auto; min-width: 0; }
+    .main-content { 
+      flex: 1; padding: 2rem 2.5rem; 
+      overflow-y: auto; overflow-x: hidden; 
+      height: 100vh; min-width: 0; 
+      will-change: transform; -webkit-overflow-scrolling: touch; 
+    }
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; gap: 1rem; }
     .sidebar-toggle { display: none; background: var(--primary); color: white; border: none; border-radius: 8px; width: 42px; height: 42px; align-items: center; justify-content: center; cursor: pointer; z-index: 1100; flex-shrink: 0; box-shadow: 0 4px 12px rgba(14,42,71,0.2); }
     .sidebar-toggle svg { width: 22px; height: 22px; }

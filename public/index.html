@@ -1974,9 +1974,17 @@
         calState.month = now.getMonth();
         calState.selectedDay = now.getDate();
       } else {
-        calState.month += dir;
-        if (calState.month > 11) { calState.month = 0; calState.year++; }
-        if (calState.month < 0)  { calState.month = 11; calState.year--; }
+        if (calView === 'day') {
+          const d = new Date(calState.year, calState.month, calState.selectedDay + dir);
+          calState.year = d.getFullYear(); calState.month = d.getMonth(); calState.selectedDay = d.getDate();
+        } else if (calView === 'week') {
+          const d = new Date(calState.year, calState.month, calState.selectedDay + (dir * 7));
+          calState.year = d.getFullYear(); calState.month = d.getMonth(); calState.selectedDay = d.getDate();
+        } else {
+          calState.month += dir;
+          if (calState.month > 11) { calState.month = 0; calState.year++; }
+          if (calState.month < 0)  { calState.month = 11; calState.year--; }
+        }
       }
       renderCalendar();
     }
@@ -2942,7 +2950,8 @@
       const emailCandidates = [l.email_general, l.emails, l.email, l.email_ceo, l.Email, l.mail].map(e => e ? String(e).trim() : '');
       const email = emailCandidates.find(e => e && e.includes('@')) || '–';
       
-      const notesRaw = l.notes || l.note || l.description || '';
+      const notes = (l.notes || l.note || l.description || '–').replace(/</g, '&lt;').replace(/Termin:\s*[^.]+\./g, '').replace(/Termin:\s*\d{4}-\d{2}-\d{2}.*/g, '').replace(/\n\n+/g, '\n').trim();
+      const notesRaw = (l.notes || l.note || l.description || '').replace(/Termin:\s*[^.]+\./g, '').replace(/Termin:\s*\d{4}-\d{2}-\d{2}.*/g, '').replace(/\n\n+/g, '\n').trim();
 
       grid.innerHTML = `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1.25rem; margin-bottom: 1rem;">
@@ -3047,25 +3056,26 @@
       }).catch(err => showToast('Fehler beim Speichern: ' + err.message, '#ef4444'));
     }
 
-    function openApptModal(idx = null) {
+    function openApptModal(idx = null, dateStr = null, hourNum = undefined) {
       const sel = document.getElementById('apptLead');
-      if (idx !== null) {
+      if (idx !== null && idx !== undefined && typeof idx !== 'object') {
         sel.innerHTML = `<option value="${idx}">${state.leads[idx].name}</option>`;
       } else {
         sel.innerHTML = '<option value="">— Lead wählen —</option>' + 
           state.leads.map((l,i) => `<option value="${i}">${String(l.name||'Lead '+i).replace(/</g,'&lt;')}</option>`).join('');
       }
       
-      if (date) {
-        document.getElementById('apptDate').value = date;
+      if (dateStr && typeof dateStr === 'string') {
+        document.getElementById('apptDate').value = dateStr;
       } else {
         const d = new Date();
-        document.getElementById('apptDate').value = d.toISOString().split('T')[0];
+        // convert to local date picking format
+        document.getElementById('apptDate').value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
       }
 
-      if (hour !== undefined) {
-        const hStr = String(hour).padStart(2,'0') + ':00';
-        const hTo = String(hour + 1).padStart(2,'0') + ':00';
+      if (hourNum !== undefined && typeof hourNum === 'number') {
+        const hStr = String(hourNum).padStart(2,'0') + ':00';
+        const hTo = String(hourNum + 1).padStart(2,'0') + ':00';
         document.getElementById('apptFrom').value = hStr;
         document.getElementById('apptTo').value = hTo;
       } else {

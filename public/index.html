@@ -281,9 +281,9 @@
     /* Calendar Day/Week/Month grid */
     .cal-day-grid { display: grid; grid-template-columns: 60px 1fr; overflow-y: auto; max-height: 500px; }
     .cal-hour-label { font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-align: right; padding-right: 14px; height: 56px; display: flex; align-items: flex-start; padding-top: 4px; flex-shrink: 0; }
-    .cal-hour-slot { border-top: 1px solid var(--bg); height: 56px; position: relative; cursor: pointer; transition: background 0.12s; }
+    .cal-hour-slot { border-top: 1px solid var(--bg); height: 56px; position: relative; cursor: pointer; transition: background 0.12s; display: flex; flex-direction: row; gap: 4px; padding: 2px 4px; }
     .cal-hour-slot:hover { background: var(--surface-hover); }
-    .cal-slot-event { position: absolute; inset: 2px 4px; background: #eff6ff; border-left: 3px solid var(--primary); border-radius: 6px; padding: 3px 7px; font-size: 11px; font-weight: 600; color: var(--primary); overflow: hidden; cursor: pointer; display: flex; align-items: center; }
+    .cal-slot-event { flex: 1; background: #eff6ff; border-left: 3px solid var(--primary); border-radius: 6px; padding: 3px 7px; font-size: 11px; font-weight: 600; color: var(--primary); overflow: hidden; cursor: pointer; display: flex; align-items: center; }
     .cal-slot-event.orange { background: #fff7ed; border-color: #f97316; color: #c2410c; }
 
     .cal-week-grid { display: grid; grid-template-columns: 60px repeat(7, 1fr); overflow-y: auto; max-height: 520px; }
@@ -291,10 +291,10 @@
     .cal-week-header { text-align: center; padding: 8px 2px; font-weight: 700; font-size: 0.75rem; color: var(--text-muted); border-bottom: 2px solid var(--bg); position: sticky; top: 0; background: var(--surface); z-index: 2; }
     .cal-week-header .big { font-size: 1.25rem; font-weight: 700; color: var(--text); line-height: 1.2; }
     .cal-week-header .big.today { background: var(--primary); color:white; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; margin: 2px auto 0; }
-    .cal-week-col { border-top: 1px solid var(--bg); height: 48px; border-right: 1px solid var(--bg); position: relative; cursor: pointer; transition: background 0.12s; }
+    .cal-week-col { border-top: 1px solid var(--bg); height: 48px; border-right: 1px solid var(--bg); position: relative; cursor: pointer; transition: background 0.12s; display: flex; flex-direction: row; gap: 2px; padding: 2px; }
     .cal-week-col:last-child { border-right: none; }
     .cal-week-col:hover { background: var(--surface-hover); }
-    .cal-week-event { position: absolute; inset: 2px 2px; background: #eff6ff; border-radius: 4px; font-size: 10px; font-weight: 600; color: var(--primary); padding: 2px 5px; overflow: hidden; cursor: pointer; display: flex; align-items: center; }
+    .cal-week-event { flex: 1; background: #eff6ff; border-radius: 4px; font-size: 10px; font-weight: 600; color: var(--primary); padding: 2px 5px; overflow: hidden; cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center; }
     .cal-week-event.orange { background: #fff7ed; color: #c2410c; }
     .cal-corner { border-bottom: 2px solid var(--bg); position: sticky; top:0; background: var(--surface); z-index:2; }
 
@@ -1897,9 +1897,9 @@
         const evs = slotMap[h] || [];
         let evHtml = evs.map(ev => {
           const name = String(ev.l.name || '–').replace(/</g, '&lt;');
-          return `<div class="cal-slot-event orange" style="margin-bottom:2px;" onclick="event.stopPropagation(); showLeadDetail(${ev.idx})" title="Termin: ${name}">${name}</div>`;
+          return `<div class="cal-slot-event orange" onclick="event.stopPropagation(); showLeadDetail(${ev.idx})" title="Termin: ${name}">${name}</div>`;
         }).join('');
-        return `<div class="cal-hour-label" style="${isCurr ? 'color:var(--primary);font-weight:800;' : ''}">${timeStr}</div><div class="cal-hour-slot" style="display:flex;flex-direction:column;" onclick="openApptModal(undefined, '${dayDate}', ${h})">${evHtml}</div>`;
+        return `<div class="cal-hour-label" style="${isCurr ? 'color:var(--primary);font-weight:800;' : ''}">${timeStr}</div><div class="cal-hour-slot" onclick="openApptModal(undefined, '${dayDate}', ${h})">${evHtml}</div>`;
       }).join('');
       grid.innerHTML = `<div class="cal-day-grid">${rows}</div>`;
     }
@@ -1955,10 +1955,10 @@
           const evs = weekEvents[key] || [];
           let evHtml = evs.map(ev => {
             const name = String(ev.name || '').replace(/</g, '&lt;').substring(0, 20);
-            return `<div class="cal-week-event orange" style="margin-bottom:2px;" onclick="event.stopPropagation(); showLeadDetail(${ev.idx})" title="Details">${name}</div>`;
+            return `<div class="cal-week-event orange" onclick="event.stopPropagation(); showLeadDetail(${ev.idx})" title="Details">${name}</div>`;
           }).join('');
           const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-          gridHtml += `<div class="cal-week-col" style="display:flex;flex-direction:column;" onclick="openApptModal(undefined, '${ds}', ${h})">${evHtml}</div>`;
+          gridHtml += `<div class="cal-week-col" onclick="openApptModal(undefined, '${ds}', ${h})">${evHtml}</div>`;
         });
       });
       grid.innerHTML = `<div class="cal-week-grid">${gridHtml}</div>`;

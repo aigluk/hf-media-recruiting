@@ -1915,9 +1915,9 @@
   <div class="modal-overlay" id="leadModal" onclick="if(event.target===this)closeModal('leadModal')">
     <div class="modal-box">
       <button class="modal-close" onclick="closeModal('leadModal')"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
-      <div class="modal-title" id="leadModalTitle">Lead Details</div>
-      <div class="modal-grid" id="leadModalGrid"></div>
-      <div class="modal-section" id="leadModalActions"></div>
+      <h2 class="modal-title" id="leadModalTitle">Lead Details</h2>
+      <div id="leadModalGrid"></div>
+      <div id="leadModalActions"></div>
     </div>
   </div>
 
@@ -2296,16 +2296,19 @@
       ];
       
       const grid = document.getElementById('leadModalGrid');
-      const infoGridHtml = infoFields.map(([label, val]) => `
-        <div class="modal-field">
+      const infoGridHtml = infoFields.map(([label, val]) => {
+        const isWide = label === 'E-Mail' || label === 'Website' || label === 'Hausanschrift';
+        return `
+        <div class="modal-field" style="${isWide ? 'grid-column: span 2;' : ''}">
           <label style="font-size: 0.68rem; margin-bottom: 2px;">${label}</label>
-          <div class="val" style="font-size: 0.88rem; line-height: 1.4; word-break: break-word;">${String(val).includes('<a') ? val : String(val).replace(/</g,'&lt;')}</div>
-        </div>`).join('');
+          <div class="val" style="font-size: 0.88rem; line-height: 1.4; word-break: break-all;">${String(val).includes('<a') ? val : String(val).replace(/</g,'&lt;')}</div>
+        </div>`;
+      }).join('');
       
       const notes = (l.notes || l.note || l.description || '–').replace(/</g, '&lt;');
 
       grid.innerHTML = `
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem 2rem; margin-bottom: 2rem;">
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem 2rem;">
           ${infoGridHtml}
         </div>
         <div class="modal-section" style="border-top: 1px solid var(--bg); padding-top: 1.5rem; margin-top: 1.5rem;">

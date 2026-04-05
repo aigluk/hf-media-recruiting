@@ -835,6 +835,7 @@
                 <p style="color:var(--text-muted); font-size:0.875rem; margin-bottom:1.25rem;">.CSV, .XLSX, .PDF oder .DOCX</p>
                 <input type="file" id="importFile" style="display:none;" accept=".csv,.xlsx,.xls,.pdf,.docx,.doc" onchange="handleFileSelect(event)">
                 <button class="btn btn-primary" onclick="document.getElementById('importFile').click()">Eigene Datei wählen</button>
+                <div id="selectedFileName" style="margin-top:1rem; font-weight:600; color:var(--primary); font-size:0.9rem; word-break:break-all;"></div>
               </div>
 
               <div id="importPreview" style="display:none; margin-top:2rem;">
@@ -2776,6 +2777,8 @@
     function handleFiles(files) {
       if (!files.length) return;
       const file = files[0];
+      const fnDisplay = document.getElementById('selectedFileName');
+      if (fnDisplay) fnDisplay.textContent = 'Ausgewählt: ' + file.name;
       showLoader(`Analysiere ${file.name}...`);
       
       const reader = new FileReader();
@@ -3022,14 +3025,14 @@
 
       const actions = document.getElementById('leadModalActions');
       actions.innerHTML = `
-        <div style="display:flex; justify-content: flex-end; align-items:center; margin-top:0.5rem; flex-wrap:wrap; gap:0.5rem; border-top:1px solid var(--bg); padding-top:0.75rem;">
-          <button class="btn btn-outline" style="padding:0.45rem 0.65rem; font-size:0.8rem;" onclick="closeModal('leadModal'); openApptModal(${idx});">
-            <i data-lucide="calendar-plus" style="width:15px;height:15px;"></i> Neuer Termin
+        <div style="display:flex; justify-content: flex-end; align-items:center; margin-top:0.5rem; flex-wrap:nowrap; gap:0.5rem; border-top:1px solid var(--bg); padding-top:0.75rem; overflow-x:auto;">
+          <button class="btn btn-outline" style="width:auto; flex:none; padding:0.45rem 0.5rem; font-size:0.8rem; white-space:nowrap;" onclick="closeModal('leadModal'); openApptModal(${idx});">
+            <i data-lucide="calendar-plus" style="width:15px;height:15px; flex-shrink:0;"></i> Neuer Termin
           </button>
-          <button class="btn btn-primary" style="padding:0.45rem 0.65rem; font-size:0.8rem;" onclick="sendInvite(${idx})">
-            <i data-lucide="send" style="width:15px;height:15px;"></i> Einladung
+          <button class="btn btn-primary" style="width:auto; flex:none; padding:0.45rem 0.5rem; font-size:0.8rem; white-space:nowrap;" onclick="sendInvite(${idx})">
+            <i data-lucide="send" style="width:15px;height:15px; flex-shrink:0;"></i> Einladung
           </button>
-          ${l.appointmentDate ? `<button class="btn btn-outline" style="padding:0.45rem 0.65rem; border-color:#ef4444; color:#ef4444; background:transparent;" title="Termin löschen" onclick="deleteAppt(${idx})"><i data-lucide="trash-2" style="width:15px;height:15px;"></i></button>` : ''}
+          ${l.appointmentDate ? `<button class="btn btn-outline" style="width:auto; flex:none; padding:0.45rem 0.5rem; border-color:#ef4444; color:#ef4444; background:transparent; white-space:nowrap;" title="Termin löschen" onclick="deleteAppt(${idx})"><i data-lucide="trash-2" style="width:15px;height:15px; flex-shrink:0;"></i></button>` : ''}
         </div>`;
       openModal('leadModal');
     }

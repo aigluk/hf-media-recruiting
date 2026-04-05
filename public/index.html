@@ -71,6 +71,13 @@
       width: 100%; padding: 1.15rem; border-radius: 12px; border: none; cursor: pointer; transition: background 0.2s;
     }
     #authOverlay .auth-box .btn-primary:hover { background: var(--primary-hover); transform: none; }
+    
+    #authOverlay .eye-btn {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; color: var(--text-muted);
+      display: flex; align-items: center; justify-content: center; padding: 8px;
+    }
+    #authOverlay .eye-btn svg { width: 18px !important; height: 18px !important; stroke-width: 2.5px; }
 
     .app-layout { display: flex; height: 100vh; overflow: hidden; opacity: 0; transition: opacity 0.3s; }
     .app-layout.loaded { opacity: 1; }
@@ -388,10 +395,10 @@
 
       <div class="auth-input-group">
         <label>Master Passwort</label>
-        <div style="position:relative;">
+        <div style="position:relative; width: 100%;">
           <input type="password" id="passInput" class="input-field" placeholder="••••••••" onkeydown="if(event.key==='Enter') login()">
-          <button onclick="(function(){var i=document.getElementById('passInput');var b=document.getElementById('eyeIcon');if(i.type==='password'){i.type='text';b.setAttribute('data-lucide','eye-off');}else{i.type='password';b.setAttribute('data-lucide','eye');}lucide.createIcons();})()" style="position:absolute;right:18px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);display:flex;align-items:center;padding:0;" type="button">
-            <i data-lucide="eye" id="eyeIcon" style="width:18px;height:18px;"></i>
+          <button onclick="(function(){var i=document.getElementById('passInput');var b=document.getElementById('eyeIcon');if(i.type==='password'){i.type='text';b.setAttribute('data-lucide','eye-off');}else{i.type='password';b.setAttribute('data-lucide','eye');}lucide.createIcons();})()" class="eye-btn" type="button">
+            <i data-lucide="eye" id="eyeIcon"></i>
           </button>
         </div>
       </div>

@@ -43,8 +43,8 @@
     .app-layout.loaded { opacity: 1; }
 
     .sidebar { 
-      width: 180px; background: var(--surface); height: 100vh; position: sticky; top: 0; 
-      display: flex; flex-direction: column; padding: 2rem 1rem; border-right: 1px solid var(--bg); 
+      width: 200px; background: var(--surface); height: 100vh; position: sticky; top: 0; 
+      display: flex; flex-direction: column; padding: 2rem 1.25rem; border-right: 1px solid var(--bg); 
       flex-shrink: 0; box-shadow: 4px 0 15px rgba(0,0,0,0.02); z-index: 100;
     }
     .brand { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 2.5rem; padding: 0 0.875rem; letter-spacing: -0.01em; }
@@ -54,7 +54,7 @@
     .nav-item:hover { background: var(--surface-hover); color: var(--text); }
     .nav-item.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(37,99,235,0.2); }
 
-    .main-content { flex: 1; padding: 1.5rem 1rem; overflow-x: hidden; min-width: 0; }
+    .main-content { flex: 1; padding: 2rem 2.5rem; overflow-x: auto; min-width: 0; }
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; gap: 1rem; }
     .sidebar-toggle { display: none; background: var(--primary); color: white; border: none; border-radius: 8px; width: 42px; height: 42px; align-items: center; justify-content: center; cursor: pointer; z-index: 1100; flex-shrink: 0; box-shadow: 0 4px 12px rgba(14,42,71,0.2); }
     .sidebar-toggle svg { width: 22px; height: 22px; }
@@ -101,12 +101,12 @@
 
     /* TABLE — compact single-row layout */
     .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    table { width: 100%; border-collapse: collapse; text-align: left; min-width: 500px; }
-    th { font-size: 0.62rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; padding: 0.5rem 0.4rem; border-bottom: 1px solid var(--bg); white-space: nowrap; letter-spacing: 0.05em; }
-    td { padding: 0.7rem 0.4rem; font-size: 0.8rem; vertical-align: middle; border-bottom: 1px solid var(--bg); transition: background 0.15s; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
-    td.td-actions { overflow: visible; max-width: none; width: 1%; padding-right: 0; padding-left: 0.2rem; }
+    table { width: 100%; border-collapse: collapse; text-align: left; min-width: 700px; }
+    th { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; padding: 0.75rem 0.75rem; border-bottom: 1px solid var(--bg); white-space: nowrap; letter-spacing: 0.05em; }
+    td { padding: 1.1rem 0.75rem; font-size: 0.875rem; vertical-align: middle; border-bottom: 1px solid var(--bg); transition: background 0.15s; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+    td.td-actions { overflow: visible; max-width: none; width: 1%; }
     tr:hover td { background: var(--surface-hover); }
-    .td-name { font-weight: 700; color: var(--text); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+    .td-name { font-weight: 800; color: var(--text); font-size: 0.85rem; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; max-width: 180px; letter-spacing: 0.01em; }
     .td-sub { font-size: 0.8rem; color: var(--text-muted); display:flex; align-items:center; gap:5px; font-weight:500; overflow:hidden; text-overflow:ellipsis; max-width:130px; }
     .note-input { width: 100%; min-width: 100px; max-width: 150px; padding: 0.4rem 0.6rem; border: none; background: transparent; border-radius: 8px; font-size: 0.82rem; outline: none; transition: background 0.2s; color: var(--text); }
     .note-input:hover, .note-input:focus { background: var(--bg); }
@@ -119,23 +119,22 @@
     .st-keininteresse { background: #fef2f2; color: #dc2626; }
     .st-abschluss { background: #f0fdf4; color: #059669; }
     
-    .status-select-inline { appearance: none; height: 32px; padding: 0 20px 0 8px; border-radius: 8px; font-size: 0.72rem; font-weight: 700; border: 1px solid transparent; cursor: pointer; text-align: left; outline: none; transition: all 0.2s; white-space: nowrap; width: 100%; min-width: 110px; box-sizing: border-box; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 4px center; }
-    .status-select-inline:hover { filter: brightness(0.95); }
+    .status-select-inline { appearance: none; height: 34px; padding: 0 28px 0 12px; border-radius: 99px; font-size: 0.75rem; font-weight: 700; border: none; cursor: pointer; text-align: center; outline: none; transition: all 0.2s; white-space: nowrap; width: 100%; min-width: 130px; box-sizing: border-box; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
+    .status-select-inline:hover { opacity: 0.85; transform: scale(1.02); }
     
-    .note-btn { background: var(--primary); color: white !important; height: 32px; padding: 0 8px; border-radius: 8px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; font-size: 0.72rem; font-weight: 600; border: none; transition: all 0.2s; white-space: nowrap; box-sizing: border-box; }
-    .note-btn:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 2px 6px rgba(14,42,71,0.15); }
-    .note-btn i { width: 12px; height: 12px; stroke: white; flex-shrink: 0; }
+    .note-cell-text { font-size: 0.82rem; color: var(--text-muted); cursor: pointer; transition: color 0.15s; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .note-cell-text:hover { color: var(--primary); text-decoration: underline; }
 
-    .pipeline-tabs { display: flex; gap: 0.3rem; margin-bottom: 1.25rem; overflow-x: auto; padding-bottom: 4px; }
-    .pipeline-tab { padding: 0.4rem 0.8rem; font-weight: 600; font-size: 0.78rem; color: var(--text-muted); background: transparent; border-radius: 99px; cursor: pointer; transition: all 0.2s; flex-shrink: 0; border: 2px solid transparent; }
+    .pipeline-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 4px; }
+    .pipeline-tab { padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.82rem; color: var(--text-muted); background: transparent; border-radius: 99px; cursor: pointer; transition: all 0.2s; flex-shrink: 0; border: 2px solid transparent; }
     .pipeline-tab:hover { background: var(--secondary); color: var(--text); }
     .pipeline-tab.active { background: var(--primary); color: white; border: 2px solid var(--primary); box-shadow: none; }
 
     /* Action buttons: always in a single horizontal row, no icon clipping */
-    .action-group { display: flex; gap: 3px; flex-wrap: nowrap; align-items: center; justify-content: flex-end; }
-    .action-icon { min-width: 29px; width: 29px; height: 29px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; border: none; background: var(--bg); color: var(--text-muted); cursor: pointer; transition: all 0.2s; text-decoration: none; flex-shrink: 0; overflow: visible; box-sizing: border-box; position: relative; }
+    .action-group { display: flex; gap: 5px; flex-wrap: nowrap; align-items: center; justify-content: flex-end; }
+    .action-icon { min-width: 32px; width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; border: none; background: var(--bg); color: var(--text-muted); cursor: pointer; transition: all 0.2s; text-decoration: none; flex-shrink: 0; overflow: visible; box-sizing: border-box; position: relative; }
     .action-icon:hover { color: var(--primary); background: #dee5ee; }
-    .action-icon svg, .action-icon i { width: 16px !important; height: 16px !important; pointer-events: none; flex-shrink: 0; }
+    .action-icon svg, .action-icon i { width: 17px !important; height: 17px !important; pointer-events: none; flex-shrink: 0; }
     .action-icon.dm { background: var(--primary); color: white; width: auto; padding: 0 12px; font-weight: 600; font-size: 12px; height: 32px; }
     .action-icon.dm:hover { background: var(--primary-hover); box-shadow: 0 3px 8px rgba(14,42,71,0.25); }
     .action-icon.cal { background: var(--bg); color: var(--text-muted); }
@@ -503,13 +502,13 @@
                       <span class="checkmark"></span>
                     </label>
                   </th>
-                  <th>Firmenname</th>
-                  <th>Kontakt</th>
-                   <th>Branche</th>
-                   <th>Ort</th>
-                   <th style="width:105px;">Status</th>
-                   <th style="width:90px;">Notiz</th>
-                   <th style="min-width: 170px; text-align:right; padding-right:3.5rem;">Aktionen</th>
+                  <th>FIRMENNAME</th>
+                  <th>ANSPRECHPERSON</th>
+                   <th>BRANCHE</th>
+                   <th>ORT</th>
+                   <th style="width:140px;">CRM STATUS</th>
+                   <th style="width:150px;">DEAL-NOTIZEN</th>
+                   <th style="text-align:right; padding-right:2.5rem;">AKTIONEN</th>
                 </tr>
               </thead>
               <tbody id="leadsTableBody"></tbody>
@@ -1795,7 +1794,6 @@
           const opts = PIPELINES.map(p => `<option value="${p.id}" ${p.id === status ? 'selected':''}>${p.label}</option>`).join('');
           const em = l.email || l.email_ceo || l.email_general || l.Email || l.mail || (l.emails ? String(l.emails).split(',')[0].trim() : '') || '';
           const tn = l.phone || l.tel || l.Phone || l.Telefon || l.phone_number || '';
-          const note = String(l.note || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
           const name = String(l.name || '–').replace(/</g, '&lt;');
           const owner = String(l.ceos || l.ceoname || l.ansprechperson || l.owner || '–').replace(/</g, '&lt;');
           const branch = String(getMainBranch(l.industry)).replace(/</g, '&lt;');
@@ -1803,34 +1801,33 @@
 
           return `
           <tr>
-            <td style="padding-left:3.5rem;">
+            <td style="padding-left:2.5rem;">
               <label class="checkbox-container">
                 <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="toggleLeadSelection(${idx}, event)">
                 <span class="checkmark"></span>
               </label>
             </td>
-            <td><div class="td-name" onclick="showLeadDetail(${idx})" style="cursor:pointer; transition:color 0.15s;" onmouseover="this.style.color='var(--primary)';" onmouseout="this.style.color='';" title="Popup öffnen">${name}</div></td>
-            <td><div class="td-sub" style="max-width:110px;"><i data-lucide="user" style="width:12px;"></i>&nbsp;${owner}</div></td>
-            <td><span style="font-size:11.5px;font-weight:600;padding-right:4px;">${branch}</span></td>
-            <td><span style="font-size:12px;font-weight:500;color:var(--text-muted); max-width:250px; display:block; overflow:hidden; text-overflow:ellipsis;">${city}</span></td>
+            <td><div class="td-name" onclick="showLeadDetail(${idx})" style="cursor:pointer;" title="Popup öffnen">${name}</div></td>
+            <td><div class="td-sub"><i data-lucide="user" style="width:14px;"></i>&nbsp;${owner}</div></td>
+            <td><span style="font-weight:600; color:var(--text);">${branch}</span></td>
+            <td><span style="color:var(--text-muted);">${city}</span></td>
             <td>
-              <select class="status-select-inline ${stCls}" onchange="saveLeadField(${idx}, 'status', this.value)" style="min-width:90px; font-size:0.7rem; padding-right:18px;">
+              <select class="status-select-inline ${stCls}" onchange="saveLeadField(${idx}, 'status', this.value)">
                 ${opts}
               </select>
             </td>
             <td>
-              <button class="note-btn" onclick="openNoteModal(${idx})" title="Notizen bearbeiten" style="padding:0 6px; font-size:0.68rem; gap:4px;">
-                <i data-lucide="edit-3" style="width:12px;height:12px;"></i>
-                <span>${l.note || l.notes ? 'Öffnen' : 'Neu'}</span>
-              </button>
+              <div class="note-cell-text" onclick="openNoteModal(${idx})" title="Notiz bearbeiten">
+                ${l.note || l.notes || 'Notiz...'}
+              </div>
             </td>
-            <td class="td-actions" style="padding-right:3.5rem;">
-              <div class="action-group" style="gap:2px;">
+            <td class="td-actions" style="padding-right:2.5rem;">
+              <div class="action-group">
                 <button class="action-icon info" onclick="showLeadDetail(${idx})" title="Details anzeigen"><i data-lucide="info"></i></button>
                 <button class="action-icon cal" onclick="openApptModal(${idx})" title="Termin eintragen"><i data-lucide="calendar"></i></button>
                 <a href="${tn ? 'tel:'+tn : 'javascript:;'}" class="action-icon" title="Anrufen" ${!tn ? 'style="opacity:0.3;pointer-events:none;"':''}><i data-lucide="phone"></i></a>
                 <a href="${em ? 'mailto:'+em : 'javascript:;'}" class="action-icon" title="E-Mail" ${!em ? 'style="opacity:0.3;pointer-events:none;"':''}><i data-lucide="mail"></i></a>
-                <button class="action-icon dm" onclick="openPitchModal(${idx})" style="padding:0 8px; font-size:11px;"><i data-lucide="send" style="width:13px;margin-right:3px;"></i> Pitch</button>
+                <button class="action-icon dm" onclick="openPitchModal(${idx})"><i data-lucide="send"></i> Pitch</button>
                 <button class="action-icon del" onclick="deleteLead(${idx})" title="Lead löschen"><i data-lucide="trash-2"></i></button>
               </div>
             </td>

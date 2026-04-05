@@ -1051,11 +1051,13 @@
         catch(e) { throw new Error(`HTTP ${res.status}: Kein gültiger Response`); }
         if (data.error) throw new Error(data.error);
         // Normalize statuses on load so filter always works
-        // Normalize statuses and BACKFILL dates on load (04.04.2026 for legacy leads)
+        // Normalize statuses and BACKFILL dates on load (dynamic for legacy leads)
+        const todayStr = new Date().toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
         state.leads = (Array.isArray(data.leads) ? data.leads : []).map(l => ({
           ...l,
           status: normalizeStatus(l.status),
-          statusDate: l.statusDate && l.statusDate !== '—' && l.statusDate !== '' ? l.statusDate : '04.04.2026'
+          statusDate: l.statusDate && l.statusDate !== '—' && l.statusDate !== '' ? l.statusDate : todayStr,
+          createdAt: l.createdAt || new Date().toISOString()
         }));
         window.__leads = state.leads;
         document.getElementById('authOverlay').style.display = 'none';
@@ -1078,7 +1080,8 @@
       const oldStatus = lead.status;
       lead[field] = field === 'status' ? normalizeStatus(value) : value;
       if (field === 'status') {
-        lead.statusDate = new Date().toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
+        const today = new Date();
+        lead.statusDate = today.toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
       }
       updateKPIs();
       if (field === 'status' || field === 'note') { renderTable(); }
@@ -2209,21 +2212,29 @@
           );
         }
 
-        // Sort
+        // Sort (Neueste/Älteste zuerst nach createdAt)
         const sortVal = document.getElementById('sortFilter')?.value || '';
         if (sortVal === 'asc') {
-          // Oldest first (createdAt)
-          filtered.sort((a, b) => new Date(a.l.createdAt||0) - new Date(b.l.createdAt||0));
+          // Älteste zuerst
+          filtered.sort((a, b) => {
+            const timeA = a.l.createdAt ? new Date(a.l.createdAt).getTime() : 0;
+            const timeB = b.l.createdAt ? new Date(b.l.createdAt).getTime() : 0;
+            return timeA - timeB;
+          });
         } else if (sortVal === 'status') {
-          // Sort by status change date (statusDate) - newest first
+          // Status-Datum (Statusänderung) - neueste oben
           filtered.sort((a, b) => {
             const da = a.l.statusDate ? new Date(a.l.statusDate.split('.').reverse().join('-')) : new Date(0);
             const db = b.l.statusDate ? new Date(b.l.statusDate.split('.').reverse().join('-')) : new Date(0);
             return db - da;
           });
         } else {
-          // Newest first (createdAt)
-          filtered.sort((a, b) => new Date(b.l.createdAt||0) - new Date(a.l.createdAt||0));
+          // Neueste zuerst (Standard)
+          filtered.sort((a, b) => {
+            const timeA = a.l.createdAt ? new Date(a.l.createdAt).getTime() : 0;
+            const timeB = b.l.createdAt ? new Date(b.l.createdAt).getTime() : 0;
+            return timeB - timeA;
+          });
         }
 
         state.lastFiltered = filtered.map(f => f.idx);
@@ -2748,7 +2759,12 @@
 
       showLoader(`${toImport.length} Leads werden importiert...`);
       const today = new Date().toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
-      toImport.forEach(l => { if (!l.statusDate || l.statusDate === '—') l.statusDate = today; });
+      const now = new Date().toISOString();
+      toImport.forEach(l => { 
+        l.status = 'NEU';
+        l.statusDate = today; 
+        l.createdAt = now;
+      });
       state.leads = [...toImport, ...state.leads];
       window.__leads = state.leads;
       try {
@@ -2816,8 +2832,9 @@
       const grid = document.getElementById('leadModalGrid');
       const email = rawEmail || '–';
       
-      const notes = (l.notes || l.note || l.description || '–').replace(/</g, '&lt;').replace(/Termin:\s*[^.]+\./g, '').replace(/Termin:\s*\d{4}-\d{2}-\d{2}.*/g, '').replace(/\n\n+/g, '\n').trim();
-      const notesRaw = (l.notes || l.note || l.description || '').replace(/Termin:\s*[^.]+\./g, '').replace(/Termin:\s*\d{4}-\d{2}-\d{2}.*/g, '').replace(/\n\n+/g, '\n').trim();
+      const desc = (l.description || l.focus || '–').replace(/</g, '&lt;');
+      const userNotes = (l.notes || '').replace(/&lt;/g, '<').replace(/&quot;/g, '"').trim();
+      const notesRaw = userNotes;
 
       let gridContent = `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1.25rem; margin-bottom: 1rem;">
@@ -2833,7 +2850,7 @@
           <div class="modal-field" style="grid-column: span 2;"><label style="font-size:0.65rem;margin-bottom:1px;">Website</label><div class="val" style="font-size:0.85rem;word-break:break-all;">${webStr}</div></div>
           
           <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:1px;">CRM Status</label><div class="val" style="font-size:0.85rem;">${l.status || '–'}</div></div>
-          <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:1px;">Status-Datum</label><div class="val" style="font-size:0.85rem;">${l.statusDate || '04.04.2026'}</div></div>
+          <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:1px;">Status-Datum</label><div class="val" style="font-size:0.85rem;">${l.statusDate || new Date().toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' })}</div></div>
         </div>
       `;
 
@@ -2876,8 +2893,8 @@
            gridContent += `
            <div style="border-top: 1px solid var(--bg); padding-top: 0.75rem;">
              <div class="modal-field">
-               <label style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Firmenbeschreibung & Notizen</label>
-               <div style="margin-top:0.25rem; font-size:0.85rem; color:var(--text-muted); background:rgba(14, 42, 71, 0.03); padding:0.75rem; border-radius:6px; white-space:pre-wrap; border:1px solid #f0f0f0;">${notesRaw}</div>
+               <label style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Firmenbeschreibung</label>
+               <div style="margin-top:0.25rem; font-size:0.85rem; color:var(--text-muted); background:rgba(14, 42, 71, 0.03); padding:0.75rem; border-radius:6px; white-space:pre-wrap; border:1px solid #f0f0f0;">${desc}</div>
              </div>
            </div>
            `;
@@ -2964,7 +2981,13 @@
       const sel = document.getElementById('apptLead');
       if (idx !== null && idx !== undefined && typeof idx !== 'object') {
         sel.innerHTML = `<option value="${idx}">${state.leads[idx].name}</option>`;
-        document.getElementById('apptNote').value = String(state.leads[idx].note || state.leads[idx].notes || '').replace(/&quot;/g,'"').replace(/&lt;/g,'<');
+        // Only pre-fill IF there is an actual appointment note. 
+        // We look for the "Notiz: " marker we add in saveAppt, or just leave empty if it's just the AI description.
+        const lead = state.leads[idx];
+        const rawNotes = lead.notes || lead.note || '';
+        // If the notes contain "Notiz: ", extract that part. Otherwise, assume no appt note.
+        const match = rawNotes.match(/Notiz:\s*([\s\S]*)/);
+        document.getElementById('apptNote').value = match ? match[1].trim() : "";
       } else {
         sel.innerHTML = '<option value="">— Lead wählen —</option>' + 
           state.leads.map((l,i) => `<option value="${i}">${String(l.name||'Lead '+i).replace(/</g,'&lt;')}</option>`).join('');

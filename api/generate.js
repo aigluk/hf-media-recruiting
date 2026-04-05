@@ -286,7 +286,9 @@ export default async function handler(req, res) {
         contact: place.phone || '',
         rating: place.rating || null,
         reviews: place.reviews || 0,
-        google_verified: true
+        google_verified: true,
+        createdAt: new Date().toISOString(),
+        statusDate: new Date().toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' })
       };
     });
 

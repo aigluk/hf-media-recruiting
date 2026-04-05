@@ -2250,6 +2250,8 @@
       }
 
       showLoader(`${toImport.length} Leads werden importiert...`);
+      const today = new Date().toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
+      toImport.forEach(l => { if (!l.statusDate || l.statusDate === '—') l.statusDate = today; });
       state.leads = [...toImport, ...state.leads];
       window.__leads = state.leads;
       try {
@@ -2448,7 +2450,9 @@
       // Update lead status to TERMIN FIXIERT and save note
       const lead = state.leads[idx];
       if (lead) {
+        const today = new Date().toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
         lead.status = 'TERMIN FIXIERT';
+        lead.statusDate = today;
         lead.appointmentDate = date;
         lead.appointmentHour = (from || '10:00').split(':')[0];
         lead.notes = (lead.notes || '') + `\nTermin: ${date} ${from}–${to}. ${note}`;

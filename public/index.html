@@ -1422,31 +1422,45 @@
       // Industry — must have letters + Smart Mapping
       let industryRaw = find(v => hasLetters(v) && !isPureNum(v), 'branche','industry','geschäftsfeld','sektor','kategorie','sector','type','typ') || '';
       
-      // Smart Normalization for Industry
-      const normMap = {
-        'software': 'IT/Software', 'it': 'IT/Software', 'entwickler': 'IT/Software',
-        'hotel': 'Hotellerie', 'pension': 'Hotellerie', 'unterkunft': 'Hotellerie',
-        'gast': 'Gastronomie', 'rest': 'Gastronomie', 'essen': 'Gastronomie', 'wirt': 'Gastronomie',
-        'tour': 'Tourismus', 'reise': 'Tourismus', 'urlaub': 'Tourismus',
-        'metall': 'Metalltechnik', 'stahl': 'Metalltechnik', 'industrie': 'Industrie',
-        'arzt': 'Gesundheit/Pflege', 'pflege': 'Gesundheit/Pflege', 'klinik': 'Gesundheit/Pflege', 'apotheke': 'Gesundheit/Pflege', 'med': 'Gesundheit/Pflege', 'pharma': 'Gesundheit/Pflege', 'praxis': 'Gesundheit/Pflege',
-        'bau': 'Handwerk', 'tischler': 'Handwerk', 'handwerk': 'Handwerk',
-        'immobilien': 'Immobilien', 'makler': 'Immobilien',
-        'bank': 'Finanzen/Versicherung', 'versich': 'Finanzen/Versicherung', 'efs': 'Finanzen/Versicherung', 'vertrieb': 'Finanzen/Versicherung', 'sales': 'Finanzen/Versicherung', 'finanz': 'Finanzen/Versicherung',
-        'logistik': 'Logistik', 'transport': 'Logistik', 'spedition': 'Logistik',
-        'handel': 'Handel', 'shop': 'Handel', 'verkauf': 'Handel'
-      };
+      // Smart Normalization for Industry (Priority order: 1. Specific/Long, 2. Manual match)
+      const normMap = [
+        { k: ['gastro', 'restaurant', 'gasthof', 'gasthaus', 'vitis', 'vino', 'speisen', 'küche', 'kulinarik', 'delicious', 'wirt'], v: 'Gastronomie' },
+        { k: ['hotel', 'pension', 'unterkunft', 'resort', 'lodging', 'beherbergung'], v: 'Hotellerie' },
+        { k: ['software', 'entwickler', 'edv', 'informatik', 'systemhaus', 'saas', 'application'], v: 'IT/Software' },
+        { k: ['arzt', 'pflege', 'klinik', 'apotheke', 'med', 'pharma', 'praxis', 'health', 'doktor'], v: 'Gesundheit/Pflege' },
+        { k: ['metall', 'stahl', 'industrie', 'factory', 'fertigung', 'produktion'], v: 'Industrie' },
+        { k: ['bau', 'tischler', 'handwerk', 'schmiede', 'montage', 'elektro', 'sanitär'], v: 'Handwerk' },
+        { k: ['immobilien', 'makler', 'real estate', 'hausverwaltung'], v: 'Immobilien' },
+        { k: ['efs', 'bank', 'versich', 'finanz', 'investment', 'consulting', 'vertrieb', 'sales'], v: 'Finanzen/Versicherung' },
+        { k: ['logistik', 'transport', 'spedition', 'versand', 'lager'], v: 'Logistik' },
+        { k: ['tourismus', 'reise', 'urlaub', 'camping', 'travel', 'guide'], v: 'Tourismus' },
+        { k: ['handel', 'shop', 'verkauf', 'retail', 'einzelhandel'], v: 'Handel' },
+        { k: ['wellness', 'spa', 'massage', 'sauna', 'beauty'], v: 'Wellness/Spa' },
+        { k: ['it'], v: 'IT/Software', wordOnly: true } // IT only if distinct
+      ];
       
       let industry = '';
       const context = (name + ' ' + industryRaw).toLowerCase();
-      for (const [key, val] of Object.entries(normMap)) {
-        if (context.includes(key)) { industry = val; break; }
+      
+      // Match with priority
+      for (const entry of normMap) {
+        for (const k of entry.k) {
+          if (entry.wordOnly) {
+             const regex = new RegExp(`\\b${k}\\b`, 'i');
+             if (regex.test(context)) { industry = entry.v; break; }
+          } else if (context.includes(k)) {
+             industry = entry.v;
+             break;
+          }
+        }
+        if (industry) break;
       }
-      // If industryRaw is an exact match for a branch, use it
+      
+      // Exact match fallback
       if (!industry && industryRaw && BRANCHES.includes(industryRaw)) industry = industryRaw;
       
-      // Fallback if no match found → Mark as Import-Status for manual review
-      if (!industry) industry = 'Import-Status';
+      // Confidence Guard: if name is very generic and no industryRaw matched clearly → Import-Status
+      if (!industry || (!industryRaw && name.split(' ').length < 2)) industry = 'Import-Status';
 
       // Notes
       const notes = find(v => hasLetters(v), 'notiz','notizen','note','notes','anmerkung','bemerkung','kommentar','info') || '';

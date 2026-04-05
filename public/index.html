@@ -543,7 +543,7 @@
                   <div class="cal-tab" data-view="month" onclick="setCalView('month')">Monat</div>
                 </div>
                 <button class="btn btn-outline" onclick="calNav(0, true)" style="padding:0.5rem 1rem; font-size:0.82rem;">Heute</button>
-                <button class="btn btn-primary" onclick="openNewAppointment()" style="padding:0.5rem 1rem; font-size:0.82rem;"><i data-lucide="plus" style="width:15px;height:15px;"></i> Neuer Termin</button>
+                <button class="btn btn-primary" onclick="openApptModal()" style="padding:0.5rem 1rem; font-size:0.82rem;"><i data-lucide="plus" style="width:15px;height:15px;"></i> Neuer Termin</button>
               </div>
             </div>
             <div id="calendarAgendaGrid"></div>
@@ -1379,26 +1379,20 @@
           <div style="display:flex;gap:4px;">
             <button onclick="calNav(-1)"><i data-lucide="chevron-left" style="width:15px;"></i></button>
             <button onclick="calNav(1)"><i data-lucide="chevron-right" style="width:15px;"></i></button>
-          </div>
         </div>
         <div class="mini-cal-grid">${daysHtml}</div>`;
     }
 
     function renderDayView(grid, today, year, month, day) {
       const HOURS = [7,8,9,10,11,12,13,14,15,16,17,18,19,20];
-      // Only TERMIN FIXIERT leads with a real date, or spread at fixed hours
+      const dayDate = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
       const termins = state.leads.filter(l => normalizeStatus(l.status) === 'TERMIN FIXIERT');
       const slotMap = {};
-      termins.forEach((l, i) => {
-        // If lead has an appointment date matching today, put at that hour; otherwise skip (no random fill)
-        const apptDate = l.appointmentDate ? new Date(l.appointmentDate) : null;
-        const apptH = l.appointmentHour ? parseInt(l.appointmentHour) : null;
-        if (apptDate && apptDate.getFullYear() === year && apptDate.getMonth() === month && apptDate.getDate() === day) {
-          const h = apptH || HOURS[i % HOURS.length];
-          slotMap[h] = { l, idx: state.leads.indexOf(l), orange: true };
+      termins.forEach((l) => {
+        if (l.appointmentDate === dayDate && l.appointmentHour !== null && l.appointmentHour !== undefined) {
+          slotMap[parseInt(l.appointmentHour)] = { l, idx: state.leads.indexOf(l) };
         }
       });
-
       const rows = HOURS.map((h) => {
         const isCurr = (today.getHours() === h && year === today.getFullYear() && month === today.getMonth() && day === today.getDate());
         const timeStr = `${String(h).padStart(2,'0')}:00`;
@@ -1406,9 +1400,9 @@
         let evHtml = '';
         if (ev) {
           const name = String(ev.l.name || '–').replace(/</g, '&lt;');
-          evHtml = `<div class="cal-slot-event orange" onclick="showLeadDetail(${ev.idx})" title="Termin: ${name}">${name}</div>`;
+          evHtml = `<div class="cal-slot-event orange" onclick="event.stopPropagation(); showLeadDetail(${ev.idx})" title="Termin: ${name}">${name}</div>`;
         }
-        return `<div class="cal-hour-label" style="${isCurr ? 'color:var(--primary);font-weight:800;' : ''}">${timeStr}</div><div class="cal-hour-slot">${evHtml}</div>`;
+        return `<div class="cal-hour-label" style="${isCurr ? 'color:var(--primary);font-weight:800;' : ''}">${timeStr}</div><div class="cal-hour-slot" onclick="openApptModal(undefined, '${dayDate}', ${h})">${evHtml}</div>`;
       }).join('');
       grid.innerHTML = `<div class="cal-day-grid">${rows}</div>`;
     }
@@ -1429,12 +1423,15 @@
       const terminLeads = state.leads.filter(l => normalizeStatus(l.status) === 'TERMIN FIXIERT');
       const weekEvents = {}; // { 'dayIdx_hour': { name, idx, orange } }
       terminLeads.forEach((l) => {
-        const apptDate = l.appointmentDate ? new Date(l.appointmentDate) : null;
+        const apptDateStr = l.appointmentDate;
         const apptH = l.appointmentHour ? parseInt(l.appointmentHour) : null;
-        if (apptDate) {
-          const di = weekDays.findIndex(d => d.toDateString() === apptDate.toDateString());
+        if (apptDateStr && apptH !== null) {
+          const di = weekDays.findIndex(d => {
+             const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+             return ds === apptDateStr;
+          });
           if (di >= 0) {
-            const h = apptH || 9;
+            const h = apptH;
             const key = `${di}_${h}`;
             if (!weekEvents[key]) weekEvents[key] = { name: l.name, idx: state.leads.indexOf(l), orange: true };
           }
@@ -1458,8 +1455,13 @@
         weekDays.forEach((d, di) => {
           const key = `${di}_${h}`;
           const ev = weekEvents[key];
-          let evHtml = ev ? `<div class="cal-week-event${ev.orange ? ' orange' : ''}" onclick="showLeadDetail(${ev.idx})" title="Details">${String(ev.name||'').replace(/</g,'&lt;').substring(0,20)}</div>` : '';
-          gridHtml += `<div class="cal-week-col">${evHtml}</div>`;
+          let evHtml = '';
+          if (ev) {
+            const name = String(ev.name || '').replace(/</g, '&lt;').substring(0, 20);
+            evHtml = `<div class="cal-week-event orange" onclick="event.stopPropagation(); showLeadDetail(${ev.idx})" title="Details">${name}</div>`;
+          }
+          const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          gridHtml += `<div class="cal-week-col" onclick="openApptModal(undefined, '${ds}', ${h})">${evHtml}</div>`;
         });
       });
       grid.innerHTML = `<div class="cal-week-grid">${gridHtml}</div>`;
@@ -2252,6 +2254,8 @@
         <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.5rem;">
           ${phone ? `<a href="tel:${phone}" class="btn btn-outline" style="font-size:0.82rem;"><i data-lucide="phone" style="width:15px;height:15px;"></i> Anrufen</a>` : ''}
           ${email ? `<a href="mailto:${email}" class="btn btn-outline" style="font-size:0.82rem;"><i data-lucide="mail" style="width:15px;height:15px;"></i> E-Mail</a>` : ''}
+          ${l.appointmentDate ? `<button class="btn btn-outline" style="font-size:0.82rem; border-color:#f97316; color:#f97316;" onclick="sendInvite(${idx})"><i data-lucide="send" style="width:15px;height:15px;"></i> Einladung senden</button>` : ''}
+          ${l.appointmentDate ? `<button class="btn btn-outline" style="font-size:0.82rem; border-color:#ef4444; color:#ef4444;" onclick="deleteAppt(${idx})"><i data-lucide="trash-2" style="width:15px;height:15px;"></i> Termin löschen</button>` : ''}
           <button class="btn btn-primary" style="font-size:0.82rem;" onclick="addToCalendar(${idx}); closeModal('leadModal');">
             <i data-lucide="download" style="width:15px;height:15px;"></i> .ics Export
           </button>
@@ -2293,18 +2297,59 @@
       openModal('statusModal');
     }
 
-    function openNewAppointment() {
-      // Populate the lead select
+    function openApptModal(idx, date, hour) {
       const sel = document.getElementById('apptLead');
-      if (sel) {
-        sel.innerHTML = '<option value="">— Lead wählen —</option>' +
+      if (idx !== undefined) {
+        sel.innerHTML = `<option value="${idx}">${state.leads[idx].name}</option>`;
+      } else {
+        sel.innerHTML = '<option value="">— Lead wählen —</option>' + 
           state.leads.map((l,i) => `<option value="${i}">${String(l.name||'Lead '+i).replace(/</g,'&lt;')}</option>`).join('');
       }
-      // Default date = today
-      const d = new Date();
-      const dateEl = document.getElementById('apptDate');
-      if (dateEl) dateEl.value = d.toISOString().split('T')[0];
+      
+      if (date) {
+        document.getElementById('apptDate').value = date;
+      } else {
+        const d = new Date();
+        document.getElementById('apptDate').value = d.toISOString().split('T')[0];
+      }
+
+      if (hour !== undefined) {
+        const hStr = String(hour).padStart(2,'0') + ':00';
+        const hTo = String(hour + 1).padStart(2,'0') + ':00';
+        document.getElementById('apptFrom').value = hStr;
+        document.getElementById('apptTo').value = hTo;
+      } else {
+        document.getElementById('apptFrom').value = "10:00";
+        document.getElementById('apptTo').value = "11:00";
+      }
+
       openModal('apptModal');
+    }
+
+    function deleteAppt(idx) {
+      if (!confirm('Soll dieser Termin wirklich gelöscht werden?')) return;
+      const lead = state.leads[idx];
+      if (!lead) return;
+      lead.appointmentDate = null;
+      lead.appointmentHour = null;
+      lead.status = 'NEU';
+      fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leads: [lead] })
+      }).then(() => {
+        showToast('Termin gelöscht', '#666');
+        updateKPIs(); renderTable(); renderCalendar(); renderActivityFeed();
+        closeModal('leadModal');
+      });
+    }
+
+    function sendInvite(idx) {
+      const lead = state.leads[idx];
+      if (!lead || !lead.email) { showToast('Keine E-Mail Adresse verfügbar','#ef4444'); return; }
+      const subject = encodeURIComponent(`Terminbestätigung: ${lead.name} & HF Media`);
+      const body = encodeURIComponent(`Hallo ${lead.ceos || lead.name},\n\nhiermit bestätigen wir unseren Termin am ${lead.appointmentDate} um ${lead.appointmentHour}:00 Uhr.\n\nWir freuen uns auf das Gespräch!\n\nMit freundlichen Grüßen,\nIhr HF Media Team`);
+      window.location.href = `mailto:${lead.email}?subject=${subject}&body=${body}`;
     }
 
     function saveAppt() {

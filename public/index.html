@@ -964,7 +964,7 @@
       { id: 'ABSCHLUSS / ABSAGE', label: 'ABSCHLUSS / ABSAGE', color: 'st-abschluss' }
     ];
     const VALID_STATUSES = new Set(PIPELINES.map(p => p.id));
-    const BRANCHES = ['Metalltechnik','Hotellerie','Gesundheit/Pflege','Handel','Industrie','Gastronomie','Wellness/Spa','Handwerk','Tourismus','Logistik','IT/Software','Finanzen/Versicherung','Immobilien'];
+    const BRANCHES = ['Metalltechnik','Hotellerie','Gesundheit/Pflege','Handel','Industrie','Gastronomie','Wellness/Spa','Handwerk','Tourismus','Logistik','IT/Software','Finanzen/Versicherung','Immobilien','Import-Status'];
     
     function getMainBranch(raw) {
       if (!raw) return '–';
@@ -1432,18 +1432,21 @@
         'arzt': 'Gesundheit/Pflege', 'pflege': 'Gesundheit/Pflege', 'klinik': 'Gesundheit/Pflege', 'apotheke': 'Gesundheit/Pflege', 'med': 'Gesundheit/Pflege', 'pharma': 'Gesundheit/Pflege', 'praxis': 'Gesundheit/Pflege',
         'bau': 'Handwerk', 'tischler': 'Handwerk', 'handwerk': 'Handwerk',
         'immobilien': 'Immobilien', 'makler': 'Immobilien',
-        'bank': 'Finanzen/Versicherung', 'versich': 'Finanzen/Versicherung',
+        'bank': 'Finanzen/Versicherung', 'versich': 'Finanzen/Versicherung', 'efs': 'Finanzen/Versicherung', 'vertrieb': 'Finanzen/Versicherung', 'sales': 'Finanzen/Versicherung', 'finanz': 'Finanzen/Versicherung',
         'logistik': 'Logistik', 'transport': 'Logistik', 'spedition': 'Logistik',
         'handel': 'Handel', 'shop': 'Handel', 'verkauf': 'Handel'
       };
       
-      let industry = 'Tourismus';
+      let industry = '';
       const context = (name + ' ' + industryRaw).toLowerCase();
       for (const [key, val] of Object.entries(normMap)) {
         if (context.includes(key)) { industry = val; break; }
       }
       // If industryRaw is an exact match for a branch, use it
-      if (industryRaw && BRANCHES.includes(industryRaw)) industry = industryRaw;
+      if (!industry && industryRaw && BRANCHES.includes(industryRaw)) industry = industryRaw;
+      
+      // Fallback if no match found → Mark as Import-Status for manual review
+      if (!industry) industry = 'Import-Status';
 
       // Notes
       const notes = find(v => hasLetters(v), 'notiz','notizen','note','notes','anmerkung','bemerkung','kommentar','info') || '';

@@ -269,7 +269,7 @@ export default async function handler(req, res) {
       
       return {
         name: place.name,
-        industry: place.type || branchList[0],
+        industry: branchList[0] || '', // Force user-selected branch instead of place.type
         employees: place.range || '',
         region: addressParts.join(', ') || place.full_address || location,
         website,

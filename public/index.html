@@ -431,21 +431,20 @@
           </div>
 
           <!-- Cloud Sync -->
-          <div class="kpi-card" style="background:var(--primary); color:white; cursor:pointer; position:relative; overflow:hidden;" onclick="syncDatabase()">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-            <div>
-              <i data-lucide="server" style="color:rgba(255,255,255,0.8); margin-bottom:1rem;"></i>
-              <div class="metric-title" style="color:rgba(255,255,255,0.7);">Cloud-Datenbank</div>
-              <div class="metric-value" style="font-size:1.5rem; display:flex; align-items:center; gap:8px;">
-                <i data-lucide="refresh-cw" style="width:20px;"></i> Vercel KV Sync
+          <div class="metric-card" onclick="syncDatabase()" style="cursor:pointer; background:#0E2A47; color:white; border:none;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div>
+                <div class="metric-title" style="color:rgba(255,255,255,0.7);">Cloud-Datenbank</div>
+                <div class="metric-value" style="color:white; display:flex; align-items:center; gap:8px; margin-bottom:2px;">
+                   <i data-lucide="refresh-cw" style="width:18px;height:18px;"></i> Vercel KV Sync
+                </div>
+                <div class="metric-sub" style="color:rgba(255,255,255,0.6);"><span id="cloudLeadCount">0</span> Leads gespeichert</div>
               </div>
-              <div class="metric-label" style="color:rgba(255,255,255,0.6); margin-top:0.5rem;"><span id="cloudLeadCount">0</span> Leads gespeichert</div>
-            </div>
-            <div style="position:absolute; top:1.5rem; right:1.5rem; opacity:0.3;">
-              <i data-lucide="refresh-cw" style="width:32px; height:32px;"></i>
+              <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i data-lucide="server" style="width:18px;height:18px;color:white;"></i>
+              </div>
             </div>
           </div>
-        </div>
         </div>
         <div class="panel">
           <div class="panel-header"><i data-lucide="activity" style="width:22px; color:var(--primary);"></i> Letzte Aktivitäten</div>
@@ -1554,8 +1553,8 @@
       bf.value = currentVal;
     }
 
-    function toggleLeadSelection(idx) {
-      const e = window.event;
+    function toggleLeadSelection(idx, event) {
+      const e = event || window.event;
       const isSelecting = !state.selectedLeads.has(idx);
       
       if (e && e.shiftKey && state.lastIdx !== null && state.lastFiltered.includes(idx)) {
@@ -1655,8 +1654,8 @@
       showToast(`${count} Leads gelöscht`, '#16a34a');
     }
 
-    function toggleLeadSelectionModal(idx, status) {
-      const e = window.event;
+    function toggleLeadSelectionModal(idx, status, event) {
+      const e = event || window.event;
       const isSelecting = !state.selectedLeads.has(idx);
       
       if (e && e.shiftKey && state.lastIdx !== null && state.lastFilteredModal.includes(idx)) {
@@ -1745,7 +1744,7 @@
           <tr>
             <td style="padding-left:2.5rem;">
               <label class="checkbox-container">
-                <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleLeadSelection(${idx})">
+                <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="toggleLeadSelection(${idx}, event)">
                 <span class="checkmark"></span>
               </label>
             </td>
@@ -2275,7 +2274,7 @@
           const idx = state.leads.indexOf(l);
           return `<div class="lead-list-item" style="gap:12px; cursor:pointer;" onclick="closeModal('statusModal'); setTimeout(()=>showLeadDetail(${idx}),220);">
             <label class="checkbox-container" onclick="event.stopPropagation()">
-              <input type="checkbox" ${state.selectedLeads.has(idx) ? 'checked' : ''} onchange="toggleLeadSelectionModal(${idx}, '${status}')">
+              <input type="checkbox" ${state.selectedLeads.has(idx) ? 'checked' : ''} onclick="toggleLeadSelectionModal(${idx}, '${status}', event)">
               <span class="checkmark"></span>
             </label>
             <div style="flex:1;">

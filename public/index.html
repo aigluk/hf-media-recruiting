@@ -2819,7 +2819,7 @@
       const notes = (l.notes || l.note || l.description || '–').replace(/</g, '&lt;').replace(/Termin:\s*[^.]+\./g, '').replace(/Termin:\s*\d{4}-\d{2}-\d{2}.*/g, '').replace(/\n\n+/g, '\n').trim();
       const notesRaw = (l.notes || l.note || l.description || '').replace(/Termin:\s*[^.]+\./g, '').replace(/Termin:\s*\d{4}-\d{2}-\d{2}.*/g, '').replace(/\n\n+/g, '\n').trim();
 
-      grid.innerHTML = `
+      let gridContent = `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1.25rem; margin-bottom: 1rem;">
           <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:1px;">Ansprechperson</label><div class="val" style="font-size:0.85rem;">${l.ceos || l.ceoname || l.ansprechperson || l.owner || '–'}</div></div>
           <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:1px;">Branche</label><div class="val" style="font-size:0.85rem;">${l.industry || l.branche || '–'}</div></div>
@@ -2835,11 +2835,73 @@
           <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:1px;">CRM Status</label><div class="val" style="font-size:0.85rem;">${l.status || '–'}</div></div>
           <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:1px;">Status-Datum</label><div class="val" style="font-size:0.85rem;">${l.statusDate || '04.04.2026'}</div></div>
         </div>
-        </div>
       `;
 
+      const isScheduled = normalizeStatus(l.status) === 'TERMIN FIXIERT' || l.appointmentDate;
+
+      if (isScheduled) {
+        gridContent += `
+        <div style="border-top: 1px solid var(--bg); padding-top: 0.75rem;">
+          <div class="modal-field">
+            <label style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Termin & Notizen bearbeiten</label>
+            <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
+              <div style="flex:1;">
+                <div style="position:relative;">
+                  <input type="date" id="editApptDate" class="custom-picker" value="${l.appointmentDate || ''}" style="width:100%; font-size:0.8rem; padding:0.4rem; padding-right:24px; border:1px solid var(--border); border-radius:6px; background:var(--bg); position:relative; z-index:2;">
+                  <i data-lucide="calendar-days" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); width:14px; height:14px; color:var(--text-muted); z-index:1;"></i>
+                </div>
+              </div>
+              <div style="flex:1;">
+                <div style="position:relative;">
+                  <input type="time" id="editApptFrom" class="custom-picker" value="${l.appointmentFrom || ''}" style="width:100%; font-size:0.8rem; padding:0.4rem; padding-right:24px; border:1px solid var(--border); border-radius:6px; background:var(--bg); position:relative; z-index:2;">
+                  <i data-lucide="clock" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); width:14px; height:14px; color:var(--text-muted); z-index:1;"></i>
+                </div>
+              </div>
+              <div style="flex:1;">
+                <div style="position:relative;">
+                  <input type="time" id="editApptTo" class="custom-picker" value="${l.appointmentTo || ''}" style="width:100%; font-size:0.8rem; padding:0.4rem; padding-right:24px; border:1px solid var(--border); border-radius:6px; background:var(--bg); position:relative; z-index:2;">
+                  <i data-lucide="clock" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); width:14px; height:14px; color:var(--text-muted); z-index:1;"></i>
+                </div>
+              </div>
+            </div>
+            <textarea id="editLeadNotes" rows="4" style="width:100%; margin-top:0.5rem; font-size:0.85rem; padding:0.5rem; border:1px solid var(--border); border-radius:6px; resize:vertical; background:var(--bg);">${notesRaw}</textarea>
+            <button class="btn btn-outline" style="margin-top:0.5rem; width:100%; justify-content:center; font-size:0.82rem;" onclick="updateLeadQuick(${idx})">
+              <i data-lucide="save" style="width:15px;height:15px;"></i> Änderungen Speichern
+            </button>
+          </div>
+        </div>
+        `;
+      } else {
+        if (notesRaw && notesRaw !== '–' && notesRaw.length > 0) {
+           gridContent += `
+           <div style="border-top: 1px solid var(--bg); padding-top: 0.75rem;">
+             <div class="modal-field">
+               <label style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Firmenbeschreibung & Notizen</label>
+               <div style="margin-top:0.25rem; font-size:0.85rem; color:var(--text-muted); background:rgba(14, 42, 71, 0.03); padding:0.75rem; border-radius:6px; white-space:pre-wrap; border:1px solid #f0f0f0;">${notesRaw}</div>
+             </div>
+           </div>
+           `;
+        }
+      }
+
+      grid.innerHTML = gridContent;
+
       const actions = document.getElementById('leadModalActions');
-      actions.innerHTML = '';
+      if (isScheduled) {
+        actions.innerHTML = `
+          <div style="display:flex; justify-content: flex-end; align-items:center; margin-top:0.5rem; flex-wrap:nowrap; gap:0.5rem; border-top:1px solid var(--bg); padding-top:0.75rem; overflow-x:auto;">
+            <button class="btn btn-outline" style="width:auto; flex:none; padding:0.45rem 0.5rem; font-size:0.8rem; white-space:nowrap;" onclick="closeModal('leadModal'); openApptModal(${idx});">
+              <i data-lucide="calendar-plus" style="width:15px;height:15px; flex-shrink:0;"></i> Neuer Termin
+            </button>
+            <button class="btn btn-primary" style="width:auto; flex:none; padding:0.45rem 0.5rem; font-size:0.8rem; white-space:nowrap;" onclick="sendInvite(${idx})">
+              <i data-lucide="send" style="width:15px;height:15px; flex-shrink:0;"></i> Einladung
+            </button>
+            ${l.appointmentDate ? `<button class="btn btn-outline" style="width:auto; flex:none; padding:0.45rem 0.5rem; border-color:#ef4444; color:#ef4444; background:transparent; white-space:nowrap;" title="Termin löschen" onclick="deleteAppt(${idx})"><i data-lucide="trash-2" style="width:15px;height:15px; flex-shrink:0;"></i></button>` : ''}
+          </div>`;
+      } else {
+        actions.innerHTML = '';
+      }
+
       openModal('leadModal');
     }
 

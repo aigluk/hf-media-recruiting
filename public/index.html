@@ -31,42 +31,46 @@
     }
     button, input, select { font-family: inherit; }
 
-    #authOverlay { position: fixed; inset: 0; background: var(--primary); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 4rem 2rem; }
+    .input-field { width: 100%; padding: 0.875rem 1rem; background: var(--bg); border: none; border-radius: var(--radius); font-size: 0.875rem; margin-bottom: 1rem; outline: none; transition: background 0.2s; color: var(--text); }
+    .input-field:focus { background: #e2e8f0; }
+    .btn { padding: 0.875rem 1.5rem; border: none; border-radius: var(--radius); font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 0.75rem; }
+    .btn-primary { background: var(--primary); color: white; width: 100%; }
+    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+
+    #authOverlay { position: fixed; inset: 0; background: var(--primary); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 2rem; }
     #authOverlay::before, #authOverlay::after { display: none; }
 
-    .auth-box { 
+    #authOverlay .auth-box { 
       background: white; 
-      padding: 3rem 3.5rem; width: 100%; max-width: 520px; text-align: center; color: var(--text); 
+      padding: 3rem 2.5rem; width: 100%; max-width: 440px; text-align: center; color: var(--text); 
       border-radius: 28px; box-shadow: none; border: none;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
     }
     
     @media (max-width: 600px) {
-      #authOverlay { padding: 1.5rem; }
-      .auth-box { padding: 2rem 1.5rem; border-radius: 24px; max-width: 360px; }
-      .auth-box h2 { font-size: 1.6rem; margin-bottom: 1.5rem; }
-      .auth-box p { margin-bottom: 2rem !important; font-size: 0.95rem !important; }
-      .auth-input-group { margin-bottom: 1.25rem; }
-      .auth-box svg { width: 64px !important; height: 64px !important; margin-bottom: 1.5rem !important; }
+      #authOverlay { padding: 1rem; }
+      #authOverlay .auth-box { padding: 2rem 1.25rem; border-radius: 24px; max-width: 340px; }
+      #authOverlay .auth-box h2 { font-size: 1.5rem; margin-bottom: 1rem; }
+      #authOverlay .auth-box p { margin-bottom: 1.5rem !important; font-size: 0.9rem !important; }
+      #authOverlay .auth-input-group { margin-bottom: 1rem; }
+      #authOverlay .auth-box svg { width: 56px !important; height: 56px !important; margin-bottom: 1rem !important; }
     }
-    .auth-box h2 { margin-bottom: 2.5rem; font-size: 2.25rem; font-weight: 800; color: var(--text); display: flex; align-items: center; justify-content: center; gap: 12px; letter-spacing: -0.04em; }
-    .auth-input-group { margin-bottom: 1.5rem; text-align: left; }
-    .auth-input-group label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; color: var(--text-muted); }
-    .auth-box .input-field { 
-      width: 100%; padding: 1.15rem 1.4rem; 
-      background: var(--bg); 
-      border: 1px solid var(--secondary); 
+    #authOverlay .auth-box h2 { margin-bottom: 2.5rem; font-size: 2rem; font-weight: 800; color: var(--text); display: flex; align-items: center; justify-content: center; gap: 12px; letter-spacing: -0.04em; }
+    #authOverlay .auth-input-group { width: 100%; margin-bottom: 1.25rem; text-align: left; }
+    #authOverlay .auth-input-group label { display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; color: var(--text-muted); }
+    
+    #authOverlay .auth-box .input-field { 
+      width: 100%; padding: 1rem 1.25rem; 
+      background: var(--bg); border: 1px solid var(--secondary); 
       border-radius: 12px; font-size: 1rem; color: var(--text); 
-      outline: none; transition: all 0.2s; 
+      margin-bottom: 0; outline: none; transition: all 0.2s;
     }
-    .auth-box .input-field::placeholder { color: var(--text-muted); opacity: 0.5; }
-    .auth-box .input-field:focus { background: #fff; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(14,42,71,0.1); }
-    .auth-box .btn-primary { 
-      background: var(--primary); color: white; 
-      width: 100%; padding: 1.15rem; font-size: 1rem; font-weight: 700; border-radius: 12px; margin-top: 1rem; 
-      border: none; cursor: pointer; transition: all 0.2s;
+    #authOverlay .auth-box .input-field:focus { background: white; border-color: var(--primary); box-shadow: none; }
+    #authOverlay .auth-box .btn-primary { 
+      background: var(--primary); color: white; margin-top: 1rem; font-size: 1rem; font-weight: 700; 
+      width: 100%; padding: 1.15rem; border-radius: 12px; border: none; cursor: pointer; transition: background 0.2s;
     }
-    .auth-box .btn-primary:hover { background: var(--primary-hover); transform: scale(0.99); }
+    #authOverlay .auth-box .btn-primary:hover { background: var(--primary-hover); transform: none; }
 
     .app-layout { display: flex; height: 100vh; overflow: hidden; opacity: 0; transition: opacity 0.3s; }
     .app-layout.loaded { opacity: 1; }
@@ -387,7 +391,7 @@
         <div style="position:relative;">
           <input type="password" id="passInput" class="input-field" placeholder="••••••••" onkeydown="if(event.key==='Enter') login()">
           <button onclick="(function(){var i=document.getElementById('passInput');var b=document.getElementById('eyeIcon');if(i.type==='password'){i.type='text';b.setAttribute('data-lucide','eye-off');}else{i.type='password';b.setAttribute('data-lucide','eye');}lucide.createIcons();})()" style="position:absolute;right:18px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);display:flex;align-items:center;padding:0;" type="button">
-            <i data-lucide="eye" id="eyeIcon" style="width:20px;height:20px;"></i>
+            <i data-lucide="eye" id="eyeIcon" style="width:18px;height:18px;"></i>
           </button>
         </div>
       </div>

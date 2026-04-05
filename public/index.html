@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lead CRM Engine</title>
+  <title>Lead Gen Engine</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -31,26 +31,36 @@
     }
     button, input, select { font-family: inherit; }
 
-    #authOverlay { position: fixed; inset: 0; background: var(--primary); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 2rem; }
-    .auth-box { background: transparent; padding: 4rem 2rem; width: 100%; max-width: 400px; text-align: center; color: white; }
-    .auth-box h2 { margin-bottom: 2.5rem; font-size: 1.85rem; font-weight: 700; color: white; display: flex; align-items: center; justify-content: center; gap: 10px; letter-spacing: -0.02em; }
-    .auth-input-group { margin-bottom: 1.5rem; text-align: left; }
-    .auth-input-group label { display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; opacity: 0.8; }
-    .auth-box .input-field { 
-      width: 100%; padding: 1rem 1.25rem; 
-      background: rgba(255,255,255,0.08); 
-      border: 1px solid rgba(255,255,255,0.2); 
-      border-radius: 12px; font-size: 0.95rem; color: white; 
-      outline: none; transition: all 0.2s; 
+    #authOverlay { position: fixed; inset: 0; background: radial-gradient(circle at 20% 30%, #1e3a8a 0%, #0E2A47 100%); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 2rem; overflow: hidden; }
+    #authOverlay::before { content: ""; position: absolute; top: -10%; left: -10%; width: 50%; height: 50%; background: radial-gradient(circle, rgba(30,64,175,0.4) 0%, transparent 70%); filter: blur(60px); z-index: -1; animation: float 10s infinite alternate; }
+    #authOverlay::after { content: ""; position: absolute; bottom: -10%; right: -10%; width: 40%; height: 40%; background: radial-gradient(circle, rgba(14,42,71,0.6) 0%, transparent 70%); filter: blur(80px); z-index: -1; animation: float 12s infinite alternate-reverse; }
+    @keyframes float { from { transform: translate(0,0); } to { transform: translate(40px, 40px); } }
+
+    .auth-box { 
+      background: rgba(255,255,255,0.03); 
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      padding: 4.5rem 2.5rem; width: 100%; max-width: 440px; text-align: center; color: white; 
+      border-radius: 24px; border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
     }
-    .auth-box .input-field::placeholder { color: rgba(255,255,255,0.4); }
-    .auth-box .input-field:focus { background: rgba(255,255,255,0.15); border-color: white; }
+    .auth-box h2 { margin-bottom: 2.5rem; font-size: 2rem; font-weight: 800; color: white; display: flex; align-items: center; justify-content: center; gap: 12px; letter-spacing: -0.03em; }
+    .auth-input-group { margin-bottom: 1.75rem; text-align: left; }
+    .auth-input-group label { display: block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; opacity: 0.6; }
+    .auth-box .input-field { 
+      width: 100%; padding: 1.15rem 1.4rem; 
+      background: rgba(255,255,255,0.06); 
+      border: 1px solid rgba(255,255,255,0.15); 
+      border-radius: 14px; font-size: 1rem; color: white; 
+      outline: none; transition: all 0.25s ease; 
+    }
+    .auth-box .input-field::placeholder { color: rgba(255,255,255,0.3); }
+    .auth-box .input-field:focus { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.5); box-shadow: 0 0 0 4px rgba(255,255,255,0.05); }
     .auth-box .btn-primary { 
       background: white; color: var(--primary); 
-      width: 100%; padding: 1rem; font-size: 1rem; border-radius: 12px; margin-top: 1rem; 
-      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      width: 100%; padding: 1.15rem; font-size: 1rem; font-weight: 700; border-radius: 14px; margin-top: 1.25rem; 
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2); border: none; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .auth-box .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(0,0,0,0.15); }
+    .auth-box .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); background: #f8fafc; }
 
     .app-layout { display: flex; height: 100vh; overflow: hidden; opacity: 0; transition: opacity 0.3s; }
     .app-layout.loaded { opacity: 1; }
@@ -350,21 +360,21 @@
 
   <div id="authOverlay">
     <div class="auth-box">
-      <h2><i data-lucide="shield-check"></i> CRM Login Dashboard</h2>
-      <p style="color: rgba(255,255,255,0.7); font-size: 0.95rem; margin-bottom: 2.5rem; font-weight: 500;">HF Media Zentrale Datenbank</p>
+      <h2><i data-lucide="zap"></i> Lead Gen Engine</h2>
+      <p style="color: rgba(255,255,255,0.6); font-size: 1rem; margin-bottom: 2.75rem; font-weight: 500; letter-spacing: 0.01em;">Premium Lead Management Portal</p>
       
       <div class="auth-input-group">
         <label>Master Passwort</label>
         <div style="position:relative;">
           <input type="password" id="passInput" class="input-field" placeholder="••••••••" onkeydown="if(event.key==='Enter') login()">
-          <button onclick="(function(){var i=document.getElementById('passInput');var b=document.getElementById('eyeIcon');if(i.type==='password'){i.type='text';b.setAttribute('data-lucide','eye-off');}else{i.type='password';b.setAttribute('data-lucide','eye');}lucide.createIcons();})()" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.6);display:flex;align-items:center;padding:0;" type="button">
-            <i data-lucide="eye" id="eyeIcon" style="width:18px;height:18px;"></i>
+          <button onclick="(function(){var i=document.getElementById('passInput');var b=document.getElementById('eyeIcon');if(i.type==='password'){i.type='text';b.setAttribute('data-lucide','eye-off');}else{i.type='password';b.setAttribute('data-lucide','eye');}lucide.createIcons();})()" style="position:absolute;right:18px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.4);display:flex;align-items:center;padding:0;" type="button">
+            <i data-lucide="eye" id="eyeIcon" style="width:20px;height:20px;"></i>
           </button>
         </div>
       </div>
       
-      <button class="btn btn-primary" onclick="login()">Einloggen</button>
-      <div id="authError" style="display:none; color:#ff4d4d; font-size:0.85rem; margin-top:1.25rem; font-weight:600; background:rgba(255,0,0,0.1); padding:8px; border-radius:8px;">Ungültiges Passwort.</div>
+      <button class="btn btn-primary" onclick="login()">Zentrale öffnen</button>
+      <div id="authError" style="display:none; color:#ff8080; font-size:0.85rem; margin-top:1.5rem; font-weight:700; background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; border: 1px solid rgba(255,255,255,0.1);">Ungültiges Kennwort.</div>
     </div>
   </div>
 
@@ -659,7 +669,7 @@
               <div style="display:flex; gap:12px; flex:1; justify-content:flex-end; min-width:320px;">
                 <select id="metaAccountSelect" class="input-field" style="width:auto; margin:0; padding:0.6rem 2.2rem 0.6rem 1rem; border-radius:12px; font-weight:700; font-size:0.85rem; border-color:var(--border);">
                    <option value="">Ad Account wählen</option>
-                   <option value="hf_media">HF Media Agency</option>
+                   <option value="lead_gen">Lead Gen Engine</option>
                 </select>
                 <select id="metaCampaignSelect" class="input-field" style="width:auto; margin:0; padding:0.6rem 2.2rem 0.6rem 1rem; border-radius:12px; font-weight:700; font-size:0.85rem; border-color:var(--border);" onchange="updateMetaStats()">
                    <option value="">Kampagne wählen</option>
@@ -1126,7 +1136,7 @@
       end.setHours(11, 0, 0, 0);
       const fmt = d => d.toISOString().replace(/-|:/g,'').split('.')[0]+'Z';
       const ics = [
-        'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//HF Media CRM//DE','BEGIN:VEVENT',
+        'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Lead Gen Engine//DE','BEGIN:VEVENT',
         `UID:${Date.now()}@hfmedia`,
         `DTSTAMP:${fmt(new Date())}`,
         `DTSTART:${fmt(now)}`,`DTEND:${fmt(end)}`,
@@ -1275,7 +1285,7 @@
       // Connected State
       header.innerHTML = `
         <div style="width:10px; height:10px; background:#16a34a; border-radius:50%; box-shadow:0 0 10px rgba(22,163,74,0.5);"></div>
-        <span style="font-weight:700; font-size:0.9rem; color:var(--text);">Live Status: <span style="color:#16a34a;">Verbunden (HF Media)</span></span>
+        <span style="font-weight:700; font-size:0.9rem; color:var(--text);">Live Status: <span style="color:#16a34a;">Verbunden</span></span>
       `;
       actionBtn.innerHTML = `<i data-lucide="refresh-cw" style="width:18px; height:18px;"></i> Sync`;
 
@@ -2443,8 +2453,8 @@
       if (!lead || !email) { showToast('Keine E-Mail Adresse verfügbar','#ef4444'); return; }
       const date = lead.appointmentDate || '[DATUM]';
       const hour = lead.appointmentHour ? `${lead.appointmentHour}:00` : '[UHRZEIT]';
-      const subject = encodeURIComponent(`Terminbestätigung: ${lead.name} & HF Media`);
-      const body = encodeURIComponent(`Hallo ${lead.ceos || lead.ceoname || lead.ansprechperson || lead.owner || lead.name},\n\nhiermit bestätigen wir unseren Termin am ${date} um ${hour} Uhr.\n\nWir freuen uns auf das Gespräch!\n\nMit freundlichen Grüßen,\nIhr HF Media Team`);
+      const subject = encodeURIComponent(`Terminbestätigung: ${lead.name} & Lead Gen Engine`);
+      const body = encodeURIComponent(`Hallo ${lead.ceos || lead.ceoname || lead.ansprechperson || lead.owner || lead.name},\n\nhiermit bestätigen wir unseren Termin am ${date} um ${hour} Uhr.\n\nWir freuen uns auf das Gespräch!\n\nMit freundlichen Grüßen,\nIhr Lead Gen Team`);
       window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
     }
 

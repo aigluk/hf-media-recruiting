@@ -431,24 +431,22 @@
           </div>
 
           <!-- Cloud Sync -->
-          <div class="metric-card" onclick="syncDatabase()" style="cursor:pointer; background:#0E2A47; color:white; border:none; display:flex; flex-direction:column; justify-content:space-between;">
+          <div class="metric-card" onclick="syncDatabase()" style="cursor:pointer; background:#0E2A47; color:white; border:none; display:flex; flex-direction:column; justify-content:space-between; min-height:120px; padding:1.25rem 1.5rem;">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
-              <div class="metric-title" style="color:rgba(255,255,255,0.7); font-size:0.95rem; font-weight:600;">Cloud-Datenbank</div>
-              <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                <i data-lucide="server" style="width:18px;height:18px;color:white;"></i>
+              <div class="metric-title" style="color:rgba(255,255,255,0.7); font-size:0.95rem; font-weight:600; margin-bottom:0.25rem;">Cloud-Datenbank</div>
+              <div style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i data-lucide="server" style="width:16px;height:16px;color:white;"></i>
               </div>
             </div>
             
-            <div style="display:flex; align-items:center; gap:8px; margin: 0.25rem 0;">
-              <div style="font-size:2.5rem; font-weight:700; color:white; letter-spacing:-0.02em;">Vercel KV</div>
-            </div>
+            <div style="font-size:2.5rem; font-weight:700; color:white; letter-spacing:-0.03em; line-height:1; margin-bottom:0.15rem;">Vercel KV</div>
 
-            <div class="metric-sub" style="color:rgba(255,255,255,0.6); font-size:0.8rem;">
+            <div class="metric-sub" style="color:rgba(255,255,255,0.6); font-size:0.8rem; margin-top:2px;">
               <span id="cloudLeadCount">0</span> Leads gespeichert
             </div>
             
-            <div style="display:flex; justify-content:center; margin-top:1rem; padding-top:1rem; border-top:1px solid rgba(255,255,255,0.1);">
-               <i data-lucide="refresh-cw" style="width:24px;height:24px;opacity:0.8;"></i>
+            <div style="display:flex; justify-content:center; margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid rgba(255,255,255,0.1);">
+               <i data-lucide="refresh-cw" style="width:20px;height:20px;opacity:0.7;"></i>
             </div>
           </div>
         </div>
@@ -2320,6 +2318,8 @@
       const lead = state.leads[idx];
       if (lead) {
         lead.status = 'TERMIN FIXIERT';
+        lead.appointmentDate = date;
+        lead.appointmentHour = (from || '10:00').split(':')[0];
         lead.notes = (lead.notes || '') + `\nTermin: ${date} ${from}–${to}. ${note}`;
         fetch('/api/leads', {
           method: 'POST',

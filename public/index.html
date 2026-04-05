@@ -1575,13 +1575,23 @@
       // Phone — MUST start with + or 0, have 7+ digits
       let phoneRaw = find(isPhone, 'telefon','tel','phone','mobil','mobiltelefon','handynummer','mobile','fon','rufnummer','direktwahl','geschäftstelefon','kontaktnummer');
 
+      // Check if file has an explicitly labeled name/company column
+      const nameKeys = ['firmenname','firma','unternehmensname','unternehmen','company','organisation','organization','businessname','business','standort','location','filiale','praxis','klinik','agentur','name','bezeichnung','betrieb','titel'];
+      const hasExplicitNameColumn = entries.some(([col]) => {
+         if (isGenericCol(col)) return false;
+         const normCol = col.toLowerCase().replace(/[\s_\-\.\(\)\/\:;]/g, '');
+         return nameKeys.some(k => normCol.includes(k));
+      });
+
       // ── BRUTE FORCE FALLBACK für fehlende Felder ──
       // Scannt einfach die gesamte Zeile nach passenden Inhalten!
       if (!name || !emailRaw || !phoneRaw) {
         for (const [col, val] of entries) {
+           if (hasExplicitNameColumn && nameKeys.some(k => col.toLowerCase().replace(/[\s_\-\.\(\)\/\:;]/g, '').includes(k))) continue; // don't brute-force from the explicit column if it was empty/invalid
+           
            if (!emailRaw && isEmail(val)) emailRaw = val;
            else if (!phoneRaw && isPhone(val)) phoneRaw = val;
-           else if (!name && isCompanyName(val)) name = val;
+           else if (!name && !hasExplicitNameColumn && isCompanyName(val)) name = val;
         }
       }
 
@@ -2802,7 +2812,21 @@
           const workbook = XLSX.read(data, { type: isCsv ? 'string' : 'binary' });
           const sheetName = workbook.SheetNames[0];
           const sheet = workbook.Sheets[sheetName];
-          const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+          
+          // Determine the actual header row to handle sheets with title rows
+          const rawAoA = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+          let headerRowIndex = 0;
+          let maxCols = 0;
+          for (let i = 0; i < Math.min(10, rawAoA.length); i++) {
+             const cols = rawAoA[i].filter(cell => String(cell).trim() !== '').length;
+             if (cols > maxCols) {
+                maxCols = cols;
+                headerRowIndex = i;
+             }
+          }
+          
+          // Re-parse using the detected header row
+          const rows = XLSX.utils.sheet_to_json(sheet, { range: headerRowIndex, defval: '' });
           
           if (!rows || rows.length === 0) throw new Error('Die Datei ist leer oder ungültig.');
           

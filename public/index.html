@@ -1773,12 +1773,12 @@
             </td>
             <td style="padding-right:1.5rem; white-space:nowrap;">
               <div class="action-group" style="justify-content:flex-end;">
-                <button class="action-icon info" onclick="showLeadDetail(${idx})" title="Details anzeigen"><i data-lucide="info"></i></button>
-                <button class="action-icon cal" onclick="addToCalendar(${idx})" title=".ics Termin"><i data-lucide="calendar"></i></button>
-                ${tn ? `<a href="tel:${tn}" class="action-icon" title="Anrufen"><i data-lucide="phone"></i></a>` : ''}
-                ${em ? `<a href="mailto:${em}" class="action-icon" title="E-Mail"><i data-lucide="mail"></i></a>` : ''}
-                <button class="action-icon dm" onclick="openPitchModal(${idx})"><i data-lucide="send" style="width:13px;margin-right:5px;"></i> Pitch</button>
-                <button class="action-icon" onclick="deleteLead(${idx})" title="Lead löschen" style="color:#ef4444;"><i data-lucide="trash-2" style="width:15px;"></i></button>
+                <button class="action-icon info" onclick="showLeadDetail(${idx})" title="Details anzeigen"><i data-lucide="info" style="width:18px;height:18px;"></i></button>
+                <button class="action-icon cal" onclick="openApptModal(${idx})" title="Termin eintragen"><i data-lucide="calendar" style="width:18px;height:18px;"></i></button>
+                ${tn ? `<a href="tel:${tn}" class="action-icon" title="Anrufen"><i data-lucide="phone" style="width:18px;height:18px;"></i></a>` : ''}
+                ${em ? `<a href="mailto:${em}" class="action-icon" title="E-Mail"><i data-lucide="mail" style="width:18px;height:18px;"></i></a>` : ''}
+                <button class="action-icon dm" onclick="openPitchModal(${idx})"><i data-lucide="send" style="width:14px;margin-right:5px;"></i> Pitch</button>
+                <button class="action-icon" onclick="deleteLead(${idx})" title="Lead löschen" style="color:#ef4444;"><i data-lucide="trash-2" style="width:16px;"></i></button>
 
               </div>
             </td>
@@ -2269,9 +2269,6 @@
             <i data-lucide="send" style="width:15px;height:15px;"></i> Einladung senden
           </button>
           ${l.appointmentDate ? `<button class="btn btn-outline" style="font-size:0.82rem; border-color:#ef4444; color:#ef4444;" onclick="deleteAppt(${idx})"><i data-lucide="trash-2" style="width:15px;height:15px;"></i> Termin löschen</button>` : ''}
-          <button class="btn btn-outline" style="font-size:0.82rem;" onclick="addToCalendar(${idx}); closeModal('leadModal');">
-            <i data-lucide="download" style="width:15px;height:15px;"></i> .ics Export
-          </button>
         </div>`;
       openModal('leadModal');
     }

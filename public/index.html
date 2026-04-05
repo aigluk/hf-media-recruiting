@@ -1084,7 +1084,7 @@
         lead.statusDate = today.toLocaleString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
       }
       updateKPIs();
-      if (field === 'status' || field === 'note') { renderTable(); }
+      if (field === 'status' || field === 'note') { renderTable(); renderActivityFeed(); }
       if (field === 'status') { renderCalendar(); renderReports(); }
       try {
         await fetch('/api/leads', {
@@ -2023,10 +2023,19 @@
         'KEIN INTERESSE': 'Kein Interesse',
         'NEU': 'Neu / Offen'
       };
-      // Show non-NEU leads first, then NEU — as an activity log
+      // Show strictly chronological activity log (newest first based on statusDate)
       const sorted = [...state.leads].sort((a,b) => {
-        const order = {'ABSCHLUSS / ABSAGE':0,'TERMIN FIXIERT':1,'IN KONTAKT':2,'KEIN INTERESSE':3,'NEU':4};
-        return (order[normalizeStatus(a.status)] || 4) - (order[normalizeStatus(b.status)] || 4);
+        const parseS = (s) => {
+          if (!s || s === '—' || String(s).length < 5) return 0;
+          try {
+            // Split "DD.MM.YYYY HH:mm"
+            const parts = s.split(' ');
+            const dStr = parts[0].split('.');
+            const tStr = parts[1] || '00:00';
+            return new Date(`${dStr[2]}-${dStr[1]}-${dStr[0]}T${tStr}:00`).getTime();
+          } catch(e) { return 0; }
+        };
+        return parseS(b.statusDate) - parseS(a.statusDate);
       });
 
       if (!sorted.length) {
@@ -2049,6 +2058,7 @@
           <div class="activity-body">
             <div class="activity-name">${name}</div>
             <div class="activity-sub">${label}${region ? ' · ' + region : ''}</div>
+            <div style="font-size:10px; color:var(--text-muted); opacity:0.7; margin-top:2px;">${l.statusDate || '—'}</div>
           </div>
         </div>`;
       }).join('');
@@ -2776,6 +2786,7 @@
         clearImport();
         hideLoader();
         showToast(`${toImport.length} Leads erfolgreich importiert!`, '#16a34a');
+        updateKPIs(); renderTable(); renderActivityFeed();
         switchView('leads');
       } catch(e) { hideLoader(); showToast('Fehler bei Import'); }
     }

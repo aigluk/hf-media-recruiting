@@ -36,8 +36,18 @@
 
     .auth-box { 
       background: white; 
-      padding: 3.5rem 2.5rem; width: 100%; max-width: 380px; text-align: center; color: var(--text); 
+      padding: 3rem 3.5rem; width: 100%; max-width: 520px; text-align: center; color: var(--text); 
       border-radius: 28px; box-shadow: none; border: none;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    
+    @media (max-width: 600px) {
+      #authOverlay { padding: 1.5rem; }
+      .auth-box { padding: 2rem 1.5rem; border-radius: 24px; max-width: 360px; }
+      .auth-box h2 { font-size: 1.6rem; margin-bottom: 1.5rem; }
+      .auth-box p { margin-bottom: 2rem !important; font-size: 0.95rem !important; }
+      .auth-input-group { margin-bottom: 1.25rem; }
+      .auth-box svg { width: 64px !important; height: 64px !important; margin-bottom: 1.5rem !important; }
     }
     .auth-box h2 { margin-bottom: 2.5rem; font-size: 2.25rem; font-weight: 800; color: var(--text); display: flex; align-items: center; justify-content: center; gap: 12px; letter-spacing: -0.04em; }
     .auth-input-group { margin-bottom: 1.5rem; text-align: left; }

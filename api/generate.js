@@ -17,7 +17,48 @@ const BRANCH_SEARCH_MAP = {
   'Gesundheit/Pflege':     'Arztpraxis Pflegeheim Apotheke',
 };
 
-// E-Mail Regex
+// ── OpenData.host Firmenbuch Lookup (AT) ──
+// WICHTIG: https:// verwenden — http:// redirected auf https:// und Node.js verliert den Auth-Header!
+async function lookupFirmenbuch(companyName, apiKey) {
+  if (!apiKey || !companyName) return null;
+  try {
+    const basicAuth = Buffer.from(`${apiKey}:`).toString('base64');
+    const params = new URLSearchParams({
+      'company-name': companyName,
+      'country': 'at',
+      'limit': '5'
+    });
+    const r = await fetch(`https://api.opendata.host/1.0/registered-companies/find?${params}`, {
+      headers: { 
+        'Authorization': `Basic ${basicAuth}`,
+        'Accept': 'application/json'
+      },
+      signal: AbortSignal.timeout(4000)
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    if (!data.companies || data.companies.length === 0) return null;
+
+    // Finde die beste Übereinstimmung (aktiv bevorzugt)
+    const company = data.companies.find(c => c['reg-status'] === 'registered') || data.companies[0];
+    const addr = company['business-address'] || {};
+    const fullAddress = [addr['street-address'], addr['street-number'], addr['postal-code'], addr.city]
+      .filter(Boolean).join(', ');
+
+    // Geschäftsführer aus officers (wenn vorhanden)
+    const officers = company.officers || [];
+    const gf = officers.find(o => /(geschäftsführer|gf|ceo|inhaber|vorstand)/i.test(o.role || ''));
+
+    return {
+      businessName: company['business-name'] || null,
+      address: fullAddress || null,
+      city: addr.city || null,
+      legalForm: company['legal-form'] || null,
+      ceo: gf ? `${gf['first-name'] || ''} ${gf['last-name'] || ''}`.trim() : null,
+    };
+  } catch { return null; }
+}
+
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
 
 // Generische Adressen (kein CEO)
@@ -132,6 +173,7 @@ export default async function handler(req, res) {
   }
 
   const outscraperKey = process.env.OUTSCRAPER_API_KEY;
+  const opendataKey   = process.env.OPENDATA_HOST_API_KEY || 'F6F1-D72F-7FEF-468A-82AC-B620-3091-B593';
   if (!outscraperKey) return res.status(500).json({ error: 'Outscraper API Key fehlt.' });
 
   const { branches, custom } = req.body;
@@ -222,7 +264,22 @@ export default async function handler(req, res) {
       };
     });
 
+  // ── STEP 2: Firmenbuch CEO-Verifikation (OpenData.host) ──
+  // Offizielle AT-Firmenbuch Daten überschreiben Outscraper-Daten → höchste Zuverlässigkeit
+  await Promise.all(baseleads.map(async (lead) => {
+    const fb = await lookupFirmenbuch(lead.name, opendataKey);
+    if (!fb) return;
+    // Adresse übernehmen wenn vorhanden
+    if (fb.address) lead.region = fb.address;
+    // CEO NUR übernehmen wenn Firmenbuch einen liefert (hat Vorrang vor Outscraper)
+    if (fb.ceo && fb.ceo.split(/\s+/).length >= 2) {
+      lead.ceos = fb.ceo;
+      lead.firmenbuch_verified = true;
+    }
+  }));
+
   // ── STEP 3: KV Status-Sync ──
+
   let kvStatuses = {};
   if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
     try {

@@ -114,7 +114,7 @@ export default async function handler(req, res) {
     deep_scan: 'true',
     extract_social_profiles: 'true'
   });
-  params.append('enrichment', 'company_insights,domains_service');
+  params.append('enrichment', 'domains_service');
 
   let places = [];
   try {
@@ -209,7 +209,8 @@ export default async function handler(req, res) {
       };
     });
 
-  // ── STEP 2: Opendata Verification ──
+  // ── STEP 2: Opendata Verification (Temporarily disabled due to invalid API key) ──
+  /*
   await Promise.all(baseleads.map(async (lead) => {
     const fb = await lookupFirmenbuch(lead.name, opendataKey);
     if (!fb) return;
@@ -219,6 +220,7 @@ export default async function handler(req, res) {
       lead.firmenbuch_ceo = true;
     }
   }));
+  */
 
   // ── STEP 3: Sync Status from KV ──
   let kvStatuses = {};

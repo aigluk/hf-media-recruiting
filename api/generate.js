@@ -17,72 +17,108 @@ const BRANCH_SEARCH_MAP = {
   'Gesundheit/Pflege':     'Arztpraxis Pflegeheim Apotheke',
 };
 
-// CEO / Entscheider Titel-Erkennung (basierend auf echten Outscraper-Feldern)
-const CEO_TITLE_REGEX = /\b(ceo|chief executive|geschäftsführer|geschäftsführerin|gf|inhaber|inhaberin|founder|co-founder|gründer|owner|direktor|direktorin|vorstand|managing director|president|principal)\b/i;
-
-// Generische E-Mail-Präfixe (werden nicht als CEO-Mail gewertet)
-const GENERIC_EMAIL_REGEX = /^(info|office|kontakt|contact|hello|hallo|support|service|mail|team|post|anfrage|booking|reservation|sales|hr|buchhaltung|verwaltung|sekretariat|empfang|reception|marketing)@/i;
-
-// Strict E-Mail-Validator
+// E-Mail Regex
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
 
+// Generische Adressen (kein CEO)
+const GENERIC_PREFIX = /^(info|office|kontakt|contact|hello|hallo|support|service|mail|team|post|anfrage|booking|reservation|sales|hr|buchhaltung|verwaltung|sekretariat|empfang|reception|marketing|noreply|no-reply|jobs|karriere)@/i;
+
+// CEO / Decision-Maker Titel (Outscraper email_X_title Feld)
+const CEO_TITLE_REGEX = /\b(ceo|chief executive|geschäftsführer|geschäftsführerin|gef\.|gf\b|inhaber|inhaberin|founder|co-founder|gründer|owner|direktor|direktorin|vorstand|managing director|president|principal|geschäftsleitung)\b/i;
+
 // ════════════════════════════════════════════════════════════════════════════
-// extractPersonData: Liest Outscraper's email_X_* Felder sauber aus.
-// Gibt { emails, ceoName, ceoEmail } zurück — NIE halluziniert, NIE geraten.
+// Extrahiert den Hauptteil einer Domain (meininger-hotels.com → meininger-hotels)
+// ════════════════════════════════════════════════════════════════════════════
+function getMainDomain(urlStr) {
+  if (!urlStr) return null;
+  try {
+    const host = new URL(urlStr.startsWith('http') ? urlStr : 'https://' + urlStr).hostname;
+    // Entferne www. prefix
+    const parts = host.replace(/^www\./, '');
+    return parts; // z.B. "meininger-hotels.com"
+  } catch { return null; }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// extractPersonData: Liest Outscraper email_X_* Felder aus.
+// KRITISCH: Nur Emails akzeptieren, deren Domain zur Unternehmenswebsite passt.
+// Verhindert false positives wie "erikstofrregen@medlanes.com" für MEININGER Hotel.
 // ════════════════════════════════════════════════════════════════════════════
 function extractPersonData(place) {
   const companyNameLower = (place.name || '').toLowerCase().trim();
+  const websiteDomain = getMainDomain(place.website);
+  // Extrahiere den "Hauptteil" ohne TLD für flexibleren Vergleich
+  // z.B. "meininger-hotels.com" → "meininger-hotels"
+  const websiteDomainBase = websiteDomain ? websiteDomain.split('.').slice(0, -1).join('.') : null;
 
-  // Sammle alle email_X Einträge aus Outscraper
+  // Sammle alle email_X Einträge
   const contacts = [];
   for (let i = 1; i <= 30; i++) {
     const email = place[`email_${i}`];
-    if (!email) break; // Outscraper listet sequenziell, kein Gap
-    if (!EMAIL_REGEX.test(email)) continue;
-    if (email.includes('google.com') || email.includes('sentry') || email.endsWith('.png')) continue;
+    if (!email) break; // Outscraper listet sequenziell
+
+    const emailStr = typeof email === 'string' ? email.toLowerCase().trim() : '';
+    if (!EMAIL_REGEX.test(emailStr)) continue;
+
+    const emailDomain = emailStr.split('@')[1] || '';
+    const emailDomainBase = emailDomain.split('.').slice(0, -1).join('.');
+
+    // ★ DOMAIN-VALIDIERUNG: Nur Emails die zum Unternehmen gehören
+    // Akzeptiert wenn:  email domain == website domain ODER
+    //                   email domain enthält den website-Hauptteil (oder umgekehrt)
+    let domainMatch = false;
+    if (!websiteDomain) {
+      // Kein Website bekannt → Emails als unsicher markieren (nicht ablehnen, aber tiefer priorisieren)
+      domainMatch = false;
+    } else {
+      domainMatch = (
+        emailDomain === websiteDomain ||
+        emailDomainBase === websiteDomainBase ||
+        (websiteDomainBase && emailDomain.includes(websiteDomainBase)) ||
+        (websiteDomainBase && websiteDomainBase.includes(emailDomainBase))
+      );
+    }
 
     contacts.push({
-      email:    email.toLowerCase().trim(),
-      name:     place[`email_${i}_full_name`] || null,
-      title:    place[`email_${i}_title`]     || null,
-      isGeneric: GENERIC_EMAIL_REGEX.test(email),
+      email: emailStr,
+      name:  place[`email_${i}_full_name`] || null,
+      title: place[`email_${i}_title`]     || null,
+      isGeneric: GENERIC_PREFIX.test(emailStr),
+      domainMatch,
     });
   }
 
-  // CEO-Kontakt: Erstes Match mit CEO-Titel
-  const ceoContact = contacts.find(c => c.title && CEO_TITLE_REGEX.test(c.title) && c.name);
+  // Nur Domain-passende Emails für CEO/General-Picker verwenden
+  const verifiedContacts = contacts.filter(c => c.domainMatch);
+  // Fallback: Alle Contacts wenn keine domain-validierten vorhanden
+  const pool = verifiedContacts.length > 0 ? verifiedContacts : [];
 
-  // Generische E-Mail (info@, office@, ...)
-  const generalContact = contacts.find(c => c.isGeneric);
+  // CEO: Ersten Kontakt mit CEO-Titel und Namen nehmen
+  const ceoContact = pool.find(c => c.title && CEO_TITLE_REGEX.test(c.title) && c.name);
 
-  // Erste persönliche E-Mail (nicht generisch) als Fallback
-  const personalContact = contacts.find(c => !c.isGeneric);
+  // Generische E-Mail: info@, office@, etc.
+  const generalContact = pool.find(c => c.isGeneric);
+
+  // Erste persönliche E-Mail (nicht generisch) als Alternativ
+  const personalContact = pool.find(c => !c.isGeneric);
 
   const email_general = generalContact?.email || personalContact?.email || '';
   const email_ceo     = (ceoContact && ceoContact.email !== email_general) ? ceoContact.email : '';
 
-  // CEO Name: NUR wenn Outscraper eine echte Person mit CEO-Titel hat
+  // CEO-Name: NUR wenn Outscraper eine echte Person mit CEO-Titel zurückgibt UND Domain stimmt
   let ceoName = '';
-  if (ceoContact && ceoContact.name) {
+  if (ceoContact?.name) {
     const n = ceoContact.name.trim();
-    // Sicherheitscheck: Nicht der Firmenname selbst
     if (n.toLowerCase() !== companyNameLower && n.split(/\s+/).length >= 2) {
       ceoName = n;
     }
   }
+  // Fallback ohne Domain-Match: personalContact Name (ohne CEO-Titel) NICHT nehmen → leer lassen
+  // → Lieber leer als falsch
 
-  // Wenn kein CEO-Titel-Match aber eine persönliche E-Mail mit Namen existiert: als Fallback
-  if (!ceoName && personalContact?.name) {
-    const n = personalContact.name.trim();
-    if (n.toLowerCase() !== companyNameLower && n.split(/\s+/).length >= 2) {
-      ceoName = n;
-    }
-  }
-
-  // Aufgebaute E-Mail-Liste für Anzeige
   const emailDisplay = [email_general, email_ceo].filter(Boolean).join(', ');
 
-  return { emailDisplay, email_general, email_ceo, ceoName };
+  return { emailDisplay, email_general, email_ceo, ceoName, domainMatchCount: verifiedContacts.length };
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -114,7 +150,7 @@ export default async function handler(req, res) {
     region:   'AT',
     async:    'false',
   });
-  // domains_service: liefert email_1..N + email_X_full_name + email_X_title
+  // domains_service liefert email_1..N + email_X_full_name + email_X_title (verifiziert via Diagnostik)
   params.append('enrichment', 'domains_service');
 
   let places = [];
@@ -149,14 +185,14 @@ export default async function handler(req, res) {
           const url = new URL(decodeURIComponent(website));
           ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','gclid','fbclid'].forEach(p => url.searchParams.delete(p));
           website = url.toString();
-        } catch { /* keep as-is */ }
+        } catch { /* as-is */ }
       }
 
       // Adresse
       const addressParts = [place.street, place.postal_code, place.city].filter(Boolean);
       const region = addressParts.join(', ') || place.full_address || location;
 
-      // CEOs + Emails aus Outscraper email_X_* Feldern (verified)
+      // Emails + CEO — mit Domain-Validierung
       const { emailDisplay, email_general, email_ceo, ceoName } = extractPersonData(place);
 
       // Beschreibung: Eigene Google-Beschreibung zuerst, dann Subtypes
@@ -171,9 +207,9 @@ export default async function handler(req, res) {
         website,
         phone:         place.phone  || '',
         emails:        emailDisplay,
-        email_general: email_general,
-        email_ceo:     email_ceo,
-        ceos:          ceoName,    // Leer wenn nicht sicher gefunden — KEINE Halluzination
+        email_general,
+        email_ceo,
+        ceos:          ceoName,  // Leer wenn nicht sicher — KEINE Halluzination
         description,
         rating:        place.rating  || null,
         reviews:       place.reviews || 0,
@@ -214,6 +250,6 @@ export default async function handler(req, res) {
     total:      baseleads.length,
     ceoFound:   ceoCount,
     emailFound: emailCount,
-    source:     'Google Maps + Contacts (Outscraper domains_service)',
+    source:     'Google Maps + Contacts (Outscraper domains_service, domain-validated)',
   });
 }

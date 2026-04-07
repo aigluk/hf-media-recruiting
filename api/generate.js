@@ -91,11 +91,14 @@ async function searchGoogleForCeo(companyName, apiKey) {
 async function searchApolloB2b(domain, apiKey) {
   if (!apiKey || !domain) return null;
   try {
-    const r = await fetch('https://api.apollo.io/api/v1/mixed_people/search', {
+    const r = await fetch('https://api.apollo.io/api/v1/mixed_people/api_search', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+      headers: { 
+        'Content-Type': 'application/json', 
+        'Cache-Control': 'no-cache',
+        'X-Api-Key': apiKey 
+      },
       body: JSON.stringify({
-        api_key: apiKey,
         q_organization_domains: domain,
         person_titles: ["ceo", "owner", "founder", "geschäftsführer", "inhaber", "director"],
         page: 1
@@ -250,22 +253,32 @@ export default async function handler(req, res) {
     language: 'de',
     region:   'AT',
     async:    'false',
+    // ── PROFIS: Nur direkte Kontakte, keine info@ Mails! ──
+    enrichment: 'contacts_n_leads',
+    preferred_contacts: JSON.stringify(['CEO', 'Owner', 'Managing Director', 'Geschäftsführer', 'Inhaber']),
+    general_emails: 'false',
+    contacts_per_company: '3'
   });
-  // domains_service liefert email_1..N + email_X_full_name + email_X_title (verifiziert via Diagnostik)
-  params.append('enrichment', 'domains_service');
 
   let places = [];
   try {
-    const apiRes = await fetch(`https://api.leadsscraper.io/google-maps-search?${params}`, {
+    const apiRes = await fetch(`https://api.outscraper.com/google-maps-search?${params}`, {
       headers: { 'X-API-KEY': outscraperKey, 'Accept': 'application/json' }
     });
     if (!apiRes.ok) {
-      const e = await apiRes.text();
-      return res.status(apiRes.status).json({ error: `Outscraper Fehler: ${e.slice(0, 200)}` });
-    }
-    const apiData = await apiRes.json();
-    if (apiData.data && Array.isArray(apiData.data)) {
-      places = Array.isArray(apiData.data[0]) ? apiData.data[0] : apiData.data;
+       // Fallback zu leadsscraper falls outscraper direkt fehlschlägt
+       const fallbackRes = await fetch(`https://api.leadsscraper.io/google-maps-search?${params}`, {
+         headers: { 'X-API-KEY': outscraperKey, 'Accept': 'application/json' }
+       });
+       if (!fallbackRes.ok) {
+         const e = await fallbackRes.text();
+         return res.status(fallbackRes.status).json({ error: `API Fehler: ${e.slice(0, 200)}` });
+       }
+       const apiData = await fallbackRes.json();
+       places = Array.isArray(apiData.data[0]) ? apiData.data[0] : apiData.data;
+    } else {
+       const apiData = await apiRes.json();
+       places = Array.isArray(apiData.data[0]) ? apiData.data[0] : apiData.data;
     }
   } catch (err) {
     return res.status(500).json({ error: err.message });

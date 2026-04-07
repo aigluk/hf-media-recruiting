@@ -86,6 +86,36 @@ async function searchGoogleForCeo(companyName, apiKey) {
   return null;
 }
 
+// ── Apollo.io B2B Enrichment (Ultimate Senior Fix für private Emails) ──
+// Das ist der Branchenstandard. Keine Hacks mehr. Liefert den CEO + seine private Mail (max.muster@firma.at)
+async function searchApolloB2b(domain, apiKey) {
+  if (!apiKey || !domain) return null;
+  try {
+    const r = await fetch('https://api.apollo.io/api/v1/mixed_people/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+      body: JSON.stringify({
+        api_key: apiKey,
+        q_organization_domains: domain,
+        person_titles: ["ceo", "owner", "founder", "geschäftsführer", "inhaber", "director"],
+        page: 1
+      }),
+      signal: AbortSignal.timeout(5000)
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    if (data.people && data.people.length > 0) {
+      const p = data.people[0]; // Bester Match
+      return {
+        ceo: `${p.first_name || ''} ${p.last_name || ''}`.trim(),
+        email: p.email,
+        linkedin: p.linkedin_url
+      };
+    }
+  } catch (e) {}
+  return null;
+}
+
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
 
 // Generische Adressen (kein CEO)
@@ -201,6 +231,8 @@ export default async function handler(req, res) {
 
   const outscraperKey = process.env.OUTSCRAPER_API_KEY;
   const opendataKey   = process.env.OPENDATA_HOST_API_KEY || 'F6F1-D72F-7FEF-468A-82AC-B620-3091-B593';
+  const apolloKey     = process.env.APOLLO_API_KEY; // NEU: Der Profit-Macher für echte E-Mails
+
   if (!outscraperKey) return res.status(500).json({ error: 'Outscraper API Key fehlt.' });
 
   const { branches, custom } = req.body;
@@ -310,6 +342,21 @@ export default async function handler(req, res) {
        if (googleCeo) {
          lead.ceos = googleCeo;
          lead.google_snippet_verified = true;
+       }
+    }
+    // 3. ULTIMATE FIX: Apollo.io Enrichment für private CEO-Emails
+    // Falls ein Apollo Key hinterlegt ist, holen wir die B2B-Profi Daten!
+    if (apolloKey && lead.website) {
+       const apolloData = await searchApolloB2b(lead.website.replace(/^https?:\/\/(www\.)?/,'').split('/')[0], apolloKey);
+       if (apolloData) {
+         if (apolloData.ceo && apolloData.ceo.length > 3) lead.ceos = apolloData.ceo;
+         
+         // Generics filtern, weil Apollo oft echt gute private Mails liefert (m.mustermann@...)
+         if (apolloData.email) {
+           lead.email_ceo = apolloData.email;
+           lead.emails = apolloData.email + (lead.email_general ? `, ${lead.email_general}` : ''); // Private Mail immer zuerst!
+         }
+         lead.apollo_verified = true;
        }
     }
   }));

@@ -59,6 +59,33 @@ async function lookupFirmenbuch(companyName, apiKey) {
   } catch { return null; }
 }
 
+// ── Google Snippet CEO Fallback (Outscraper Search API) ──
+// Falls LinkedIn und Firmenbuch leersind, frage Google nach dem Impressum.
+// In Google's Snippet steht der GF fast immer, was alle Bot-Blocks der Hotel-Seiten umgeht!
+async function searchGoogleForCeo(companyName, apiKey) {
+  if (!apiKey || !companyName) return null;
+  try {
+     const q = encodeURIComponent(`${companyName} impressum geschäftsführer`);
+     const r = await fetch(`https://api.outscraper.com/search?query=${q}&limit=2&async=false`, {
+       headers: { 'X-API-KEY': apiKey }
+     });
+     if (!r.ok) return null;
+     const json = await r.json();
+     for (const res of (json.data[0] || [])) {
+        if (!res.snippet) continue;
+        const text = res.snippet;
+        // Regex für "Geschäftsführer: Max Mustermann"
+        const m1 = text.match(/(?:Geschäftsführung|Geschäftsführer|Inhaber)(?:in)?\s*(?:[:|-]|ist|sind)?\s*([A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+){1,2})/i);
+        // Regex für "vertreten durch Max Mustermann"
+        const m2 = text.match(/vertreten(?:[\sA-Za-z]+)?durch\s*[:|-]?\s*([A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+){1,2})/i);
+        
+        if (m1 && !m1[1].includes('GmbH')) return m1[1].trim();
+        if (m2 && !m2[1].includes('GmbH')) return m2[1].trim();
+     }
+  } catch (e) {}
+  return null;
+}
+
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
 
 // Generische Adressen (kein CEO)
@@ -264,17 +291,26 @@ export default async function handler(req, res) {
       };
     });
 
-  // ── STEP 2: Firmenbuch CEO-Verifikation (OpenData.host) ──
-  // Offizielle AT-Firmenbuch Daten überschreiben Outscraper-Daten → höchste Zuverlässigkeit
+  // ── STEP 2: Firmenbuch & Google Snippet CEO-Verifikation ──
   await Promise.all(baseleads.map(async (lead) => {
+    // 1. Check Firmenbuch (liefert aktuell im Free-Tier leider fast nie den CEO)
     const fb = await lookupFirmenbuch(lead.name, opendataKey);
-    if (!fb) return;
-    // Adresse übernehmen wenn vorhanden
-    if (fb.address) lead.region = fb.address;
-    // CEO NUR übernehmen wenn Firmenbuch einen liefert (hat Vorrang vor Outscraper)
-    if (fb.ceo && fb.ceo.split(/\s+/).length >= 2) {
-      lead.ceos = fb.ceo;
-      lead.firmenbuch_verified = true;
+    if (fb) {
+      if (fb.address) lead.region = fb.address;
+      if (fb.ceo && fb.ceo.split(/\s+/).length >= 2) {
+        lead.ceos = fb.ceo;
+        lead.firmenbuch_verified = true;
+      }
+    }
+    
+    // 2. Fallback: Wenn wir immer noch keinen ordentlichen CEO haben,
+    // nutzen wir den Google Snippet Hack via Outscraper!
+    if (!lead.ceos || lead.ceos.length < 5) {
+       const googleCeo = await searchGoogleForCeo(lead.name, outscraperKey);
+       if (googleCeo) {
+         lead.ceos = googleCeo;
+         lead.google_snippet_verified = true;
+       }
     }
   }));
 

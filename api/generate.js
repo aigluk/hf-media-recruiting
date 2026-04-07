@@ -266,22 +266,31 @@ export default async function handler(req, res) {
       headers: { 'X-API-KEY': outscraperKey, 'Accept': 'application/json' }
     });
     if (!apiRes.ok) {
-       // Fallback zu leadsscraper falls outscraper direkt fehlschlägt
+       // Check if it's a JSON error already or text
+       const errorType = apiRes.headers.get('content-type');
+       if (errorType && errorType.includes('application/json')) {
+         const apiData = await apiRes.json();
+         return res.status(apiRes.status).json(apiData);
+       }
+       // Fallback text error (like Insufficient Funds)
+       const errorText = await apiRes.text();
+       
+       // Try fallback service
        const fallbackRes = await fetch(`https://api.leadsscraper.io/google-maps-search?${params}`, {
          headers: { 'X-API-KEY': outscraperKey, 'Accept': 'application/json' }
        });
        if (!fallbackRes.ok) {
          const e = await fallbackRes.text();
-         return res.status(fallbackRes.status).json({ error: `API Fehler: ${e.slice(0, 200)}` });
+         return res.status(fallbackRes.status).json({ error: `API-Verbindung fehlgeschlagen: ${e.slice(0, 100) || errorText.slice(0, 100)}` });
        }
        const apiData = await fallbackRes.json();
-       places = Array.isArray(apiData.data[0]) ? apiData.data[0] : apiData.data;
+       places = Array.isArray(apiData.data?.[0]) ? apiData.data[0] : (apiData.data || []);
     } else {
        const apiData = await apiRes.json();
-       places = Array.isArray(apiData.data[0]) ? apiData.data[0] : apiData.data;
+       places = Array.isArray(apiData.data?.[0]) ? apiData.data[0] : (apiData.data || []);
     }
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: `System-Fehler: ${err.message}` });
   }
 
   if (places.length === 0) {

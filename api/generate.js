@@ -272,7 +272,7 @@ export default async function handler(req, res) {
        });
        if (!fallbackRes.ok) {
          const e = await fallbackRes.text();
-         return res.status(fallbackRes.status).json({ error: `API Fehler: ${e.slice(0, 200)}` });
+          return res.status(fallbackRes.status).json({ error: `API Fehler: ${e.slice(0, 150)}` });
        }
        const apiData = await fallbackRes.json();
        places = Array.isArray(apiData.data[0]) ? apiData.data[0] : apiData.data;

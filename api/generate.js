@@ -253,11 +253,6 @@ export default async function handler(req, res) {
     language: 'de',
     region:   'AT',
     async:    'false',
-    // ── PROFIS: Nur direkte Kontakte, keine info@ Mails! ──
-    enrichment: 'contacts_n_leads',
-    preferred_contacts: JSON.stringify(['CEO', 'Owner', 'Managing Director', 'Geschäftsführer', 'Inhaber']),
-    general_emails: 'false',
-    contacts_per_company: '3'
   });
 
   let places = [];
@@ -345,8 +340,8 @@ export default async function handler(req, res) {
       };
     });
 
-  // ── STEP 2: Firmenbuch & Google Snippet CEO-Verifikation ──
-  await Promise.all(baseleads.map(async (lead) => {
+  // ── STEP 2: Firmenbuch & Google Snippet CEO-Verifikation (max 5 parallel) ──
+  const enrichLead = async (lead) => {
     // 1. Check Firmenbuch (liefert aktuell im Free-Tier leider fast nie den CEO)
     const fb = await lookupFirmenbuch(lead.name, opendataKey);
     if (fb) {
@@ -381,7 +376,13 @@ export default async function handler(req, res) {
          lead.apollo_verified = true;
        }
     }
-  }));
+  };
+
+  // Maximal 3 Leads gleichzeitig anreichern, um Timeout zu vermeiden
+  const CONCURRENCY = 3;
+  for (let i = 0; i < baseleads.length; i += CONCURRENCY) {
+    await Promise.all(baseleads.slice(i, i + CONCURRENCY).map(enrichLead));
+  }
 
   // ── STEP 3: KV Status-Sync ──
 

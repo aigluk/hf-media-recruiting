@@ -260,35 +260,32 @@ export default async function handler(req, res) {
     language: 'de',
     region:   'AT',
     async:    'false',
-    // ── PROFIS: Nur direkte Kontakte, keine info@ Mails! ──
-    enrichment: 'contacts_n_leads',
-    preferred_contacts: JSON.stringify(['CEO', 'Owner', 'Managing Director', 'Geschäftsführer', 'Inhaber']),
-    general_emails: 'false',
-    contacts_per_company: '3'
   });
+  // domains_service: schnell (~3s), liefert email_X Felder via Domain-Lookup
+  params.append('enrichment', 'domains_service');
 
   let places = [];
   try {
     const apiRes = await fetch(`https://api.outscraper.com/google-maps-search?${params}`, {
       headers: { 'X-API-KEY': outscraperKey, 'Accept': 'application/json' }
     });
-    if (!apiRes.ok) {
-       // Fallback zu leadsscraper falls outscraper direkt fehlschlägt
-       const fallbackRes = await fetch(`https://api.leadsscraper.io/google-maps-search?${params}`, {
-         headers: { 'X-API-KEY': outscraperKey, 'Accept': 'application/json' }
-       });
-       if (!fallbackRes.ok) {
-         const e = await fallbackRes.text();
-         return res.status(fallbackRes.status).json({ error: `API Fehler: ${e.slice(0, 200)}` });
-       }
-       const apiData = await fallbackRes.json();
-       places = Array.isArray(apiData.data[0]) ? apiData.data[0] : apiData.data;
-    } else {
-       const apiData = await apiRes.json();
-       places = Array.isArray(apiData.data[0]) ? apiData.data[0] : apiData.data;
+    const rawText = await apiRes.text();
+    let apiData;
+    try {
+      apiData = JSON.parse(rawText);
+    } catch {
+      if (/insufficient|credit|quota|limit|balance/i.test(rawText)) {
+        return res.status(402).json({ error: 'Outscraper Credits aufgebraucht. Bitte Guthaben aufladen unter outscraper.com.' });
+      }
+      return res.status(502).json({ error: `Outscraper API-Fehler: ${rawText.slice(0, 120)}` });
     }
+    if (!apiRes.ok) {
+      const msg = apiData?.message || apiData?.error || JSON.stringify(apiData).slice(0, 120);
+      return res.status(apiRes.status).json({ error: `Outscraper Fehler (${apiRes.status}): ${msg}` });
+    }
+    places = Array.isArray(apiData.data?.[0]) ? apiData.data[0] : (apiData.data || []);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: `Netzwerk-Fehler: ${err.message}` });
   }
 
   if (places.length === 0) {

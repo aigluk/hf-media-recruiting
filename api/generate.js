@@ -59,61 +59,34 @@ async function lookupFirmenbuch(companyName, apiKey) {
   } catch { return null; }
 }
 
-// ── Google Snippet CEO Fallback (Outscraper Search API) ──
-// Falls LinkedIn und Firmenbuch leersind, frage Google nach dem Impressum.
-// In Google's Snippet steht der GF fast immer, was alle Bot-Blocks der Hotel-Seiten umgeht!
-async function searchGoogleForCeo(companyName, apiKey) {
-  if (!apiKey || !companyName) return null;
-  try {
-     const q = encodeURIComponent(`${companyName} impressum geschäftsführer`);
-     const r = await fetch(`https://api.outscraper.com/search?query=${q}&limit=2&async=false`, {
-       headers: { 'X-API-KEY': apiKey }
-     });
-     if (!r.ok) return null;
-     const json = await r.json();
-     for (const res of (json.data[0] || [])) {
-        if (!res.snippet) continue;
-        const text = res.snippet;
-        // Regex für "Geschäftsführer: Max Mustermann"
-        const m1 = text.match(/(?:Geschäftsführung|Geschäftsführer|Inhaber)(?:in)?\s*(?:[:|-]|ist|sind)?\s*([A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+){1,2})/i);
-        // Regex für "vertreten durch Max Mustermann"
-        const m2 = text.match(/vertreten(?:[\sA-Za-z]+)?durch\s*[:|-]?\s*([A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+){1,2})/i);
-        
-        if (m1 && !m1[1].includes('GmbH')) return m1[1].trim();
-        if (m2 && !m2[1].includes('GmbH')) return m2[1].trim();
-     }
-  } catch (e) {}
-  return null;
-}
-
-// ── Apollo.io B2B Enrichment (Ultimate Senior Fix für private Emails) ──
-// Das ist der Branchenstandard. Keine Hacks mehr. Liefert den CEO + seine private Mail (max.muster@firma.at)
+// ── Apollo.io: CEO + private E-Mail per Domain ──
 async function searchApolloB2b(domain, apiKey) {
   if (!apiKey || !domain) return null;
   try {
     const r = await fetch('https://api.apollo.io/api/v1/mixed_people/search', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+        'X-Api-Key': apiKey,
+      },
       body: JSON.stringify({
-        api_key: apiKey,
         q_organization_domains: domain,
-        person_titles: ["ceo", "owner", "founder", "geschäftsführer", "inhaber", "director"],
-        page: 1
+        person_titles: ['ceo', 'owner', 'founder', 'geschäftsführer', 'inhaber', 'managing director'],
+        page: 1,
+        per_page: 1,
       }),
-      signal: AbortSignal.timeout(5000)
+      signal: AbortSignal.timeout(4000),
     });
     if (!r.ok) return null;
     const data = await r.json();
-    if (data.people && data.people.length > 0) {
-      const p = data.people[0]; // Bester Match
-      return {
-        ceo: `${p.first_name || ''} ${p.last_name || ''}`.trim(),
-        email: p.email,
-        linkedin: p.linkedin_url
-      };
-    }
-  } catch (e) {}
-  return null;
+    const p = data?.people?.[0];
+    if (!p) return null;
+    return {
+      ceo:   [p.first_name, p.last_name].filter(Boolean).join(' '),
+      email: p.email || null,
+    };
+  } catch { return null; }
 }
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;

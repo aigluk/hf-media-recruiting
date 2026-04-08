@@ -961,6 +961,17 @@
       return date.toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric' });
     }
 
+    // Formats a date/time in the browser's local timezone.
+    // Handles ISO strings (from server) and legacy "DD.MM.YYYY, HH:MM" strings gracefully.
+    function fmtDateTime(d) {
+      if (!d || d === '—') return '—';
+      // Legacy format already localised — return as-is
+      if (typeof d === 'string' && /^\d{2}\.\d{2}\.\d{4}/.test(d)) return d;
+      const date = new Date(d);
+      if (isNaN(date)) return d;
+      return date.toLocaleString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    }
+
     const PIPELINES = [
       { id: 'NEU', label: 'NEU / OFFEN', color: 'st-neu' },
       { id: 'IN KONTAKT', label: 'IN KONTAKT', color: 'st-inkontakt' },
@@ -2028,6 +2039,9 @@
         const parseS = (s) => {
           if (!s || s === '—' || String(s).length < 5) return 0;
           try {
+            if (String(s).includes('T') || String(s).includes('-')) {
+              const ts = new Date(s).getTime(); return isNaN(ts) ? 0 : ts;
+            }
             const clean = String(s).replace(',', '').trim();
             const parts = clean.split(/\s+/);
             const dStr = parts[0].split('.');
@@ -2060,7 +2074,7 @@
           <div class="activity-body">
             <div class="activity-name">${name}</div>
             <div class="activity-sub">${label}${region ? ' · ' + region : ''}</div>
-            <div style="font-size:10px; color:var(--text-muted); opacity:0.7; margin-top:2px;">${l.statusDate || '—'}</div>
+            <div style="font-size:10px; color:var(--text-muted); opacity:0.7; margin-top:2px;">${fmtDateTime(l.statusDate)}</div>
           </div>
         </div>`;
       }).join('');
@@ -2225,10 +2239,15 @@
           );
         }
 
-        // Robust parser for "DD.MM.YYYY HH:mm"
+        // Robust parser for ISO strings and legacy "DD.MM.YYYY HH:mm"
         const parseS = (s) => {
           if (!s || s === '—' || String(s).length < 5) return 0;
           try {
+            // ISO string (from server) — parse directly
+            if (String(s).includes('T') || String(s).includes('-')) {
+              const ts = new Date(s).getTime();
+              return isNaN(ts) ? 0 : ts;
+            }
             const clean = String(s).replace(',', '').trim();
             const parts = clean.split(/\s+/);
             const dStr = parts[0].split('.');
@@ -2990,7 +3009,7 @@
           <div class="modal-field" style="grid-column: span 2;"><label style="font-size:0.65rem;margin-bottom:1px;">Website</label><div class="val" style="font-size:0.85rem;word-break:break-all;">${webStr}</div></div>
           
           <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:1px;">CRM Status</label><div class="val" style="font-size:0.85rem;">${l.status || '–'}</div></div>
-          <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:1px;">Status-Datum</label><div class="val" style="font-size:0.85rem;">${l.statusDate || new Date().toLocaleString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })}</div></div>
+          <div class="modal-field"><label style="font-size:0.65rem;margin-bottom:1px;">Status-Datum</label><div class="val" style="font-size:0.85rem;">${fmtDateTime(l.statusDate)}</div></div>
         </div>
       `;
 

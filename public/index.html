@@ -450,7 +450,7 @@
     <aside class="sidebar">
       <div class="brand">Lead CRM Engine</div>
       <nav class="nav-menu">
-        <a href="#" class="nav-item" onclick="switchView('dashboard')" id="nav-dashboard"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+        <a href="#" class="nav-item" onclick="switchView('dashboard')" id="nav-dashboard"><i data-lucide="gauge"></i> Dashboard</a>
         <a href="#" class="nav-item active" onclick="switchView('leads')" id="nav-leads"><i data-lucide="users"></i> Pipelines & Leads</a>
         <a href="#" class="nav-item" onclick="switchView('calendar')" id="nav-calendar"><i data-lucide="calendar"></i> Kalender</a>
         <a href="#" class="nav-item" onclick="switchView('reports')" id="nav-reports"><i data-lucide="pie-chart"></i> Reports</a>
@@ -1121,7 +1121,7 @@
       document.getElementById('pipelineTabs').innerHTML = PIPELINES.map(p =>
         `<div class="pipeline-tab ${p.id === state.activeTab ? 'active' : ''}" onclick="setTab('${p.id}')">${p.label}</div>`
       ).join('');
-      document.getElementById('brancheChips').innerHTML = BRANCHES.map(b =>
+      document.getElementById('brancheChips').innerHTML = BRANCHES.filter(b => b !== 'Import-Status').map(b =>
         `<div class="chip" onclick="toggleBranch(this, '${b}')">${b}</div>`
       ).join('');
       updateKPIs(); renderTable(); renderCalendar(); renderReports(); renderActivityFeed();

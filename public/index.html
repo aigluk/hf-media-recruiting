@@ -2260,6 +2260,7 @@
         }
 
         tbody.innerHTML = filtered.map(({ l, idx }) => {
+          window.__leads[idx] = l; // explizit jeden slot sichern
           const status = normalizeStatus(l.status);
           const isSelected = state.selectedLeads.has(idx);
           const stCls = PIPELINES.find(p => p.id === status)?.color || 'st-neu';
@@ -2920,8 +2921,8 @@
     }
 
     function showLeadDetail(idx) {
-      const l = state.leads[idx] || (window.__leads && window.__leads[idx]) || null;
-      if (!l) return;
+      const l = (window.__leads && window.__leads[idx]) || state.leads[idx] || state.leads.find((_,i) => i === idx) || null;
+      if (!l) { console.warn('showLeadDetail: kein Lead bei idx', idx, 'leads:', state.leads.length); return; }
       const rawPhone = (l.phone || l.tel || l.Phone || l.Telefon || l.phone_number || '').replace(/[^\d+]/g,'');
       const emCands  = [l.email_general, l.emails, l.email, l.email_ceo, l.Email, l.mail].map(e => e ? String(e).trim() : '');
       const rawEmail = emCands.find(e => e && e.includes('@')) || '';

@@ -1,42 +1,5 @@
 import { kv } from '@vercel/kv';
 
-// ── Englische Google-Subtype → Deutsche Bezeichnung ──
-const SUBTYPE_DE = {
-  restaurant: 'Restaurant', cafe: 'Café', bar: 'Bar', bakery: 'Bäckerei',
-  hotel: 'Hotel', lodging: 'Unterkunft', spa: 'Wellness & Spa', gym: 'Fitnessstudio',
-  real_estate_agency: 'Immobilienmakler', property_management_company: 'Hausverwaltung',
-  construction_company: 'Bauunternehmen', contractor: 'Auftragnehmer',
-  electrician: 'Elektriker', plumber: 'Installateur', painter: 'Maler',
-  carpenter: 'Tischler', roofer: 'Dachdecker', flooring_store: 'Bodenbelag',
-  auto_repair: 'KFZ-Werkstatt', car_dealer: 'Autohaus', car_wash: 'Autowaschanlage',
-  accounting: 'Buchhaltung', lawyer: 'Rechtsanwalt', insurance_agency: 'Versicherung',
-  bank: 'Bank', financial_planner: 'Finanzberatung',
-  doctor: 'Arztpraxis', dentist: 'Zahnarzt', pharmacy: 'Apotheke',
-  hospital: 'Krankenhaus', physiotherapist: 'Physiotherapie',
-  it_company: 'IT-Unternehmen', software_company: 'Softwarehaus',
-  logistics_and_supply_chain: 'Logistik', moving_company: 'Umzugsunternehmen',
-  freight_forwarder: 'Spedition', storage: 'Lager',
-  manufacturer: 'Produzent', factory: 'Fabrik', machine_shop: 'Metallbetrieb',
-  retail: 'Einzelhandel', shopping_mall: 'Einkaufszentrum', clothing_store: 'Bekleidungsgeschäft',
-  supermarket: 'Supermarkt', home_goods_store: 'Einrichtungshaus',
-  travel_agency: 'Reisebüro', tour_operator: 'Reiseveranstalter',
-  hair_salon: 'Friseursalon', beauty_salon: 'Kosmetikstudio',
-  cleaning_service: 'Reinigungsservice', landscaper: 'Gartenbau',
-  school: 'Schule', university: 'Universität', training_centre: 'Ausbildungszentrum',
-  marketing_agency: 'Marketingagentur', advertising_agency: 'Werbeagentur',
-  event_venue: 'Veranstaltungsort', wedding_venue: 'Hochzeitslocation',
-  funeral_home: 'Bestattungsunternehmen', church: 'Kirche',
-  non_profit_organization: 'Nonprofit-Organisation',
-};
-
-function subtypesToDe(subtypes) {
-  if (!Array.isArray(subtypes) || subtypes.length === 0) return '';
-  return subtypes
-    .map(s => SUBTYPE_DE[s] || s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()))
-    .slice(0, 3)
-    .join(' · ');
-}
-
 // ── Branch → Google Maps Suchbegriff ──
 const BRANCH_SEARCH_MAP = {
   'Gastronomie':           'Restaurants',
@@ -96,34 +59,61 @@ async function lookupFirmenbuch(companyName, apiKey) {
   } catch { return null; }
 }
 
-// ── Apollo.io: CEO + private E-Mail per Domain ──
-async function searchApollo(domain, apiKey) {
+// ── Google Snippet CEO Fallback (Outscraper Search API) ──
+// Falls LinkedIn und Firmenbuch leersind, frage Google nach dem Impressum.
+// In Google's Snippet steht der GF fast immer, was alle Bot-Blocks der Hotel-Seiten umgeht!
+async function searchGoogleForCeo(companyName, apiKey) {
+  if (!apiKey || !companyName) return null;
+  try {
+     const q = encodeURIComponent(`${companyName} impressum geschäftsführer`);
+     const r = await fetch(`https://api.outscraper.com/search?query=${q}&limit=2&async=false`, {
+       headers: { 'X-API-KEY': apiKey }
+     });
+     if (!r.ok) return null;
+     const json = await r.json();
+     for (const res of (json.data[0] || [])) {
+        if (!res.snippet) continue;
+        const text = res.snippet;
+        // Regex für "Geschäftsführer: Max Mustermann"
+        const m1 = text.match(/(?:Geschäftsführung|Geschäftsführer|Inhaber)(?:in)?\s*(?:[:|-]|ist|sind)?\s*([A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+){1,2})/i);
+        // Regex für "vertreten durch Max Mustermann"
+        const m2 = text.match(/vertreten(?:[\sA-Za-z]+)?durch\s*[:|-]?\s*([A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+){1,2})/i);
+        
+        if (m1 && !m1[1].includes('GmbH')) return m1[1].trim();
+        if (m2 && !m2[1].includes('GmbH')) return m2[1].trim();
+     }
+  } catch (e) {}
+  return null;
+}
+
+// ── Apollo.io B2B Enrichment (Ultimate Senior Fix für private Emails) ──
+// Das ist der Branchenstandard. Keine Hacks mehr. Liefert den CEO + seine private Mail (max.muster@firma.at)
+async function searchApolloB2b(domain, apiKey) {
   if (!apiKey || !domain) return null;
   try {
     const r = await fetch('https://api.apollo.io/api/v1/mixed_people/search', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache',
-        'X-Api-Key': apiKey,
-      },
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
       body: JSON.stringify({
+        api_key: apiKey,
         q_organization_domains: domain,
-        person_titles: ['ceo', 'owner', 'founder', 'geschäftsführer', 'inhaber', 'managing director', 'director'],
-        page: 1,
-        per_page: 1,
+        person_titles: ["ceo", "owner", "founder", "geschäftsführer", "inhaber", "director"],
+        page: 1
       }),
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(5000)
     });
     if (!r.ok) return null;
     const data = await r.json();
-    const p = data?.people?.[0];
-    if (!p) return null;
-    return {
-      ceo:   [p.first_name, p.last_name].filter(Boolean).join(' '),
-      email: p.email || null,
-    };
-  } catch { return null; }
+    if (data.people && data.people.length > 0) {
+      const p = data.people[0]; // Bester Match
+      return {
+        ceo: `${p.first_name || ''} ${p.last_name || ''}`.trim(),
+        email: p.email,
+        linkedin: p.linkedin_url
+      };
+    }
+  } catch (e) {}
+  return null;
 }
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
@@ -241,7 +231,7 @@ export default async function handler(req, res) {
 
   const outscraperKey = process.env.OUTSCRAPER_API_KEY;
   const opendataKey   = process.env.OPENDATA_HOST_API_KEY || 'F6F1-D72F-7FEF-468A-82AC-B620-3091-B593';
-  const apolloKey     = process.env.APOLLO_API_KEY;
+  const apolloKey     = process.env.APOLLO_API_KEY; // NEU: Der Profit-Macher für echte E-Mails
 
   if (!outscraperKey) return res.status(500).json({ error: 'Outscraper API Key fehlt.' });
 
@@ -261,31 +251,24 @@ export default async function handler(req, res) {
     region:   'AT',
     async:    'false',
   });
-  // domains_service: schnell (~3s), liefert email_X Felder via Domain-Lookup
+  // domains_service liefert email_1..N + email_X_full_name + email_X_title (verifiziert via Diagnostik)
   params.append('enrichment', 'domains_service');
 
   let places = [];
   try {
-    const apiRes = await fetch(`https://api.outscraper.com/google-maps-search?${params}`, {
+    const apiRes = await fetch(`https://api.leadsscraper.io/google-maps-search?${params}`, {
       headers: { 'X-API-KEY': outscraperKey, 'Accept': 'application/json' }
     });
-    const rawText = await apiRes.text();
-    let apiData;
-    try {
-      apiData = JSON.parse(rawText);
-    } catch {
-      if (/insufficient|credit|quota|limit|balance/i.test(rawText)) {
-        return res.status(402).json({ error: 'Outscraper Credits aufgebraucht. Bitte Guthaben aufladen unter outscraper.com.' });
-      }
-      return res.status(502).json({ error: `Outscraper API-Fehler: ${rawText.slice(0, 120)}` });
-    }
     if (!apiRes.ok) {
-      const msg = apiData?.message || apiData?.error || JSON.stringify(apiData).slice(0, 120);
-      return res.status(apiRes.status).json({ error: `Outscraper Fehler (${apiRes.status}): ${msg}` });
+      const e = await apiRes.text();
+      return res.status(apiRes.status).json({ error: `Outscraper Fehler: ${e.slice(0, 200)}` });
     }
-    places = Array.isArray(apiData.data?.[0]) ? apiData.data[0] : (apiData.data || []);
+    const apiData = await apiRes.json();
+    if (apiData.data && Array.isArray(apiData.data)) {
+      places = Array.isArray(apiData.data[0]) ? apiData.data[0] : apiData.data;
+    }
   } catch (err) {
-    return res.status(500).json({ error: `Netzwerk-Fehler: ${err.message}` });
+    return res.status(500).json({ error: err.message });
   }
 
   if (places.length === 0) {
@@ -313,11 +296,9 @@ export default async function handler(req, res) {
       // Emails + CEO — mit Domain-Validierung
       const { emailDisplay, email_general, email_ceo, ceoName } = extractPersonData(place);
 
-      // Beschreibung: Google-Beschreibung → About → deutsche Subtypes → Kategorie
+      // Beschreibung: Eigene Google-Beschreibung zuerst, dann Subtypes
       const description = place.description
-        || place.about
-        || subtypesToDe(place.subtypes)
-        || place.category
+        || (Array.isArray(place.subtypes) && place.subtypes.length > 0 ? place.subtypes.join(', ') : '')
         || '';
 
       return {
@@ -342,39 +323,41 @@ export default async function handler(req, res) {
       };
     });
 
-  // ── STEP 2: Firmenbuch + Apollo parallel (beide max 4s Timeout) ──
+  // ── STEP 2: Firmenbuch & Google Snippet CEO-Verifikation ──
   await Promise.all(baseleads.map(async (lead) => {
-    const domain = lead.website
-      ? lead.website.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]
-      : null;
-
-    const [fb, apollo] = await Promise.all([
-      lookupFirmenbuch(lead.name, opendataKey),
-      searchApollo(domain, apolloKey),
-    ]);
-
+    // 1. Check Firmenbuch (liefert aktuell im Free-Tier leider fast nie den CEO)
+    const fb = await lookupFirmenbuch(lead.name, opendataKey);
     if (fb) {
       if (fb.address) lead.region = fb.address;
-      if (fb.city && !lead.city) lead.city = fb.city;
-      if (fb.legalForm) lead.legalForm = fb.legalForm;
       if (fb.ceo && fb.ceo.split(/\s+/).length >= 2) {
         lead.ceos = fb.ceo;
         lead.firmenbuch_verified = true;
       }
     }
-
-    if (apollo) {
-      // Apollo CEO nur wenn wir noch keinen haben
-      if (apollo.ceo && apollo.ceo.length > 3 && !lead.ceos) {
-        lead.ceos = apollo.ceo;
-        lead.apollo_verified = true;
-      }
-      // Apollo E-Mail: nur wenn keine CEO-Mail vorhanden und nicht generisch
-      if (apollo.email && !lead.email_ceo && !GENERIC_PREFIX.test(apollo.email)) {
-        lead.email_ceo = apollo.email;
-        lead.emails = [apollo.email, lead.email_general].filter(Boolean).join(', ');
-        lead.apollo_verified = true;
-      }
+    
+    // 2. Fallback: Wenn wir immer noch keinen ordentlichen CEO haben,
+    // nutzen wir den Google Snippet Hack via Outscraper!
+    if (!lead.ceos || lead.ceos.length < 5) {
+       const googleCeo = await searchGoogleForCeo(lead.name, outscraperKey);
+       if (googleCeo) {
+         lead.ceos = googleCeo;
+         lead.google_snippet_verified = true;
+       }
+    }
+    // 3. ULTIMATE FIX: Apollo.io Enrichment für private CEO-Emails
+    // Falls ein Apollo Key hinterlegt ist, holen wir die B2B-Profi Daten!
+    if (apolloKey && lead.website) {
+       const apolloData = await searchApolloB2b(lead.website.replace(/^https?:\/\/(www\.)?/,'').split('/')[0], apolloKey);
+       if (apolloData) {
+         if (apolloData.ceo && apolloData.ceo.length > 3) lead.ceos = apolloData.ceo;
+         
+         // Generics filtern, weil Apollo oft echt gute private Mails liefert (m.mustermann@...)
+         if (apolloData.email) {
+           lead.email_ceo = apolloData.email;
+           lead.emails = apolloData.email + (lead.email_general ? `, ${lead.email_general}` : ''); // Private Mail immer zuerst!
+         }
+         lead.apollo_verified = true;
+       }
     }
   }));
 

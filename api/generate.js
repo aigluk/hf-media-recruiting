@@ -96,6 +96,35 @@ async function lookupFirmenbuch(companyName, apiKey) {
   } catch { return null; }
 }
 
+// ── Apollo.io: CEO + private E-Mail per Domain ──
+async function searchApollo(domain, apiKey) {
+  if (!apiKey || !domain) return null;
+  try {
+    const r = await fetch('https://api.apollo.io/api/v1/mixed_people/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+        'X-Api-Key': apiKey,
+      },
+      body: JSON.stringify({
+        q_organization_domains: domain,
+        person_titles: ['ceo', 'owner', 'founder', 'geschäftsführer', 'inhaber', 'managing director', 'director'],
+        page: 1,
+        per_page: 1,
+      }),
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    const p = data?.people?.[0];
+    if (!p) return null;
+    return {
+      ceo:   [p.first_name, p.last_name].filter(Boolean).join(' '),
+      email: p.email || null,
+    };
+  } catch { return null; }
+}
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
 
@@ -212,6 +241,7 @@ export default async function handler(req, res) {
 
   const outscraperKey = process.env.OUTSCRAPER_API_KEY;
   const opendataKey   = process.env.OPENDATA_HOST_API_KEY || 'F6F1-D72F-7FEF-468A-82AC-B620-3091-B593';
+  const apolloKey     = process.env.APOLLO_API_KEY;
 
   if (!outscraperKey) return res.status(500).json({ error: 'Outscraper API Key fehlt.' });
 
@@ -315,18 +345,38 @@ export default async function handler(req, res) {
       };
     });
 
-  // ── STEP 2: Firmenbuch CEO-Verifikation ──
-  // Google Search CEO entfernt: zu langsam für Vercel Hobby (10s Limit) + teuer
+  // ── STEP 2: Firmenbuch + Apollo parallel (beide max 4s Timeout) ──
   await Promise.all(baseleads.map(async (lead) => {
-    const fb = await lookupFirmenbuch(lead.name, opendataKey);
+    const domain = lead.website
+      ? lead.website.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]
+      : null;
+
+    const [fb, apollo] = await Promise.all([
+      lookupFirmenbuch(lead.name, opendataKey),
+      searchApollo(domain, apolloKey),
+    ]);
+
     if (fb) {
-      // Firmenbuch-Adresse ist offiziell → bevorzugen
       if (fb.address) lead.region = fb.address;
       if (fb.city && !lead.city) lead.city = fb.city;
       if (fb.legalForm) lead.legalForm = fb.legalForm;
       if (fb.ceo && fb.ceo.split(/\s+/).length >= 2) {
         lead.ceos = fb.ceo;
         lead.firmenbuch_verified = true;
+      }
+    }
+
+    if (apollo) {
+      // Apollo CEO nur wenn wir noch keinen haben
+      if (apollo.ceo && apollo.ceo.length > 3 && !lead.ceos) {
+        lead.ceos = apollo.ceo;
+        lead.apollo_verified = true;
+      }
+      // Apollo E-Mail: nur wenn keine CEO-Mail vorhanden und nicht generisch
+      if (apollo.email && !lead.email_ceo && !GENERIC_PREFIX.test(apollo.email)) {
+        lead.email_ceo = apollo.email;
+        lead.emails = [apollo.email, lead.email_general].filter(Boolean).join(', ');
+        lead.apollo_verified = true;
       }
     }
   }));

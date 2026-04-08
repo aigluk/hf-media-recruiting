@@ -256,19 +256,23 @@ export default async function handler(req, res) {
 
   let places = [];
   try {
-    const apiRes = await fetch(`https://api.leadsscraper.io/google-maps-search?${params}`, {
+    const apiRes = await fetch(`https://api.outscraper.com/google-maps-search?${params}`, {
       headers: { 'X-API-KEY': outscraperKey, 'Accept': 'application/json' }
     });
+    const rawText = await apiRes.text();
+    let apiData;
+    try { apiData = JSON.parse(rawText); } catch {
+      if (/insufficient|credit|quota|limit|balance/i.test(rawText))
+        return res.status(402).json({ error: 'Outscraper Credits aufgebraucht.' });
+      return res.status(502).json({ error: `Outscraper Fehler: ${rawText.slice(0, 120)}` });
+    }
     if (!apiRes.ok) {
-      const e = await apiRes.text();
-      return res.status(apiRes.status).json({ error: `Outscraper Fehler: ${e.slice(0, 200)}` });
+      const msg = apiData?.message || apiData?.error || JSON.stringify(apiData).slice(0, 120);
+      return res.status(apiRes.status).json({ error: `Outscraper Fehler (${apiRes.status}): ${msg}` });
     }
-    const apiData = await apiRes.json();
-    if (apiData.data && Array.isArray(apiData.data)) {
-      places = Array.isArray(apiData.data[0]) ? apiData.data[0] : apiData.data;
-    }
+    places = Array.isArray(apiData.data?.[0]) ? apiData.data[0] : (apiData.data || []);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: `Netzwerk-Fehler: ${err.message}` });
   }
 
   if (places.length === 0) {
@@ -323,10 +327,17 @@ export default async function handler(req, res) {
       };
     });
 
-  // ── STEP 2: Firmenbuch & Google Snippet CEO-Verifikation ──
+  // ── STEP 2: Firmenbuch + Apollo parallel (je max 4s) ──
   await Promise.all(baseleads.map(async (lead) => {
-    // 1. Check Firmenbuch (liefert aktuell im Free-Tier leider fast nie den CEO)
-    const fb = await lookupFirmenbuch(lead.name, opendataKey);
+    const domain = lead.website
+      ? lead.website.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]
+      : null;
+
+    const [fb, apollo] = await Promise.all([
+      lookupFirmenbuch(lead.name, opendataKey),
+      searchApolloB2b(domain, apolloKey),
+    ]);
+
     if (fb) {
       if (fb.address) lead.region = fb.address;
       if (fb.ceo && fb.ceo.split(/\s+/).length >= 2) {
@@ -334,30 +345,17 @@ export default async function handler(req, res) {
         lead.firmenbuch_verified = true;
       }
     }
-    
-    // 2. Fallback: Wenn wir immer noch keinen ordentlichen CEO haben,
-    // nutzen wir den Google Snippet Hack via Outscraper!
-    if (!lead.ceos || lead.ceos.length < 5) {
-       const googleCeo = await searchGoogleForCeo(lead.name, outscraperKey);
-       if (googleCeo) {
-         lead.ceos = googleCeo;
-         lead.google_snippet_verified = true;
-       }
-    }
-    // 3. ULTIMATE FIX: Apollo.io Enrichment für private CEO-Emails
-    // Falls ein Apollo Key hinterlegt ist, holen wir die B2B-Profi Daten!
-    if (apolloKey && lead.website) {
-       const apolloData = await searchApolloB2b(lead.website.replace(/^https?:\/\/(www\.)?/,'').split('/')[0], apolloKey);
-       if (apolloData) {
-         if (apolloData.ceo && apolloData.ceo.length > 3) lead.ceos = apolloData.ceo;
-         
-         // Generics filtern, weil Apollo oft echt gute private Mails liefert (m.mustermann@...)
-         if (apolloData.email) {
-           lead.email_ceo = apolloData.email;
-           lead.emails = apolloData.email + (lead.email_general ? `, ${lead.email_general}` : ''); // Private Mail immer zuerst!
-         }
-         lead.apollo_verified = true;
-       }
+
+    if (apollo) {
+      if (apollo.ceo && apollo.ceo.length > 3 && !lead.ceos) {
+        lead.ceos = apollo.ceo;
+        lead.apollo_verified = true;
+      }
+      if (apollo.email && !lead.email_ceo && !GENERIC_PREFIX.test(apollo.email)) {
+        lead.email_ceo = apollo.email;
+        lead.emails = [apollo.email, lead.email_general].filter(Boolean).join(', ');
+        lead.apollo_verified = true;
+      }
     }
   }));
 

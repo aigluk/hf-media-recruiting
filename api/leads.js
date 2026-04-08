@@ -29,17 +29,23 @@ export default async function handler(req, res) {
       
       const existingData = await kv.get('crm_global_leads_v1') || [];
       const existingLeads = Array.isArray(existingData) ? existingData : [];
-      
-      // Merge leads based on unique key (name + region)
+
+      // Merge leads based on unique key: name + website (stable across runs)
+      // Fallback to name + first 30 chars of region if no website
       const btoa = (str) => Buffer.from(str, 'utf8').toString('base64');
       const encodeKey = (str) => btoa(unescape(encodeURIComponent(str)));
-      
+      const getKey = (l) => {
+        const name = (l.name || '').toLowerCase().trim();
+        const website = (l.website || '').replace(/^https?:\/\/(www\.)?/, '').split('/')[0].toLowerCase().trim();
+        return encodeKey(website ? `${name}|${website}` : `${name}|${(l.region||'').substring(0,30)}`);
+      };
+
       const leadMap = new Map();
-      existingLeads.forEach(l => leadMap.set(encodeKey((l.name||'') + '|' + (l.region||'')), l));
-      
+      existingLeads.forEach(l => leadMap.set(getKey(l), l));
+
       leads.forEach(l => {
-        const k = encodeKey((l.name||'') + '|' + (l.region||''));
-        // Always overwrite with newest object to allow status/note updates
+        const k = getKey(l);
+        // Always overwrite with newest object to allow status/note/statusDate updates
         leadMap.set(k, { ...leadMap.get(k), ...l });
       });
 

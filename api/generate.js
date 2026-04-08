@@ -240,7 +240,10 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: `Outscraper Fehler: ${rawText.slice(0, 120)}` });
     }
     if (!apiRes.ok) {
-      const msg = apiData?.message || apiData?.error || JSON.stringify(apiData).slice(0, 120);
+      if (apiRes.status === 402) {
+        return res.status(402).json({ error: 'Outscraper Credits aufgebraucht — bitte unter outscraper.com Guthaben aufladen.' });
+      }
+      const msg = (typeof apiData?.message === 'string' ? apiData.message : null) || apiData?.error || JSON.stringify(apiData).slice(0, 120);
       return res.status(apiRes.status).json({ error: `Outscraper Fehler (${apiRes.status}): ${msg}` });
     }
     places = Array.isArray(apiData.data?.[0]) ? apiData.data[0] : (apiData.data || []);

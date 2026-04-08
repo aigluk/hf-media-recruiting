@@ -336,9 +336,9 @@ export default async function handler(req, res) {
       };
     });
 
-  // ── STEP 2: Firmenbuch & Google Snippet CEO-Verifikation ──
+  // ── STEP 2: Firmenbuch CEO-Verifikation ──
+  // Google Search CEO entfernt: zu langsam für Vercel Hobby (10s Limit) + teuer
   await Promise.all(baseleads.map(async (lead) => {
-    // 1. Check Firmenbuch (liefert aktuell im Free-Tier leider fast nie den CEO)
     const fb = await lookupFirmenbuch(lead.name, opendataKey);
     if (fb) {
       if (fb.address) lead.region = fb.address;
@@ -346,31 +346,6 @@ export default async function handler(req, res) {
         lead.ceos = fb.ceo;
         lead.firmenbuch_verified = true;
       }
-    }
-    
-    // 2. Fallback: Wenn wir immer noch keinen ordentlichen CEO haben,
-    // nutzen wir den Google Snippet Hack via Outscraper!
-    if (!lead.ceos || lead.ceos.length < 5) {
-       const googleCeo = await searchGoogleForCeo(lead.name, outscraperKey);
-       if (googleCeo) {
-         lead.ceos = googleCeo;
-         lead.google_snippet_verified = true;
-       }
-    }
-    // 3. ULTIMATE FIX: Apollo.io Enrichment für private CEO-Emails
-    // Falls ein Apollo Key hinterlegt ist, holen wir die B2B-Profi Daten!
-    if (apolloKey && lead.website) {
-       const apolloData = await searchApolloB2b(lead.website.replace(/^https?:\/\/(www\.)?/,'').split('/')[0], apolloKey);
-       if (apolloData) {
-         if (apolloData.ceo && apolloData.ceo.length > 3) lead.ceos = apolloData.ceo;
-         
-         // Generics filtern, weil Apollo oft echt gute private Mails liefert (m.mustermann@...)
-         if (apolloData.email) {
-           lead.email_ceo = apolloData.email;
-           lead.emails = apolloData.email + (lead.email_general ? `, ${lead.email_general}` : ''); // Private Mail immer zuerst!
-         }
-         lead.apollo_verified = true;
-       }
     }
   }));
 

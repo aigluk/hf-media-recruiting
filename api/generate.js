@@ -260,32 +260,29 @@ export default async function handler(req, res) {
     const apiRes = await fetch(`https://api.outscraper.com/google-maps-search?${params}`, {
       headers: { 'X-API-KEY': outscraperKey, 'Accept': 'application/json' }
     });
-    if (!apiRes.ok) {
-       // Check if it's a JSON error already or text
-       const errorType = apiRes.headers.get('content-type');
-       if (errorType && errorType.includes('application/json')) {
-         const apiData = await apiRes.json();
-         return res.status(apiRes.status).json(apiData);
-       }
-       // Fallback text error (like Insufficient Funds)
-       const errorText = await apiRes.text();
-       
-       // Try fallback service
-       const fallbackRes = await fetch(`https://api.leadsscraper.io/google-maps-search?${params}`, {
-         headers: { 'X-API-KEY': outscraperKey, 'Accept': 'application/json' }
-       });
-       if (!fallbackRes.ok) {
-         const e = await fallbackRes.text();
-         return res.status(fallbackRes.status).json({ error: `API-Verbindung fehlgeschlagen: ${e.slice(0, 100) || errorText.slice(0, 100)}` });
-       }
-       const apiData = await fallbackRes.json();
-       places = Array.isArray(apiData.data?.[0]) ? apiData.data[0] : (apiData.data || []);
-    } else {
-       const apiData = await apiRes.json();
-       places = Array.isArray(apiData.data?.[0]) ? apiData.data[0] : (apiData.data || []);
+    const rawText = await apiRes.text();
+
+    // Outscraper kann auch bei 200 OK einen Text-Fehler zurückgeben (z.B. bei leeren Credits)
+    let apiData;
+    try {
+      apiData = JSON.parse(rawText);
+    } catch {
+      // Kein JSON → Outscraper API-Fehler (leere Credits, Rate-Limit, etc.)
+      const preview = rawText.slice(0, 120);
+      if (/insufficient|credit|quota|limit|balance/i.test(rawText)) {
+        return res.status(402).json({ error: 'Outscraper Credits aufgebraucht. Bitte Guthaben aufladen unter outscraper.com.' });
+      }
+      return res.status(502).json({ error: `Outscraper API-Fehler: ${preview}` });
     }
+
+    if (!apiRes.ok) {
+      const msg = apiData?.message || apiData?.error || JSON.stringify(apiData).slice(0, 120);
+      return res.status(apiRes.status).json({ error: `Outscraper Fehler (${apiRes.status}): ${msg}` });
+    }
+
+    places = Array.isArray(apiData.data?.[0]) ? apiData.data[0] : (apiData.data || []);
   } catch (err) {
-    return res.status(500).json({ error: `System-Fehler: ${err.message}` });
+    return res.status(500).json({ error: `Netzwerk-Fehler: ${err.message}` });
   }
 
   if (places.length === 0) {

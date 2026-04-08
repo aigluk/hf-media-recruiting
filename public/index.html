@@ -2202,6 +2202,7 @@
     }
 
     function renderTable() {
+      window.__leads = state.leads; // immer synchron halten
       try {
         const q = (document.getElementById('tableSearch').value || '').toLowerCase().trim();
         const bf = document.getElementById('branchFilter');
@@ -2919,7 +2920,7 @@
     }
 
     function showLeadDetail(idx) {
-      const l = window.__leads ? window.__leads[idx] : (state.leads[idx] || null);
+      const l = state.leads[idx] || (window.__leads && window.__leads[idx]) || null;
       if (!l) return;
       const rawPhone = (l.phone || l.tel || l.Phone || l.Telefon || l.phone_number || '').replace(/[^\d+]/g,'');
       const emCands  = [l.email_general, l.emails, l.email, l.email_ceo, l.Email, l.mail].map(e => e ? String(e).trim() : '');

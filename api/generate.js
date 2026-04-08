@@ -1,5 +1,42 @@
 import { kv } from '@vercel/kv';
 
+// ── Englische Google-Subtype → Deutsche Bezeichnung ──
+const SUBTYPE_DE = {
+  restaurant: 'Restaurant', cafe: 'Café', bar: 'Bar', bakery: 'Bäckerei',
+  hotel: 'Hotel', lodging: 'Unterkunft', spa: 'Wellness & Spa', gym: 'Fitnessstudio',
+  real_estate_agency: 'Immobilienmakler', property_management_company: 'Hausverwaltung',
+  construction_company: 'Bauunternehmen', contractor: 'Auftragnehmer',
+  electrician: 'Elektriker', plumber: 'Installateur', painter: 'Maler',
+  carpenter: 'Tischler', roofer: 'Dachdecker', flooring_store: 'Bodenbelag',
+  auto_repair: 'KFZ-Werkstatt', car_dealer: 'Autohaus', car_wash: 'Autowaschanlage',
+  accounting: 'Buchhaltung', lawyer: 'Rechtsanwalt', insurance_agency: 'Versicherung',
+  bank: 'Bank', financial_planner: 'Finanzberatung',
+  doctor: 'Arztpraxis', dentist: 'Zahnarzt', pharmacy: 'Apotheke',
+  hospital: 'Krankenhaus', physiotherapist: 'Physiotherapie',
+  it_company: 'IT-Unternehmen', software_company: 'Softwarehaus',
+  logistics_and_supply_chain: 'Logistik', moving_company: 'Umzugsunternehmen',
+  freight_forwarder: 'Spedition', storage: 'Lager',
+  manufacturer: 'Produzent', factory: 'Fabrik', machine_shop: 'Metallbetrieb',
+  retail: 'Einzelhandel', shopping_mall: 'Einkaufszentrum', clothing_store: 'Bekleidungsgeschäft',
+  supermarket: 'Supermarkt', home_goods_store: 'Einrichtungshaus',
+  travel_agency: 'Reisebüro', tour_operator: 'Reiseveranstalter',
+  hair_salon: 'Friseursalon', beauty_salon: 'Kosmetikstudio',
+  cleaning_service: 'Reinigungsservice', landscaper: 'Gartenbau',
+  school: 'Schule', university: 'Universität', training_centre: 'Ausbildungszentrum',
+  marketing_agency: 'Marketingagentur', advertising_agency: 'Werbeagentur',
+  event_venue: 'Veranstaltungsort', wedding_venue: 'Hochzeitslocation',
+  funeral_home: 'Bestattungsunternehmen', church: 'Kirche',
+  non_profit_organization: 'Nonprofit-Organisation',
+};
+
+function subtypesToDe(subtypes) {
+  if (!Array.isArray(subtypes) || subtypes.length === 0) return '';
+  return subtypes
+    .map(s => SUBTYPE_DE[s] || s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()))
+    .slice(0, 3)
+    .join(' · ');
+}
+
 // ── Branch → Google Maps Suchbegriff ──
 const BRANCH_SEARCH_MAP = {
   'Gastronomie':           'Restaurants',
@@ -249,9 +286,11 @@ export default async function handler(req, res) {
       // Emails + CEO — mit Domain-Validierung
       const { emailDisplay, email_general, email_ceo, ceoName } = extractPersonData(place);
 
-      // Beschreibung: Eigene Google-Beschreibung zuerst, dann Subtypes
+      // Beschreibung: Google-Beschreibung → About → deutsche Subtypes → Kategorie
       const description = place.description
-        || (Array.isArray(place.subtypes) && place.subtypes.length > 0 ? place.subtypes.join(', ') : '')
+        || place.about
+        || subtypesToDe(place.subtypes)
+        || place.category
         || '';
 
       return {
@@ -281,7 +320,10 @@ export default async function handler(req, res) {
   await Promise.all(baseleads.map(async (lead) => {
     const fb = await lookupFirmenbuch(lead.name, opendataKey);
     if (fb) {
+      // Firmenbuch-Adresse ist offiziell → bevorzugen
       if (fb.address) lead.region = fb.address;
+      if (fb.city && !lead.city) lead.city = fb.city;
+      if (fb.legalForm) lead.legalForm = fb.legalForm;
       if (fb.ceo && fb.ceo.split(/\s+/).length >= 2) {
         lead.ceos = fb.ceo;
         lead.firmenbuch_verified = true;

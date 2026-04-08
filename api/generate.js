@@ -253,6 +253,11 @@ export default async function handler(req, res) {
     language: 'de',
     region:   'AT',
     async:    'false',
+    // ── PROFIS: Nur direkte Kontakte, keine info@ Mails! ──
+    enrichment: 'contacts_n_leads',
+    preferred_contacts: JSON.stringify(['CEO', 'Owner', 'Managing Director', 'Geschäftsführer', 'Inhaber']),
+    general_emails: 'false',
+    contacts_per_company: '3'
   });
 
   let places = [];
@@ -260,29 +265,23 @@ export default async function handler(req, res) {
     const apiRes = await fetch(`https://api.outscraper.com/google-maps-search?${params}`, {
       headers: { 'X-API-KEY': outscraperKey, 'Accept': 'application/json' }
     });
-    const rawText = await apiRes.text();
-
-    // Outscraper kann auch bei 200 OK einen Text-Fehler zurückgeben (z.B. bei leeren Credits)
-    let apiData;
-    try {
-      apiData = JSON.parse(rawText);
-    } catch {
-      // Kein JSON → Outscraper API-Fehler (leere Credits, Rate-Limit, etc.)
-      const preview = rawText.slice(0, 120);
-      if (/insufficient|credit|quota|limit|balance/i.test(rawText)) {
-        return res.status(402).json({ error: 'Outscraper Credits aufgebraucht. Bitte Guthaben aufladen unter outscraper.com.' });
-      }
-      return res.status(502).json({ error: `Outscraper API-Fehler: ${preview}` });
-    }
-
     if (!apiRes.ok) {
-      const msg = apiData?.message || apiData?.error || JSON.stringify(apiData).slice(0, 120);
-      return res.status(apiRes.status).json({ error: `Outscraper Fehler (${apiRes.status}): ${msg}` });
+       // Fallback zu leadsscraper falls outscraper direkt fehlschlägt
+       const fallbackRes = await fetch(`https://api.leadsscraper.io/google-maps-search?${params}`, {
+         headers: { 'X-API-KEY': outscraperKey, 'Accept': 'application/json' }
+       });
+       if (!fallbackRes.ok) {
+         const e = await fallbackRes.text();
+         return res.status(fallbackRes.status).json({ error: `API Fehler: ${e.slice(0, 200)}` });
+       }
+       const apiData = await fallbackRes.json();
+       places = Array.isArray(apiData.data[0]) ? apiData.data[0] : apiData.data;
+    } else {
+       const apiData = await apiRes.json();
+       places = Array.isArray(apiData.data[0]) ? apiData.data[0] : apiData.data;
     }
-
-    places = Array.isArray(apiData.data?.[0]) ? apiData.data[0] : (apiData.data || []);
   } catch (err) {
-    return res.status(500).json({ error: `Netzwerk-Fehler: ${err.message}` });
+    return res.status(500).json({ error: err.message });
   }
 
   if (places.length === 0) {
@@ -337,8 +336,8 @@ export default async function handler(req, res) {
       };
     });
 
-  // ── STEP 2: Firmenbuch & Google Snippet CEO-Verifikation (max 5 parallel) ──
-  const enrichLead = async (lead) => {
+  // ── STEP 2: Firmenbuch & Google Snippet CEO-Verifikation ──
+  await Promise.all(baseleads.map(async (lead) => {
     // 1. Check Firmenbuch (liefert aktuell im Free-Tier leider fast nie den CEO)
     const fb = await lookupFirmenbuch(lead.name, opendataKey);
     if (fb) {
@@ -373,13 +372,7 @@ export default async function handler(req, res) {
          lead.apollo_verified = true;
        }
     }
-  };
-
-  // Maximal 3 Leads gleichzeitig anreichern, um Timeout zu vermeiden
-  const CONCURRENCY = 3;
-  for (let i = 0; i < baseleads.length; i += CONCURRENCY) {
-    await Promise.all(baseleads.slice(i, i + CONCURRENCY).map(enrichLead));
-  }
+  }));
 
   // ── STEP 3: KV Status-Sync ──
 

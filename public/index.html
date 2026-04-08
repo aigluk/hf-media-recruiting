@@ -1121,9 +1121,10 @@
       document.getElementById('pipelineTabs').innerHTML = PIPELINES.map(p =>
         `<div class="pipeline-tab ${p.id === state.activeTab ? 'active' : ''}" onclick="setTab('${p.id}')">${p.label}</div>`
       ).join('');
-      document.getElementById('brancheChips').innerHTML = BRANCHES.filter(b => b !== 'Import-Status').map(b =>
-        `<div class="chip" onclick="toggleBranch(this, '${b}')">${b}</div>`
-      ).join('');
+      document.getElementById('brancheChips').innerHTML = BRANCHES
+        .filter(b => b !== 'Import-Status')
+        .map(b => `<div class="chip" onclick="toggleBranch(this, '${b}')">${b}</div>`)
+        .join('');
       updateKPIs(); renderTable(); renderCalendar(); renderReports(); renderActivityFeed();
     }
 

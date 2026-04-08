@@ -59,22 +59,45 @@ async function lookupFirmenbuch(companyName, apiKey) {
   } catch { return null; }
 }
 
-// ── Apollo.io: CEO + private E-Mail per Domain ──
+// ── Outscraper Company Insights: CEO + Email + Phone per Domain ──
+// Docs: https://app.outscraper.com/api-docs#tag/Company-Insights
+// Liefert: ceo_name, ceo_email, emails[], phones[], linkedin — alles in einem Call
+async function companyInsights(domain, apiKey) {
+  if (!apiKey || !domain) return null;
+  try {
+    const params = new URLSearchParams({ query: domain, async: 'false' });
+    const r = await fetch(`https://api.outscraper.com/company-insights?${params}`, {
+      headers: { 'X-API-KEY': apiKey, 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!r.ok) return null;
+    const raw = await r.text();
+    let data;
+    try { data = JSON.parse(raw); } catch { return null; }
+    const c = data?.data?.[0] || data?.data || null;
+    if (!c) return null;
+    return {
+      ceo:         c.ceo_name    || null,
+      email_ceo:   c.ceo_email   || null,
+      email_gen:   Array.isArray(c.emails) ? c.emails[0] : (c.emails || null),
+      phone:       Array.isArray(c.phones) ? c.phones[0] : (c.phones || null),
+      linkedin:    c.linkedin    || null,
+      description: c.description || null,
+    };
+  } catch { return null; }
+}
+
+// ── Apollo.io: CEO + private E-Mail per Domain (Fallback) ──
 async function searchApolloB2b(domain, apiKey) {
   if (!apiKey || !domain) return null;
   try {
     const r = await fetch('https://api.apollo.io/api/v1/mixed_people/search', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache',
-        'X-Api-Key': apiKey,
-      },
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache', 'X-Api-Key': apiKey },
       body: JSON.stringify({
         q_organization_domains: domain,
         person_titles: ['ceo', 'owner', 'founder', 'geschäftsführer', 'inhaber', 'managing director'],
-        page: 1,
-        per_page: 1,
+        page: 1, per_page: 1,
       }),
       signal: AbortSignal.timeout(4000),
     });
@@ -82,10 +105,7 @@ async function searchApolloB2b(domain, apiKey) {
     const data = await r.json();
     const p = data?.people?.[0];
     if (!p) return null;
-    return {
-      ceo:   [p.first_name, p.last_name].filter(Boolean).join(' '),
-      email: p.email || null,
-    };
+    return { ceo: [p.first_name, p.last_name].filter(Boolean).join(' '), email: p.email || null };
   } catch { return null; }
 }
 
@@ -303,33 +323,57 @@ export default async function handler(req, res) {
       };
     });
 
-  // ── STEP 2: Firmenbuch + Apollo parallel (je max 4s) ──
+  // ── STEP 2: Parallel Enrichment — Company Insights (Haupt) + Firmenbuch + Apollo (Fallback) ──
   await Promise.all(baseleads.map(async (lead) => {
     const domain = lead.website
       ? lead.website.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]
       : null;
 
-    const [fb, apollo] = await Promise.all([
+    // Alle 3 Quellen gleichzeitig anfragen
+    const [ci, fb, apollo] = await Promise.all([
+      companyInsights(domain, outscraperKey),
       lookupFirmenbuch(lead.name, opendataKey),
       searchApolloB2b(domain, apolloKey),
     ]);
 
+    // 1. Company Insights (beste Quelle: CEO + Email + Phone direkt)
+    if (ci) {
+      if (ci.ceo && ci.ceo.trim().split(/\s+/).length >= 2) {
+        lead.ceos = ci.ceo.trim();
+        lead.ci_verified = true;
+      }
+      if (ci.email_ceo && EMAIL_REGEX.test(ci.email_ceo) && !GENERIC_PREFIX.test(ci.email_ceo)) {
+        lead.email_ceo = ci.email_ceo;
+      }
+      if (ci.email_gen && EMAIL_REGEX.test(ci.email_gen) && !lead.email_general) {
+        lead.email_general = ci.email_gen;
+      }
+      if (ci.phone && !lead.phone) lead.phone = ci.phone;
+      if (ci.description && !lead.description) lead.description = ci.description;
+      // Emails zusammensetzen
+      const allEmails = [lead.email_ceo, lead.email_general].filter(Boolean);
+      if (allEmails.length) lead.emails = allEmails.join(', ');
+    }
+
+    // 2. Firmenbuch (offizielle AT-Quelle für Adresse + CEO)
     if (fb) {
       if (fb.address) lead.region = fb.address;
-      if (fb.ceo && fb.ceo.split(/\s+/).length >= 2) {
+      if (fb.ceo && fb.ceo.split(/\s+/).length >= 2 && !lead.ceos) {
         lead.ceos = fb.ceo;
         lead.firmenbuch_verified = true;
       }
     }
 
+    // 3. Apollo (Fallback wenn Company Insights keinen CEO/Email hat)
     if (apollo) {
       if (apollo.ceo && apollo.ceo.length > 3 && !lead.ceos) {
         lead.ceos = apollo.ceo;
         lead.apollo_verified = true;
       }
-      if (apollo.email && !lead.email_ceo && !GENERIC_PREFIX.test(apollo.email)) {
+      if (apollo.email && EMAIL_REGEX.test(apollo.email) && !lead.email_ceo && !GENERIC_PREFIX.test(apollo.email)) {
         lead.email_ceo = apollo.email;
-        lead.emails = [apollo.email, lead.email_general].filter(Boolean).join(', ');
+        const allEmails = [apollo.email, lead.email_general].filter(Boolean);
+        lead.emails = allEmails.join(', ');
         lead.apollo_verified = true;
       }
     }

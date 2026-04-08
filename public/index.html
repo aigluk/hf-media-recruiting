@@ -165,6 +165,8 @@
     .st-termin { background: #ecfdf5; color: #16a34a; }
     .st-keininteresse { background: #fef2f2; color: #dc2626; }
     .st-abschluss { background: #f0fdf4; color: #059669; }
+    .st-bestandskunde { background: #eff6ff; color: #1d4ed8; }
+    .st-nogo { background: #1a1a2e; color: #f87171; }
     
     .status-select-inline { appearance: none; height: 34px; padding: 0 28px 0 12px; border-radius: 99px; font-size: 0.75rem; font-weight: 700; border: none; cursor: pointer; text-align: center; outline: none; transition: all 0.2s; white-space: nowrap; width: 100%; min-width: 130px; box-sizing: border-box; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
     .status-select-inline:hover { opacity: 0.85; transform: scale(1.02); }
@@ -977,8 +979,12 @@
       { id: 'IN KONTAKT', label: 'IN KONTAKT', color: 'st-inkontakt' },
       { id: 'TERMIN FIXIERT', label: 'TERMIN FIXIERT', color: 'st-termin' },
       { id: 'KEIN INTERESSE', label: 'KEIN INTERESSE', color: 'st-keininteresse' },
-      { id: 'ABSCHLUSS / ABSAGE', label: 'ABSCHLUSS / ABSAGE', color: 'st-abschluss' }
+      { id: 'ABSCHLUSS / ABSAGE', label: 'ABSCHLUSS / ABSAGE', color: 'st-abschluss' },
+      { id: 'BESTANDSKUNDE', label: 'BESTANDSKUNDE', color: 'st-bestandskunde' },
+      { id: 'NO GO', label: 'NO GO', color: 'st-nogo' },
     ];
+    // Statuses that are "protected" — excluded from KPI counts, activity feed, and import
+    const PROTECTED_STATUSES = new Set(['BESTANDSKUNDE', 'NO GO']);
     const VALID_STATUSES = new Set(PIPELINES.map(p => p.id));
     const BRANCHES = ['Metalltechnik','Hotellerie','Gesundheit/Pflege','Handel','Industrie','Gastronomie','Wellness/Spa','Handwerk','Tourismus','Logistik','IT/Software','Finanzen/Versicherung','Immobilien','Import-Status'];
     
@@ -1191,17 +1197,18 @@
       const counts = { 'NEU':0,'IN KONTAKT':0,'TERMIN FIXIERT':0,'ABSCHLUSS / ABSAGE':0,'KEIN INTERESSE':0 };
       state.leads.forEach(l => {
         const s = normalizeStatus(l.status);
-        counts[s] = (counts[s] || 0) + 1;
+        if (!PROTECTED_STATUSES.has(s)) counts[s] = (counts[s] || 0) + 1;
       });
       document.getElementById('kpi-new').textContent = counts['NEU'];
       document.getElementById('kpi-contact').textContent = counts['IN KONTAKT'];
       document.getElementById('kpi-termin').textContent = counts['TERMIN FIXIERT'];
       document.getElementById('kpi-won').textContent = counts['ABSCHLUSS / ABSAGE'];
-      
+
+      const activeLeads = state.leads.filter(l => !PROTECTED_STATUSES.has(normalizeStatus(l.status))).length;
       const countEl = document.getElementById('cloudLeadCount');
-      if (countEl) countEl.textContent = state.leads.length;
+      if (countEl) countEl.textContent = activeLeads;
       const totalEl = document.getElementById('kpi-total');
-      if (totalEl) totalEl.textContent = state.leads.length + ' Leads gespeichert';
+      if (totalEl) totalEl.textContent = activeLeads + ' Leads gespeichert';
     }
 
     // .ICS calendar export for Outlook / Apple / Google
@@ -2059,7 +2066,7 @@
         return;
       }
 
-      feed.innerHTML = sorted.slice(0, 12).map(l => {
+      feed.innerHTML = sorted.filter(l => !PROTECTED_STATUSES.has(normalizeStatus(l.status))).slice(0, 12).map(l => {
         const st = normalizeStatus(l.status);
         const dot = STATUS_COLOR[st] || 'grey';
         const label = STATUS_LABEL[st] || st;
@@ -2825,42 +2832,39 @@
     }
 
     function checkDuplicates() {
-      const dups = pendingLeads.filter(pl => state.leads.some(l => {
-        const nameMatch = (l.name && pl.name && l.name.trim().toLowerCase() === pl.name.trim().toLowerCase());
-        const email1 = (l.email || '').toLowerCase().trim();
+      const beforeCount = pendingLeads.length;
+      // Silently remove any lead that already exists in the DB (by name, email, or phone)
+      // This includes NO GO and BESTANDSKUNDE leads — they stay protected
+      const filtered = pendingLeads.filter(pl => !state.leads.some(l => {
+        const nameMatch = l.name && pl.name && l.name.trim().toLowerCase() === pl.name.trim().toLowerCase();
+        const email1 = (l.email || l.email_general || l.emails || '').split(',')[0].toLowerCase().trim();
         const email2 = (pl.email || '').toLowerCase().trim();
-        const emailMatch = (email1.length > 3 && email1 === email2);
+        const emailMatch = email1.length > 3 && email2.length > 3 && email1 === email2;
         const phone1 = (l.phone || '').replace(/[^\d]/g,'');
         const phone2 = (pl.phone || '').replace(/[^\d]/g,'');
-        const phoneMatch = (phone1.length > 5 && phone1 === phone2);
-        return Boolean(nameMatch || phoneMatch || emailMatch);
+        const phoneMatch = phone1.length > 5 && phone1 === phone2;
+        return nameMatch || emailMatch || phoneMatch;
       }));
-      
-      const dupsView = document.getElementById('importDuplicateCheck');
-      const dupsList = document.getElementById('duplicateList');
+
+      // Replace pendingLeads contents in-place
+      pendingLeads.length = 0;
+      filtered.forEach(l => pendingLeads.push(l));
+
+      const skipped = beforeCount - filtered.length;
+      const percClean = beforeCount > 0 ? Math.round((filtered.length / beforeCount) * 100) : 100;
+
       const scoreBar = document.getElementById('dataScoreBar');
       const scoreText = document.getElementById('cleanlinessScore');
       const importBar = document.getElementById('importProgressBar');
       const importText = document.getElementById('importStatsText');
-      
-      if (pendingLeads.length > 0) {
-        const total = pendingLeads.length;
-        const cleanCount = total - dups.length;
-        const percClean = Math.round((cleanCount / total) * 100);
-        if (scoreBar) scoreBar.style.width = percClean + '%';
-        if (scoreBar) scoreBar.style.background = percClean < 80 ? '#ef4444' : '#16a34a';
-        if (scoreText) scoreText.textContent = percClean + '%';
-        
-        if (importBar) importBar.style.width = '100%';
-        if (importText) importText.textContent = `${total} Leads analysiert`;
-      }
+      if (scoreBar) { scoreBar.style.width = percClean + '%'; scoreBar.style.background = '#16a34a'; }
+      if (scoreText) scoreText.textContent = percClean + '%';
+      if (importBar) importBar.style.width = '100%';
+      if (importText) importText.textContent = `${beforeCount} analysiert · ${filtered.length} neu · ${skipped > 0 ? skipped + ' übersprungen' : 'keine Dubletten'}`;
 
-      if (dups.length > 0) {
-        dupsView.style.display = 'block';
-        dupsList.innerHTML = dups.map(d => `<div>• <strong>${d.name}</strong> (${d.email || d.phone || 'Dublette'})</div>`).join('');
-      } else {
-        dupsView.style.display = 'none';
-      }
+      // Hide the old warning box — handled silently now
+      const dupsView = document.getElementById('importDuplicateCheck');
+      if (dupsView) dupsView.style.display = 'none';
     }
 
     function renderImportPreview() {
@@ -2869,13 +2873,8 @@
       p.style.display = 'block';
       
       b.innerHTML = pendingLeads.slice(0, 50).map((l, i) => {
-        const isDup = state.leads.some(el => {
-          const nameM = (el.name && l.name && el.name.trim().toLowerCase() === l.name.trim().toLowerCase());
-          const emM = (el.email && l.email && el.email.toLowerCase().trim() === l.email.toLowerCase().trim());
-          return nameM || emM;
-        });
-        return `<tr style="${isDup ? 'background:rgba(239,68,68,0.05); color:var(--danger);' : ''}">
-          <td style="font-weight:600;">${String(l.name).replace(/</g,'&lt;')} ${isDup ? '<span style="font-size:10px; opacity:0.8;">(DUBLETTE)</span>' : ''}</td>
+        return `<tr>
+          <td style="font-weight:600;">${String(l.name).replace(/</g,'&lt;')}</td>
           <td style="font-size:0.8rem;">${String(l.industry || l.region || '-').replace(/</g,'&lt;')}</td>
           <td style="text-align:right;"><button class="action-icon" style="color:var(--text-muted);" onclick="pendingLeads.splice(${i},1); renderImportPreview(); checkDuplicates();"><i data-lucide="trash-2" style="width:14px;"></i></button></td>
         </tr>`;

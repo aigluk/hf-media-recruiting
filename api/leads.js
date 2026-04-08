@@ -50,8 +50,10 @@ export default async function handler(req, res) {
           // Lead already exists: update scraped data but preserve user-edited fields
           const userChangedStatus = existing.status && existing.status !== 'NEU' && existing.status !== 'Neu/Offen';
           const merged = { ...existing, ...l };
+          // Always preserve BESTANDSKUNDE and NO GO — never overwrite
+          const isProtected = existing.status === 'BESTANDSKUNDE' || existing.status === 'NO GO';
           // Keep user status + statusDate if they moved the lead past NEU
-          if (userChangedStatus) {
+          if (userChangedStatus || isProtected) {
             merged.status = existing.status;
             merged.statusDate = existing.statusDate;
           }

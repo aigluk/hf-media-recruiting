@@ -843,6 +843,18 @@
                 <input type="file" id="importFile" style="display:none;" accept=".csv,.xlsx,.xls" onchange="handleFileSelect(event)">
                 <button class="btn btn-primary" onclick="document.getElementById('importFile').click()">Eigene Datei wählen</button>
                 <div id="selectedFileName" style="margin-top:1rem; font-weight:600; color:var(--primary); font-size:0.9rem; word-break:break-all;"></div>
+                <div style="margin-top:1.25rem; text-align:left;">
+                  <label style="font-size:0.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; display:block; margin-bottom:6px;">CRM Status beim Import</label>
+                  <select id="importStatus" class="status-select-inline" style="width:100%; background:#f1f5f9; color:var(--text);">
+                    <option value="NEU">NEU / OFFEN</option>
+                    <option value="IN KONTAKT">IN KONTAKT</option>
+                    <option value="TERMIN FIXIERT">TERMIN FIXIERT</option>
+                    <option value="KEIN INTERESSE">KEIN INTERESSE</option>
+                    <option value="ABSCHLUSS / ABSAGE">ABSCHLUSS / ABSAGE</option>
+                    <option value="BESTANDSKUNDE">BESTANDSKUNDE</option>
+                    <option value="NO GO">NO GO</option>
+                  </select>
+                </div>
               </div>
 
               <div id="importPreview" style="display:none; margin-top:2rem;">
@@ -981,7 +993,7 @@
       { id: 'KEIN INTERESSE', label: 'KEIN INTERESSE', color: 'st-keininteresse' },
       { id: 'ABSCHLUSS / ABSAGE', label: 'ABSCHLUSS / ABSAGE', color: 'st-abschluss' },
       { id: 'BESTANDSKUNDE', label: 'BESTANDSKUNDE', color: 'st-bestandskunde' },
-      { id: 'NO GO', label: 'NO GO', color: 'st-nogo' },
+      { id: 'NO GO', label: 'NO GO', color: 'st-nogo', hideTab: true },
     ];
     // Statuses that are "protected" — excluded from KPI counts, activity feed, and import
     const PROTECTED_STATUSES = new Set(['BESTANDSKUNDE', 'NO GO']);
@@ -1135,7 +1147,7 @@
 
     function initUI() {
       updateBranchFilterOptions();
-      document.getElementById('pipelineTabs').innerHTML = PIPELINES.map(p =>
+      document.getElementById('pipelineTabs').innerHTML = PIPELINES.filter(p => !p.hideTab).map(p =>
         `<div class="pipeline-tab ${p.id === state.activeTab ? 'active' : ''}" onclick="setTab('${p.id}')">${p.label}</div>`
       ).join('');
       document.getElementById('brancheChips').innerHTML = BRANCHES.filter(b => b !== 'Import-Status').map(b =>
@@ -2912,12 +2924,13 @@
       }
 
       showLoader(`${toImport.length} Leads werden importiert...`);
-      const todayStr = new Date().toLocaleString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+      const selectedStatus = document.getElementById('importStatus')?.value || 'NEU';
       const now = new Date().toISOString();
-      toImport.forEach(l => { 
-        l.status = 'NEU';
-        l.statusDate = todayStr; 
+      toImport.forEach(l => {
+        l.status = selectedStatus;
+        l.statusDate = now;
         l.createdAt = now;
+        l.industry = 'Import-Status'; // Manuell importierte Leads immer mit Import-Status kennzeichnen
       });
       state.leads = [...toImport, ...state.leads];
       window.__leads = state.leads;

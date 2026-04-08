@@ -8,9 +8,10 @@ export default async function handler(req, res) {
   const apiKey = process.env.OUTSCRAPER_API_KEY;
   const domain = req.query.domain || 'ronacher.com';
 
+  const endpoint = req.query.ep || 'company-insights';
   const params = new URLSearchParams({ query: domain, async: 'false' });
   try {
-    const r = await fetch(`https://api.outscraper.com/company-insights?${params}`, {
+    const r = await fetch(`https://api.outscraper.com/${endpoint}?${params}`, {
       headers: { 'X-API-KEY': apiKey, 'Accept': 'application/json' },
       signal: AbortSignal.timeout(8000),
     });

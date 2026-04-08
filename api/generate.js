@@ -324,9 +324,15 @@ export default async function handler(req, res) {
       const { emailDisplay, email_general, email_ceo, ceoName } = extractPersonData(place);
 
       // Beschreibung: Eigene Google-Beschreibung zuerst, dann Subtypes
-      const description = place.description
+      // Emojis und Sonderzeichen entfernen — nur normaler Text
+      const stripEmoji = (s) => s
+        ? s.replace(/[^\p{L}\p{N}\p{P}\p{Z}\n]/gu, '').replace(/\s+/g, ' ').trim()
+        : s;
+      const description = stripEmoji(
+        place.description
         || (Array.isArray(place.subtypes) && place.subtypes.length > 0 ? place.subtypes.join(', ') : '')
-        || '';
+        || ''
+      );
 
       return {
         name:          place.name,
@@ -373,7 +379,9 @@ export default async function handler(req, res) {
         lead.email_general = ci.email_gen;
       }
       if (ci.phone && !lead.phone) lead.phone = ci.phone;
-      if (ci.description && !lead.description) lead.description = ci.description;
+      if (ci.description && !lead.description) {
+        lead.description = ci.description.replace(/[^\p{L}\p{N}\p{P}\p{Z}\n]/gu, '').replace(/\s+/g, ' ').trim();
+      }
       // Emails zusammensetzen
       const allEmails = [lead.email_ceo, lead.email_general].filter(Boolean);
       if (allEmails.length) lead.emails = allEmails.join(', ');

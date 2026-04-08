@@ -45,8 +45,27 @@ export default async function handler(req, res) {
 
       leads.forEach(l => {
         const k = getKey(l);
-        // Always overwrite with newest object to allow status/note/statusDate updates
-        leadMap.set(k, { ...leadMap.get(k), ...l });
+        const existing = leadMap.get(k);
+        if (existing) {
+          // Lead already exists: update scraped data but preserve user-edited fields
+          const userChangedStatus = existing.status && existing.status !== 'NEU' && existing.status !== 'Neu/Offen';
+          const merged = { ...existing, ...l };
+          // Keep user status + statusDate if they moved the lead past NEU
+          if (userChangedStatus) {
+            merged.status = existing.status;
+            merged.statusDate = existing.statusDate;
+          }
+          // Always preserve notes and appointment data
+          if (existing.notes)          merged.notes          = existing.notes;
+          if (existing.note)           merged.note           = existing.note;
+          if (existing.appointmentDate) merged.appointmentDate = existing.appointmentDate;
+          if (existing.appointmentFrom) merged.appointmentFrom = existing.appointmentFrom;
+          if (existing.appointmentTo)   merged.appointmentTo   = existing.appointmentTo;
+          if (existing.appointmentHour) merged.appointmentHour = existing.appointmentHour;
+          leadMap.set(k, merged);
+        } else {
+          leadMap.set(k, l);
+        }
       });
 
       const updatedLeads = Array.from(leadMap.values());

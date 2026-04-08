@@ -59,14 +59,13 @@ async function lookupFirmenbuch(companyName, apiKey) {
   } catch { return null; }
 }
 
-// ── Outscraper Company Insights: CEO + Email + Phone per Domain ──
-// Docs: https://app.outscraper.com/api-docs#tag/Company-Insights
-// Liefert: ceo_name, ceo_email, emails[], phones[], linkedin — alles in einem Call
+// ── Outscraper Emails & Contacts: Email + Phone + Description per Domain ──
+// Endpoint: /emails-and-contacts — returns {emails:[{value,source}], phones:[{value,source}], contacts:[], site_data:{description,title}}
 async function companyInsights(domain, apiKey) {
   if (!apiKey || !domain) return null;
   try {
     const params = new URLSearchParams({ query: domain, async: 'false' });
-    const r = await fetch(`https://api.outscraper.com/company-insights?${params}`, {
+    const r = await fetch(`https://api.outscraper.com/emails-and-contacts?${params}`, {
       headers: { 'X-API-KEY': apiKey, 'Accept': 'application/json' },
       signal: AbortSignal.timeout(5000),
     });
@@ -74,15 +73,43 @@ async function companyInsights(domain, apiKey) {
     const raw = await r.text();
     let data;
     try { data = JSON.parse(raw); } catch { return null; }
-    const c = data?.data?.[0] || data?.data || null;
+
+    // Response: { data: [{ emails:[{value,source}], phones:[{value,source}], contacts:[], site_data:{description,title} }] }
+    const c = Array.isArray(data?.data) ? data.data[0] : (data?.data || data || null);
     if (!c) return null;
+
+    // CEO aus contacts[] (wenn vorhanden — oft leer für AT KMU)
+    let ceo = null, emailCeo = null;
+    const contacts = Array.isArray(c.contacts) ? c.contacts : [];
+    if (contacts.length > 0) {
+      const ceoContact = contacts.find(p =>
+        CEO_TITLE_REGEX.test(p.title || p.position || p.role || '')
+      ) || contacts[0];
+      if (ceoContact) {
+        const fn = ceoContact.first_name || ceoContact.firstName || '';
+        const ln = ceoContact.last_name  || ceoContact.lastName  || '';
+        ceo = (ceoContact.full_name || ceoContact.name || `${fn} ${ln}`).trim() || null;
+        emailCeo = ceoContact.email || ceoContact.work_email || null;
+      }
+    }
+
+    // Emails: Array von {value, source} Objekten
+    const emailsArr = Array.isArray(c.emails) ? c.emails : [];
+    const emailGen = emailsArr[0]?.value || null;
+
+    // Phones: Array von {value, source} Objekten
+    const phonesArr = Array.isArray(c.phones) ? c.phones : [];
+    const phone = phonesArr[0]?.value || null;
+
+    // Description aus site_data
+    const description = c.site_data?.description || c.description || null;
+
     return {
-      ceo:         c.ceo_name    || null,
-      email_ceo:   c.ceo_email   || null,
-      email_gen:   Array.isArray(c.emails) ? c.emails[0] : (c.emails || null),
-      phone:       Array.isArray(c.phones) ? c.phones[0] : (c.phones || null),
-      linkedin:    c.linkedin    || null,
-      description: c.description || null,
+      ceo:         ceo      || null,
+      email_ceo:   emailCeo || null,
+      email_gen:   emailGen || null,
+      phone:       phone    || null,
+      description,
     };
   } catch { return null; }
 }

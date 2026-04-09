@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   // Set CORS headers if needed
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,PATCH');
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -75,6 +75,14 @@ export default async function handler(req, res) {
       await kv.set('crm_global_leads_v1', updatedLeads);
 
       return res.status(200).json({ message: 'Success', total: updatedLeads.length });
+    }
+
+    // PATCH: Full replacement (used by deleteLead on client)
+    if (req.method === 'PATCH') {
+      const { leads } = req.body;
+      if (!Array.isArray(leads)) return res.status(400).json({ error: 'Invalid payload' });
+      await kv.set('crm_global_leads_v1', leads);
+      return res.status(200).json({ message: 'Replaced', total: leads.length });
     }
 
     // DELETE: Clear Database

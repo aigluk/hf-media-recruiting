@@ -2375,7 +2375,7 @@
           const status = normalizeStatus(l.status);
           const isSelected = state.selectedLeads.has(idx);
           const stCls = PIPELINES.find(p => p.id === status)?.color || 'st-neu';
-          const opts = PIPELINES.map(p => `<option value="${p.id}" ${p.id === status ? 'selected':''}>${p.label}</option>`).join('');
+          const opts = PIPELINES.filter(p => !PROTECTED_STATUSES.has(p.id)).map(p => `<option value="${p.id}" ${p.id === status ? 'selected':''}>${p.label}</option>`).join('');
           const em = l.email || l.email_ceo || l.email_general || l.Email || l.mail || (l.emails ? String(l.emails).split(',')[0].trim() : '') || '';
           const tn = l.phone || l.tel || l.Phone || l.Telefon || l.phone_number || '';
           const name = String(l.name || '–').replace(/</g, '&lt;');

@@ -111,11 +111,11 @@
     .view-section.active { display: block; animation: fadeUp 0.3s ease; }
     @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
 
-    .metrics-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.25rem; margin-bottom: 2.5rem; margin-top: 1.5rem; }
-    .metric-card { background-color: var(--surface); padding: 2rem; border-radius: 0 16px 16px 16px; box-shadow: var(--shadow); position: relative; transition: box-shadow 0.2s, transform 0.2s; }
+    .metrics-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1rem; margin-bottom: 1rem; margin-top: 1.5rem; }
+    .metric-card { background-color: var(--surface); padding: 1.1rem 1.25rem; border-radius: 0 14px 14px 14px; box-shadow: var(--shadow); position: relative; transition: box-shadow 0.2s, transform 0.2s; }
     .metric-card::before { content: ""; position: absolute; top: -14px; left: 0; width: 110px; height: 14px; background-color: inherit; border-radius: 12px 18px 0 0; }
     .metric-card:hover { box-shadow: 0 12px 30px -4px rgba(14,42,71,0.12); transform: translateY(-2px); }
-    .metric-detail-btn { margin-top: 1.25rem; display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); background: none; border: 1px solid var(--secondary); border-radius: 99px; padding: 4px 12px; cursor: pointer; transition: all 0.18s; letter-spacing: 0.01em; }
+    .metric-detail-btn { margin-top: 0.75rem; display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); background: none; border: 1px solid var(--secondary); border-radius: 99px; padding: 3px 10px; cursor: pointer; transition: all 0.18s; letter-spacing: 0.01em; }
     .metric-detail-btn:hover { background: var(--bg); }
 
     /* Universal Modal */
@@ -139,9 +139,9 @@
     .appt-form input:focus, .appt-form select:focus, .appt-form textarea:focus { border-color: var(--primary); }
     .appt-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
-    .metric-title { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; }
-    .metric-value { font-size: 2.5rem; font-weight: 700; color: var(--text); margin-bottom: 0.25rem; }
-    .metric-sub { font-size: 0.8rem; color: var(--text-muted); }
+    .metric-title { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.35rem; }
+    .metric-value { font-size: 2rem; font-weight: 700; color: var(--text); margin-bottom: 0.15rem; }
+    .metric-sub { font-size: 0.72rem; color: var(--text-muted); }
 
     .panel { background: var(--surface); border-radius: 16px; padding: 2.5rem; margin-bottom: 2rem; box-shadow: var(--shadow); }
     .panel-header { font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--text); display:flex; align-items:center; gap:10px; }
@@ -340,6 +340,9 @@
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
     /* ── Responsive ── */
+    @media (max-width: 1400px) {
+      .metrics-grid { grid-template-columns: repeat(3, 1fr); }
+    }
     @media (max-width: 1200px) {
       .metrics-grid { grid-template-columns: repeat(3, 1fr); }
     }
@@ -495,8 +498,8 @@
                 <div class="metric-value" id="kpi-new">0</div>
                 <div class="metric-sub">Unbearbeitete Kontakte</div>
               </div>
-              <div style="width:38px;height:38px;border-radius:10px;background:#eef2f7;display:flex;align-items:center;justify-content:center;">
-                <i data-lucide="users" style="width:18px;height:18px;color:#4a7fa5;"></i>
+              <div style="width:32px;height:32px;border-radius:8px;background:#eef2f7;display:flex;align-items:center;justify-content:center;">
+                <i data-lucide="users" style="width:15px;height:15px;color:#4a7fa5;"></i>
               </div>
             </div>
             <button onclick="showStatusLeads('NEU')" class="metric-detail-btn">Details <i data-lucide="chevron-right" style="width:12px;height:12px;"></i></button>
@@ -510,8 +513,8 @@
                 <div class="metric-value" id="kpi-contact" style="color:#3a6ea5;">0</div>
                 <div class="metric-sub">Erste Meetings geplant</div>
               </div>
-              <div style="width:38px;height:38px;border-radius:10px;background:#dce6f2;display:flex;align-items:center;justify-content:center;">
-                <i data-lucide="phone-call" style="width:18px;height:18px;color:#3a6ea5;"></i>
+              <div style="width:32px;height:32px;border-radius:8px;background:#dce6f2;display:flex;align-items:center;justify-content:center;">
+                <i data-lucide="phone-call" style="width:15px;height:15px;color:#3a6ea5;"></i>
               </div>
             </div>
             <button onclick="showStatusLeads('ERSTTERMIN')" class="metric-detail-btn" style="border-color:#3a6ea5;color:#3a6ea5;">Details <i data-lucide="chevron-right" style="width:12px;height:12px;"></i></button>
@@ -525,8 +528,8 @@
                 <div class="metric-value" id="kpi-termin" style="color:#92400e;">0</div>
                 <div class="metric-sub">Aktive Nachfass-Kontakte</div>
               </div>
-              <div style="width:38px;height:38px;border-radius:10px;background:#fef9c3;display:flex;align-items:center;justify-content:center;">
-                <i data-lucide="calendar-check" style="width:18px;height:18px;color:#92400e;"></i>
+              <div style="width:32px;height:32px;border-radius:8px;background:#fef9c3;display:flex;align-items:center;justify-content:center;">
+                <i data-lucide="calendar-check" style="width:15px;height:15px;color:#92400e;"></i>
               </div>
             </div>
             <button onclick="showStatusLeads('FOLLOW UP')" class="metric-detail-btn" style="border-color:#92400e;color:#92400e;">Details <i data-lucide="chevron-right" style="width:12px;height:12px;"></i></button>
@@ -540,8 +543,8 @@
                 <div class="metric-value" id="kpi-keininteresse" style="color:#dc2626;">0</div>
                 <div class="metric-sub">Abgelehnte Kontakte</div>
               </div>
-              <div style="width:38px;height:38px;border-radius:10px;background:#fee2e2;display:flex;align-items:center;justify-content:center;">
-                <i data-lucide="x-circle" style="width:18px;height:18px;color:#dc2626;"></i>
+              <div style="width:32px;height:32px;border-radius:8px;background:#fee2e2;display:flex;align-items:center;justify-content:center;">
+                <i data-lucide="x-circle" style="width:15px;height:15px;color:#dc2626;"></i>
               </div>
             </div>
             <button onclick="showStatusLeads('KEIN INTERESSE')" class="metric-detail-btn" style="border-color:#dc2626;color:#dc2626;">Details <i data-lucide="chevron-right" style="width:12px;height:12px;"></i></button>
@@ -555,8 +558,8 @@
                 <div class="metric-value" id="kpi-verkauf" style="color:#c2410c;">0</div>
                 <div class="metric-sub">Aktive Verkaufsgespräche</div>
               </div>
-              <div style="width:38px;height:38px;border-radius:10px;background:#ffedd5;display:flex;align-items:center;justify-content:center;">
-                <i data-lucide="handshake" style="width:18px;height:18px;color:#c2410c;"></i>
+              <div style="width:32px;height:32px;border-radius:8px;background:#ffedd5;display:flex;align-items:center;justify-content:center;">
+                <i data-lucide="handshake" style="width:15px;height:15px;color:#c2410c;"></i>
               </div>
             </div>
             <button onclick="showStatusLeads('VERKAUFSGESPRAECH')" class="metric-detail-btn" style="border-color:#c2410c;color:#c2410c;">Details <i data-lucide="chevron-right" style="width:12px;height:12px;"></i></button>
@@ -570,32 +573,23 @@
                 <div class="metric-value" id="kpi-won" style="color:#16a34a;">0</div>
                 <div class="metric-sub">Gewonnene Deals</div>
               </div>
-              <div style="width:38px;height:38px;border-radius:10px;background:#dcfce7;display:flex;align-items:center;justify-content:center;">
-                <i data-lucide="trophy" style="width:18px;height:18px;color:#16a34a;"></i>
+              <div style="width:32px;height:32px;border-radius:8px;background:#dcfce7;display:flex;align-items:center;justify-content:center;">
+                <i data-lucide="trophy" style="width:15px;height:15px;color:#16a34a;"></i>
               </div>
             </div>
             <button onclick="showStatusLeads('ABGESCHLOSSEN')" class="metric-detail-btn" style="border-color:#16a34a;color:#16a34a;">Details <i data-lucide="chevron-right" style="width:12px;height:12px;"></i></button>
           </div>
 
-          <!-- Cloud Sync -->
-          <div class="metric-card" onclick="syncDatabase()" style="cursor:pointer; background:#0E2A47; color:white; border:none; display:flex; flex-direction:column; justify-content:space-between; min-height:120px; padding:1.25rem 1.5rem;">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
-              <div class="metric-title" style="color:rgba(255,255,255,0.7); font-size:0.95rem; font-weight:600; margin-bottom:0.25rem;">Cloud-Datenbank</div>
-              <div style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                <i data-lucide="server" style="width:16px;height:16px;color:white;"></i>
-              </div>
-            </div>
-            
-            <div style="font-size:2.5rem; font-weight:700; color:white; letter-spacing:-0.03em; line-height:1; margin-bottom:0.15rem;">Storage</div>
+        </div>
 
-            <div class="metric-sub" style="color:rgba(255,255,255,0.6); font-size:0.8rem; margin-top:2px;">
-              <span id="cloudLeadCount">0</span> Leads gespeichert
-            </div>
-            
-            <div style="display:flex; justify-content:center; margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid rgba(255,255,255,0.1);">
-               <i data-lucide="refresh-cw" style="width:20px;height:20px;opacity:0.7;"></i>
-            </div>
+        <!-- Cloud Datenbank compact bar -->
+        <div onclick="syncDatabase()" style="cursor:pointer; background:#0E2A47; color:white; border-radius:12px; padding:0.65rem 1.5rem; display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
+          <div style="width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i data-lucide="server" style="width:14px;height:14px;color:white;"></i>
           </div>
+          <span style="font-size:0.85rem;font-weight:600;color:rgba(255,255,255,0.8);">Cloud-Datenbank</span>
+          <span style="font-size:0.85rem;font-weight:700;color:white;"><span id="cloudLeadCount">0</span> Leads gespeichert</span>
+          <i data-lucide="refresh-cw" style="width:14px;height:14px;opacity:0.6;margin-left:auto;"></i>
         </div>
         <div class="panel">
           <div class="panel-header"><i data-lucide="activity" style="width:22px; color:var(--primary);"></i> Letzte Aktivitäten</div>
@@ -3263,7 +3257,7 @@
       l.appointmentFrom = document.getElementById('editApptFrom').value;
       l.appointmentTo = document.getElementById('editApptTo').value;
       if (l.appointmentDate) l.appointmentHour = (l.appointmentFrom || '10:00').split(':')[0];
-      l.statusDate = new Date().toLocaleString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+      l.statusDate = new Date().toISOString();
 
       fetch('/api/leads', {
         method: 'POST',
@@ -3316,9 +3310,11 @@
       const lead = state.leads[idx];
       if (!lead) return;
       lead.appointmentDate = null;
+      lead.appointmentFrom = null;
+      lead.appointmentTo = null;
       lead.appointmentHour = null;
-      lead.status = 'NEU';
-      lead.statusDate = new Date().toLocaleString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+      // Keep current status — only clear appointment data
+      lead.statusDate = new Date().toISOString();
       fetch('/api/leads', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' },
@@ -3351,9 +3347,8 @@
       // Update lead status to ERSTTERMIN when appointment is saved
       const lead = state.leads[idx];
       if (lead) {
-        const todayStr = new Date().toLocaleString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
         lead.status = 'ERSTTERMIN';
-        lead.statusDate = todayStr;
+        lead.statusDate = new Date().toISOString();
         lead.appointmentDate = date;
         lead.appointmentFrom = from;
         lead.appointmentTo = to;

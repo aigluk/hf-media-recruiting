@@ -48,12 +48,13 @@ export default async function handler(req, res) {
         const existing = leadMap.get(k);
         if (existing) {
           // Lead already exists: update scraped data but preserve user-edited fields
-          const userChangedStatus = existing.status && existing.status !== 'NEU' && existing.status !== 'Neu/Offen';
           const merged = { ...existing, ...l };
-          // Always preserve BESTANDSKUNDE and NO GO — never overwrite
+          // Only apply status protection when the INCOMING status is NEU (= generation run).
+          // Explicit user edits (saveLeadField) send the actual new status — those must be accepted.
+          const incomingIsNew = !l.status || l.status === 'NEU' || l.status === 'Neu/Offen';
+          const existingIsUserSet = existing.status && existing.status !== 'NEU' && existing.status !== 'Neu/Offen';
           const isProtected = existing.status === 'BESTANDSKUNDE' || existing.status === 'NO GO';
-          // Keep user status + statusDate if they moved the lead past NEU
-          if (userChangedStatus || isProtected) {
+          if (incomingIsNew && (existingIsUserSet || isProtected)) {
             merged.status = existing.status;
             merged.statusDate = existing.statusDate;
           }

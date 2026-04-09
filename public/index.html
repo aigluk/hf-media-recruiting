@@ -162,8 +162,10 @@
     .status-select:hover { opacity: 0.8; }
     .st-neu { background: #f1f5f9; color: #475569; }
     .st-inkontakt { background: #e8f0f8; color: #0E2A47; }
-    .st-termin { background: #ecfdf5; color: #16a34a; }
+    .st-termin { background: #eff6ff; color: #2563eb; }
+    .st-followup { background: #fef9c3; color: #92400e; }
     .st-keininteresse { background: #fef2f2; color: #dc2626; }
+    .st-verkauf { background: #fff7ed; color: #c2410c; }
     .st-abschluss { background: #f0fdf4; color: #059669; }
     .st-bestandskunde { background: #eff6ff; color: #1d4ed8; }
     .st-nogo { background: #1a1a2e; color: #f87171; }
@@ -501,41 +503,41 @@
             <button onclick="showStatusLeads('NEU')" class="metric-detail-btn">Details <i data-lucide="chevron-right" style="width:12px;height:12px;"></i></button>
           </div>
 
-          <!-- In Akquise -->
+          <!-- Ersttermin -->
           <div class="metric-card">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
               <div>
-                <div class="metric-title">In Akquise</div>
+                <div class="metric-title">Ersttermin</div>
                 <div class="metric-value" id="kpi-contact" style="color:#3a6ea5;">0</div>
-                <div class="metric-sub">Aktive Gespräche</div>
+                <div class="metric-sub">Erste Meetings geplant</div>
               </div>
               <div style="width:38px;height:38px;border-radius:10px;background:#dce6f2;display:flex;align-items:center;justify-content:center;">
                 <i data-lucide="phone-call" style="width:18px;height:18px;color:#3a6ea5;"></i>
               </div>
             </div>
-            <button onclick="showStatusLeads('IN KONTAKT')" class="metric-detail-btn" style="border-color:#3a6ea5;color:#3a6ea5;">Details <i data-lucide="chevron-right" style="width:12px;height:12px;"></i></button>
+            <button onclick="showStatusLeads('ERSTTERMIN')" class="metric-detail-btn" style="border-color:#3a6ea5;color:#3a6ea5;">Details <i data-lucide="chevron-right" style="width:12px;height:12px;"></i></button>
           </div>
 
-          <!-- Termin Fixiert -->
+          <!-- Follow Up -->
           <div class="metric-card">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
               <div>
-                <div class="metric-title">Termin Fixiert</div>
-                <div class="metric-value" id="kpi-termin" style="color:#0E2A47;">0</div>
-                <div class="metric-sub">Eingetragene Sales Calls</div>
+                <div class="metric-title">Follow Up</div>
+                <div class="metric-value" id="kpi-termin" style="color:#92400e;">0</div>
+                <div class="metric-sub">Aktive Nachfass-Kontakte</div>
               </div>
-              <div style="width:38px;height:38px;border-radius:10px;background:#cfd9e8;display:flex;align-items:center;justify-content:center;">
-                <i data-lucide="calendar-check" style="width:18px;height:18px;color:#0E2A47;"></i>
+              <div style="width:38px;height:38px;border-radius:10px;background:#fef9c3;display:flex;align-items:center;justify-content:center;">
+                <i data-lucide="calendar-check" style="width:18px;height:18px;color:#92400e;"></i>
               </div>
             </div>
-            <button onclick="showStatusLeads('TERMIN FIXIERT')" class="metric-detail-btn" style="border-color:#0E2A47;color:#0E2A47;">Details <i data-lucide="chevron-right" style="width:12px;height:12px;"></i></button>
+            <button onclick="showStatusLeads('FOLLOW UP')" class="metric-detail-btn" style="border-color:#92400e;color:#92400e;">Details <i data-lucide="chevron-right" style="width:12px;height:12px;"></i></button>
           </div>
 
-          <!-- Abschlüsse -->
+          <!-- Abgeschlossen -->
           <div class="metric-card">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
               <div>
-                <div class="metric-title">Abschlüsse</div>
+                <div class="metric-title">Abgeschlossen</div>
                 <div class="metric-value" id="kpi-won" style="color:#16a34a;">0</div>
                 <div class="metric-sub">Gewonnene Deals</div>
               </div>
@@ -543,7 +545,7 @@
                 <i data-lucide="trophy" style="width:18px;height:18px;color:#16a34a;"></i>
               </div>
             </div>
-            <button onclick="showStatusLeads('ABSCHLUSS / ABSAGE')" class="metric-detail-btn" style="border-color:#16a34a;color:#16a34a;">Details <i data-lucide="chevron-right" style="width:12px;height:12px;"></i></button>
+            <button onclick="showStatusLeads('ABGESCHLOSSEN')" class="metric-detail-btn" style="border-color:#16a34a;color:#16a34a;">Details <i data-lucide="chevron-right" style="width:12px;height:12px;"></i></button>
           </div>
 
           <!-- Cloud Sync -->
@@ -847,10 +849,11 @@
                   <label style="font-size:0.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; display:block; margin-bottom:6px;">CRM Status beim Import</label>
                   <select id="importStatus" class="status-select-inline" style="width:100%; background:#f1f5f9; color:var(--text);">
                     <option value="NEU">NEU / OFFEN</option>
-                    <option value="IN KONTAKT">IN KONTAKT</option>
-                    <option value="TERMIN FIXIERT">TERMIN FIXIERT</option>
+                    <option value="ERSTTERMIN">ERSTTERMIN</option>
+                    <option value="FOLLOW UP">FOLLOW UP</option>
                     <option value="KEIN INTERESSE">KEIN INTERESSE</option>
-                    <option value="ABSCHLUSS / ABSAGE">ABSCHLUSS / ABSAGE</option>
+                    <option value="VERKAUFSGESPRAECH">VERKAUFSGESPRÄCH</option>
+                    <option value="ABGESCHLOSSEN">ABGESCHLOSSEN</option>
                     <option value="BESTANDSKUNDE">BESTANDSKUNDE</option>
                   </select>
                 </div>
@@ -986,16 +989,23 @@
     }
 
     const PIPELINES = [
-      { id: 'NEU', label: 'NEU / OFFEN', color: 'st-neu' },
-      { id: 'IN KONTAKT', label: 'IN KONTAKT', color: 'st-inkontakt' },
-      { id: 'TERMIN FIXIERT', label: 'TERMIN FIXIERT', color: 'st-termin' },
-      { id: 'KEIN INTERESSE', label: 'KEIN INTERESSE', color: 'st-keininteresse' },
-      { id: 'ABSCHLUSS / ABSAGE', label: 'ABSCHLUSS / ABSAGE', color: 'st-abschluss' },
-      { id: 'BESTANDSKUNDE', label: 'BESTANDSKUNDE', color: 'st-bestandskunde' },
-      { id: 'NO GO', label: 'NO GO', color: 'st-nogo', hideTab: true },
+      { id: 'NEU',              label: 'NEU / OFFEN',       color: 'st-neu' },
+      { id: 'ERSTTERMIN',       label: 'ERSTTERMIN',         color: 'st-inkontakt' },
+      { id: 'FOLLOW UP',        label: 'FOLLOW UP',          color: 'st-followup' },
+      { id: 'KEIN INTERESSE',   label: 'KEIN INTERESSE',     color: 'st-keininteresse' },
+      { id: 'VERKAUFSGESPRAECH',label: 'VERKAUFSGESPRÄCH',   color: 'st-verkauf' },
+      { id: 'ABGESCHLOSSEN',    label: 'ABGESCHLOSSEN',      color: 'st-abschluss' },
+      { id: 'BESTANDSKUNDE',    label: 'BESTANDSKUNDE',      color: 'st-bestandskunde' },
+      { id: 'NO GO',            label: 'NO GO',              color: 'st-nogo', hideTab: true },
     ];
     // Statuses that are "protected" — excluded from KPI counts, activity feed, and import
     const PROTECTED_STATUSES = new Set(['BESTANDSKUNDE', 'NO GO']);
+    // Legacy status migration: old DB values → new pipeline IDs
+    const LEGACY_STATUS = {
+      'IN KONTAKT':       'ERSTTERMIN',
+      'TERMIN FIXIERT':   'FOLLOW UP',
+      'ABSCHLUSS / ABSAGE': 'ABGESCHLOSSEN',
+    };
     const VALID_STATUSES = new Set(PIPELINES.map(p => p.id));
     const BRANCHES = ['Metalltechnik','Hotellerie','Gesundheit/Pflege','Handel','Industrie','Gastronomie','Wellness/Spa','Handwerk','Tourismus','Logistik','IT/Software','Finanzen/Versicherung','Immobilien','Import-Status'];
     
@@ -1065,8 +1075,11 @@
     function normalizeStatus(s) {
       if (!s) return 'NEU';
       const trimmed = String(s).trim().toUpperCase();
+      // Migrate legacy status values from old DB entries
+      if (LEGACY_STATUS[s.trim()]) return LEGACY_STATUS[s.trim()];
+      if (LEGACY_STATUS[trimmed]) return LEGACY_STATUS[trimmed];
       for (const p of PIPELINES) {
-        if (p.id === trimmed || p.label === trimmed) return p.id;
+        if (p.id === trimmed || p.label.toUpperCase() === trimmed) return p.id;
       }
       return 'NEU';
     }
@@ -1205,15 +1218,15 @@
     }
 
     function updateKPIs() {
-      const counts = { 'NEU':0,'IN KONTAKT':0,'TERMIN FIXIERT':0,'ABSCHLUSS / ABSAGE':0,'KEIN INTERESSE':0 };
+      const counts = { 'NEU':0,'ERSTTERMIN':0,'FOLLOW UP':0,'KEIN INTERESSE':0,'VERKAUFSGESPRAECH':0,'ABGESCHLOSSEN':0 };
       state.leads.forEach(l => {
         const s = normalizeStatus(l.status);
         if (!PROTECTED_STATUSES.has(s)) counts[s] = (counts[s] || 0) + 1;
       });
       document.getElementById('kpi-new').textContent = counts['NEU'];
-      document.getElementById('kpi-contact').textContent = counts['IN KONTAKT'];
-      document.getElementById('kpi-termin').textContent = counts['TERMIN FIXIERT'];
-      document.getElementById('kpi-won').textContent = counts['ABSCHLUSS / ABSAGE'];
+      document.getElementById('kpi-contact').textContent = counts['ERSTTERMIN'];
+      document.getElementById('kpi-termin').textContent = counts['FOLLOW UP'];
+      document.getElementById('kpi-won').textContent = counts['ABGESCHLOSSEN'];
 
       const activeLeads = state.leads.filter(l => !PROTECTED_STATUSES.has(normalizeStatus(l.status))).length;
       const countEl = document.getElementById('cloudLeadCount');
@@ -1277,7 +1290,7 @@
 
     function exportAllApptsICS() {
       const fmt = d => d.toISOString().replace(/-|:/g,'').split('.')[0]+'Z';
-      const apptLeads = state.leads.filter(l => l.status === 'TERMIN FIXIERT' && l.appointmentDate);
+      const apptLeads = state.leads.filter(l => l.appointmentDate);
       if (!apptLeads.length) { showToast('Keine Termine mit Datum gefunden.', '#f97316'); return; }
       const events = apptLeads.map(lead => {
         const [start, end] = getApptDates(lead);
@@ -1299,7 +1312,7 @@
     }
 
     function exportAllApptsGoogle() {
-      const apptLeads = state.leads.filter(l => l.status === 'TERMIN FIXIERT' && l.appointmentDate);
+      const apptLeads = state.leads.filter(l => l.appointmentDate);
       if (!apptLeads.length) { showToast('Keine Termine mit Datum gefunden.', '#f97316'); return; }
       // Open the next upcoming appointment in Google Calendar
       const next = apptLeads.sort((a,b) => a.appointmentDate.localeCompare(b.appointmentDate))[0];
@@ -1531,8 +1544,8 @@
       }
       
       const total = filtered.length;
-      const contacted = filtered.filter(l => ['IN KONTAKT','TERMIN FIXIERT','KEIN INTERESSE','ABSCHLUSS / ABSAGE'].includes(normalizeStatus(l.status))).length;
-      const won = filtered.filter(l => ['TERMIN FIXIERT','ABSCHLUSS / ABSAGE'].includes(normalizeStatus(l.status))).length;
+      const contacted = filtered.filter(l => ['ERSTTERMIN','FOLLOW UP','KEIN INTERESSE','VERKAUFSGESPRAECH','ABGESCHLOSSEN'].includes(normalizeStatus(l.status))).length;
+      const won = filtered.filter(l => ['VERKAUFSGESPRAECH','ABGESCHLOSSEN'].includes(normalizeStatus(l.status))).length;
       const contactRatio = total > 0 ? Math.round((contacted/total)*100) : 0;
       const closingRatio = total > 0 ? Math.round((won/total)*100) : 0;
       
@@ -1564,7 +1577,7 @@
           const m = d.getMonth();
           monthlyData[m].total++;
           const st = normalizeStatus(l.status);
-          if (['TERMIN FIXIERT','ABSCHLUSS / ABSAGE'].includes(st)) monthlyData[m].won++;
+          if (['VERKAUFSGESPRAECH','ABGESCHLOSSEN'].includes(st)) monthlyData[m].won++;
         }
       });
 
@@ -1914,7 +1927,7 @@
     function renderDayView(grid, today, year, month, day) {
       const HOURS = [7,8,9,10,11,12,13,14,15,16,17,18,19,20];
       const dayDate = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-      const termins = state.leads.filter(l => normalizeStatus(l.status) === 'TERMIN FIXIERT');
+      const termins = state.leads.filter(l => l.appointmentDate);
       const slotMap = {};
       termins.forEach((l) => {
         if (l.appointmentDate === dayDate && l.appointmentHour !== null && l.appointmentHour !== undefined) {
@@ -1948,8 +1961,8 @@
         return d;
       });
 
-      // Only TERMIN FIXIERT leads, matched by appointmentDate to their correct day in this week
-      const terminLeads = state.leads.filter(l => normalizeStatus(l.status) === 'TERMIN FIXIERT');
+      // All leads with an appointment date, shown in their correct week slot
+      const terminLeads = state.leads.filter(l => l.appointmentDate);
       const weekEvents = {}; // { 'dayIdx_hour': [{ name, idx, orange }] }
       terminLeads.forEach((l) => {
         const apptDateStr = l.appointmentDate;
@@ -1997,7 +2010,7 @@
     }
 
     function renderMonthView(grid, today, year, month) {
-      const termins = state.leads.filter(l => normalizeStatus(l.status) === 'TERMIN FIXIERT');
+      const termins = state.leads.filter(l => l.appointmentDate);
       const monthEvents = {};
       termins.forEach((l) => {
         const apptDate = l.appointmentDate ? new Date(l.appointmentDate) : null;
@@ -2039,18 +2052,22 @@
       const feed = document.getElementById('activityFeed');
       if (!feed) return;
       const STATUS_COLOR = {
-        'ABSCHLUSS / ABSAGE': 'green',
-        'TERMIN FIXIERT': 'orange',
-        'IN KONTAKT': 'blue',
+        'ABGESCHLOSSEN': 'green',
+        'VERKAUFSGESPRAECH': 'orange',
+        'FOLLOW UP': 'orange',
+        'ERSTTERMIN': 'blue',
         'KEIN INTERESSE': 'red',
-        'NEU': 'grey'
+        'NEU': 'grey',
+        'BESTANDSKUNDE': 'blue',
       };
       const STATUS_LABEL = {
-        'ABSCHLUSS / ABSAGE': 'Abgeschlossen',
-        'TERMIN FIXIERT': 'Termin fixiert',
-        'IN KONTAKT': 'In Kontakt',
+        'ABGESCHLOSSEN': 'Abgeschlossen',
+        'VERKAUFSGESPRAECH': 'Verkaufsgespräch',
+        'FOLLOW UP': 'Follow Up',
+        'ERSTTERMIN': 'Ersttermin',
         'KEIN INTERESSE': 'Kein Interesse',
-        'NEU': 'Neu / Offen'
+        'NEU': 'Neu / Offen',
+        'BESTANDSKUNDE': 'Bestandskunde',
       };
       // Show strictly chronological activity log (newest first based on statusDate)
       const sorted = [...state.leads].sort((a,b) => {
@@ -3024,7 +3041,7 @@
         </div>
       `;
 
-      const isScheduled = normalizeStatus(l.status) === 'TERMIN FIXIERT' || l.appointmentDate;
+      const isScheduled = l.appointmentDate;
 
       if (isScheduled) {
         gridContent += `
@@ -3101,7 +3118,7 @@
       const filteredLeads = state.leads.filter(l => normalizeStatus(l.status) === normalizeStatus(status));
       state.lastFilteredModal = filteredLeads.map(l => state.leads.indexOf(l));
       
-      const STATUS_LABEL = {'ABSCHLUSS / ABSAGE':'Abschlüsse','TERMIN FIXIERT':'Termin Fixiert','IN KONTAKT':'In Akquise','KEIN INTERESSE':'Kein Interesse','NEU':'Neue Leads'};
+      const STATUS_LABEL = {'ABGESCHLOSSEN':'Abgeschlossen','VERKAUFSGESPRAECH':'Verkaufsgespräch','FOLLOW UP':'Follow Up','ERSTTERMIN':'Ersttermin','KEIN INTERESSE':'Kein Interesse','NEU':'Neue Leads','BESTANDSKUNDE':'Bestandskunden'};
       document.getElementById('statusModalTitle').textContent = (STATUS_LABEL[normalizeStatus(status)] || status) + ' (' + filteredLeads.length + ')';
       const list = document.getElementById('statusModalList');
       if (!filteredLeads.length) {
@@ -3220,11 +3237,11 @@
       const to   = document.getElementById('apptTo').value;
       const note = document.getElementById('apptNote').value;
       if (isNaN(idx) || !date) { showToast('Bitte Lead und Datum wählen.','#ef4444'); return; }
-      // Update lead status to TERMIN FIXIERT and save note
+      // Update lead status to ERSTTERMIN when appointment is saved
       const lead = state.leads[idx];
       if (lead) {
         const todayStr = new Date().toLocaleString('de-AT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
-        lead.status = 'TERMIN FIXIERT';
+        lead.status = 'ERSTTERMIN';
         lead.statusDate = todayStr;
         lead.appointmentDate = date;
         lead.appointmentFrom = from;
@@ -3233,7 +3250,7 @@
         const hour = (from || '10:00').split(':')[0];
         lead.appointmentHour = hour;
 
-        const overlaps = state.leads.filter(x => x !== lead && normalizeStatus(x.status) === 'TERMIN FIXIERT' && x.appointmentDate === date && parseInt(x.appointmentHour) === parseInt(hour));
+        const overlaps = state.leads.filter(x => x !== lead && x.appointmentDate === date && parseInt(x.appointmentHour) === parseInt(hour));
 
         // Sync notes - overwrite instead of append to prevent duplication
         lead.notes = note;

@@ -1167,10 +1167,20 @@
       hideLoader();
     }
 
+    // Always writes the full local state to the server — no merge, local state wins
+    async function pushToServer() {
+      try {
+        await fetch('/api/leads', {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leads: state.leads })
+        });
+      } catch(e) { console.warn('Push failed', e); }
+    }
+
     async function saveLeadField(idx, field, value) {
       const lead = window.__leads[idx];
       if (!lead) return;
-      const oldStatus = lead.status;
       lead[field] = field === 'status' ? normalizeStatus(value) : value;
       if (field === 'status') {
         lead.statusDate = new Date().toISOString();
@@ -1178,13 +1188,7 @@
       updateKPIs();
       if (field === 'status' || field === 'note' || field === 'notes') { renderTable(); renderActivityFeed(); }
       if (field === 'status') { renderCalendar(); renderReports(); }
-      try {
-        await fetch('/api/leads', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ leads: [lead] })
-        });
-      } catch(e) { console.warn('Save failed', e); }
+      pushToServer();
     }
 
     async function deleteLead(idx) {
@@ -1193,13 +1197,7 @@
       window.__leads = state.leads;
       updateKPIs(); renderTable(); renderCalendar(); renderReports(); renderActivityFeed();
       showToast('Lead gelöscht', '#16a34a');
-      try {
-        await fetch('/api/leads', {
-          method: 'PATCH',
-          headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ leads: state.leads })
-        });
-      } catch(e) { console.warn('Delete push failed', e); }
+      pushToServer();
     }
 
     function initUI() {
@@ -3284,11 +3282,7 @@
       updateKPIs(); renderTable(); renderActivityFeed(); renderCalendar(); renderReports();
       showLeadDetail(idx);
       try {
-        await fetch('/api/leads', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ leads: [l] })
-        });
+        await pushToServer();
         showToast('Lead aktualisiert!', '#16a34a');
       } catch(e) { showToast('Speichern fehlgeschlagen', '#ef4444'); }
     }
@@ -3338,12 +3332,7 @@
       if (l.appointmentDate) l.appointmentHour = (l.appointmentFrom || '10:00').split(':')[0];
       l.statusDate = new Date().toISOString();
 
-      fetch('/api/leads', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ leads: [l] })
-      }).then(res => {
-        if (!res.ok) throw new Error('Update Fehler');
+      pushToServer().then(() => {
         showToast('Änderungen gespeichert!', '#16a34a');
         updateKPIs(); renderTable(); renderCalendar(); renderActivityFeed();
         closeModal('leadModal');
@@ -3433,15 +3422,10 @@
       lead.appointmentHour = null;
       // Keep current status — only clear appointment data
       lead.statusDate = new Date().toISOString();
-      fetch('/api/leads', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ leads: [lead] })
-      }).then(() => {
-        showToast('Termin gelöscht', '#666');
-        updateKPIs(); renderTable(); renderCalendar(); renderActivityFeed();
-        closeModal('leadModal');
-      });
+      updateKPIs(); renderTable(); renderCalendar(); renderActivityFeed();
+      closeModal('leadModal');
+      showToast('Termin gelöscht', '#666');
+      pushToServer();
     }
 
     function sendInvite(idx) {
@@ -3480,23 +3464,15 @@
         lead.notes = note;
         lead.note = note; // sync both fields
 
-        fetch('/api/leads', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ leads: [lead] })
-        }).then(res => {
-          if (!res.ok) throw new Error('Sync Fehler');
-          if (overlaps.length > 0) {
-             const names = overlaps.map(o => o.name).join(', ');
-             showToast(`Achtung: Termin überschneidet sich mit ${names} um ${hour}:00 Uhr. Termin wurde trotzdem gespeichert!`, '#f97316');
-          } else {
-             showToast(`Termin für ${lead.name} gespeichert!`, '#16a34a');
-          }
-          updateKPIs(); renderTable(); renderCalendar(); renderActivityFeed();
-          closeModal('apptModal');
-        }).catch(err => {
-          showToast('Fehler beim Speichern: ' + err.message, '#ef4444');
-        });
+        if (overlaps.length > 0) {
+           const names = overlaps.map(o => o.name).join(', ');
+           showToast(`Achtung: Termin überschneidet sich mit ${names} um ${hour}:00 Uhr. Termin wurde trotzdem gespeichert!`, '#f97316');
+        } else {
+           showToast(`Termin für ${lead.name} gespeichert!`, '#16a34a');
+        }
+        updateKPIs(); renderTable(); renderCalendar(); renderActivityFeed();
+        closeModal('apptModal');
+        pushToServer();
       }
     }
   </script>

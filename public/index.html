@@ -3199,22 +3199,98 @@
       grid.innerHTML = gridContent;
 
       const actions = document.getElementById('leadModalActions');
-      if (isScheduled) {
-        actions.innerHTML = `
-          <div style="display:flex; justify-content: flex-end; align-items:center; margin-top:0.5rem; flex-wrap:nowrap; gap:0.5rem; border-top:1px solid var(--bg); padding-top:0.75rem; overflow-x:auto;">
-            <button class="btn btn-outline" style="width:auto; flex:none; padding:0.45rem 0.5rem; font-size:0.8rem; white-space:nowrap;" onclick="closeModal('leadModal'); openApptModal(${idx});">
-              <i data-lucide="calendar-plus" style="width:15px;height:15px; flex-shrink:0;"></i> Neuer Termin
-            </button>
-            <button class="btn btn-primary" style="width:auto; flex:none; padding:0.45rem 0.5rem; font-size:0.8rem; white-space:nowrap;" onclick="sendInvite(${idx})">
-              <i data-lucide="send" style="width:15px;height:15px; flex-shrink:0;"></i> Einladung
-            </button>
-            ${l.appointmentDate ? `<button class="btn btn-outline" style="width:auto; flex:none; padding:0.45rem 0.5rem; border-color:#ef4444; color:#ef4444; background:transparent; white-space:nowrap;" title="Termin löschen" onclick="deleteAppt(${idx})"><i data-lucide="trash-2" style="width:15px;height:15px; flex-shrink:0;"></i></button>` : ''}
-          </div>`;
-      } else {
-        actions.innerHTML = '';
-      }
+      const apptButtons = isScheduled ? `
+        <button class="btn btn-outline" style="width:auto;flex:none;padding:0.45rem 0.5rem;font-size:0.8rem;white-space:nowrap;" onclick="closeModal('leadModal'); openApptModal(${idx});">
+          <i data-lucide="calendar-plus" style="width:15px;height:15px;flex-shrink:0;"></i> Neuer Termin
+        </button>
+        <button class="btn btn-primary" style="width:auto;flex:none;padding:0.45rem 0.5rem;font-size:0.8rem;white-space:nowrap;" onclick="sendInvite(${idx})">
+          <i data-lucide="send" style="width:15px;height:15px;flex-shrink:0;"></i> Einladung
+        </button>
+        <button class="btn btn-outline" style="width:auto;flex:none;padding:0.45rem 0.5rem;border-color:#ef4444;color:#ef4444;background:transparent;white-space:nowrap;" title="Termin löschen" onclick="deleteAppt(${idx})">
+          <i data-lucide="trash-2" style="width:15px;height:15px;flex-shrink:0;"></i>
+        </button>` : '';
+      actions.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem;flex-wrap:wrap;gap:0.5rem;border-top:1px solid var(--bg);padding-top:0.75rem;">
+          <button class="btn btn-outline" style="width:auto;flex:none;padding:0.45rem 0.75rem;font-size:0.8rem;" onclick="enableLeadEdit(${idx})">
+            <i data-lucide="pencil" style="width:14px;height:14px;flex-shrink:0;"></i> Bearbeiten
+          </button>
+          <div style="display:flex;gap:0.5rem;flex-wrap:nowrap;overflow-x:auto;">${apptButtons}</div>
+        </div>`;
 
       openModal('leadModal');
+      lucide.createIcons();
+    }
+
+    function enableLeadEdit(idx) {
+      const l = state.leads[idx];
+      if (!l) return;
+      const stOpts = PIPELINES.filter(p => !PROTECTED_STATUSES.has(p.id))
+        .map(p => `<option value="${p.id}" ${normalizeStatus(l.status) === p.id ? 'selected' : ''}>${p.label}</option>`).join('');
+      const branchOpts = BRANCHES.map(b => `<option value="${b}" ${(l.industry||'') === b ? 'selected' : ''}>${b}</option>`).join('');
+      const inp = (id, label, val) => `
+        <div class="modal-field">
+          <label style="font-size:0.65rem;margin-bottom:3px;color:var(--text-muted);text-transform:uppercase;">${label}</label>
+          <input id="edit_${id}" type="text" value="${String(val||'').replace(/"/g,'&quot;').replace(/</g,'&lt;')}"
+            style="width:100%;padding:0.4rem 0.6rem;font-size:0.85rem;border:1px solid var(--border);border-radius:6px;background:var(--bg);outline:none;box-sizing:border-box;">
+        </div>`;
+      document.getElementById('leadModalGrid').innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem 1.25rem;margin-bottom:1rem;">
+          ${inp('name','Firmenname', l.name)}
+          ${inp('ceos','Ansprechperson', l.ceos || l.ceoname || l.ansprechperson || l.owner || '')}
+          ${inp('phone','Telefon', l.phone || l.tel || '')}
+          ${inp('email','E-Mail', l.email || l.email_general || l.email_ceo || l.Email || l.mail || (l.emails ? String(l.emails).split(',')[0].trim() : '') || '')}
+          ${inp('website','Website', l.website || '')}
+          ${inp('address','Hausanschrift', l.address || l.adresse || '')}
+          ${inp('region','Ort / Region', l.region || '')}
+          <div class="modal-field">
+            <label style="font-size:0.65rem;margin-bottom:3px;color:var(--text-muted);text-transform:uppercase;">Branche</label>
+            <select id="edit_industry" style="width:100%;padding:0.4rem 0.6rem;font-size:0.85rem;border:1px solid var(--border);border-radius:6px;background:var(--bg);outline:none;box-sizing:border-box;">${branchOpts}</select>
+          </div>
+          <div class="modal-field">
+            <label style="font-size:0.65rem;margin-bottom:3px;color:var(--text-muted);text-transform:uppercase;">CRM Status</label>
+            <select id="edit_status" style="width:100%;padding:0.4rem 0.6rem;font-size:0.85rem;border:1px solid var(--border);border-radius:6px;background:var(--bg);outline:none;box-sizing:border-box;">${stOpts}</select>
+          </div>
+        </div>`;
+      document.getElementById('leadModalActions').innerHTML = `
+        <div style="display:flex;justify-content:flex-end;gap:0.5rem;border-top:1px solid var(--bg);padding-top:0.75rem;margin-top:0.5rem;">
+          <button class="btn btn-outline" style="font-size:0.82rem;" onclick="showLeadDetail(${idx})">Abbrechen</button>
+          <button class="btn btn-primary" style="font-size:0.82rem;" onclick="saveLeadEdit(${idx})">
+            <i data-lucide="save" style="width:14px;height:14px;"></i> Speichern
+          </button>
+        </div>`;
+      lucide.createIcons();
+      document.getElementById('edit_name')?.focus();
+    }
+
+    async function saveLeadEdit(idx) {
+      const l = state.leads[idx];
+      if (!l) return;
+      const g = id => (document.getElementById('edit_' + id)?.value || '').trim();
+      l.name     = g('name')     || l.name;
+      l.ceos     = g('ceos');
+      l.ceoname  = g('ceos');
+      l.phone    = g('phone');
+      l.email    = g('email');
+      l.website  = g('website');
+      l.address  = g('address');
+      l.region   = g('region')   || l.region;
+      l.industry = g('industry') || l.industry;
+      const newStatus = document.getElementById('edit_status')?.value;
+      if (newStatus) {
+        l.status = normalizeStatus(newStatus);
+        l.statusDate = new Date().toISOString();
+      }
+      window.__leads[idx] = l;
+      updateKPIs(); renderTable(); renderActivityFeed(); renderCalendar(); renderReports();
+      showLeadDetail(idx);
+      try {
+        await fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leads: [l] })
+        });
+        showToast('Lead aktualisiert!', '#16a34a');
+      } catch(e) { showToast('Speichern fehlgeschlagen', '#ef4444'); }
     }
 
     function showStatusLeads(status) {

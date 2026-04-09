@@ -57,13 +57,14 @@ export default async function handler(req, res) {
             merged.status = existing.status;
             merged.statusDate = existing.statusDate;
           }
-          // Always preserve notes and appointment data
-          if (existing.notes)          merged.notes          = existing.notes;
-          if (existing.note)           merged.note           = existing.note;
-          if (existing.appointmentDate) merged.appointmentDate = existing.appointmentDate;
-          if (existing.appointmentFrom) merged.appointmentFrom = existing.appointmentFrom;
-          if (existing.appointmentTo)   merged.appointmentTo   = existing.appointmentTo;
-          if (existing.appointmentHour) merged.appointmentHour = existing.appointmentHour;
+          // Always preserve notes
+          if (existing.notes) merged.notes = existing.notes;
+          if (existing.note)  merged.note  = existing.note;
+          // Preserve appointment data ONLY if the incoming update does NOT explicitly clear it (null = user deleted)
+          if (existing.appointmentDate && l.appointmentDate !== null) merged.appointmentDate = existing.appointmentDate;
+          if (existing.appointmentFrom && l.appointmentFrom !== null) merged.appointmentFrom = existing.appointmentFrom;
+          if (existing.appointmentTo   && l.appointmentTo   !== null) merged.appointmentTo   = existing.appointmentTo;
+          if (existing.appointmentHour && l.appointmentHour !== null) merged.appointmentHour = existing.appointmentHour;
           leadMap.set(k, merged);
         } else {
           leadMap.set(k, l);

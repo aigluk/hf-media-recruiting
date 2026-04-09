@@ -289,6 +289,11 @@
     .cal-hour-slot:hover { background: var(--surface-hover); }
     .cal-slot-event { flex: 1; background: #eff6ff; border-left: 3px solid var(--primary); border-radius: 6px; padding: 3px 7px; font-size: 11px; font-weight: 600; color: var(--primary); overflow: hidden; cursor: pointer; display: flex; align-items: center; }
     .cal-slot-event.orange { background: #fff7ed; border-color: #f97316; color: #c2410c; }
+    .cal-event-menu { position:fixed; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1rem; box-shadow:0 8px 32px rgba(0,0,0,0.15); z-index:9999; min-width:220px; }
+    .cal-event-menu .menu-name { font-weight:700; font-size:0.85rem; color:var(--text); margin-bottom:0.6rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .cal-event-menu .menu-actions { display:flex; gap:0.5rem; margin-top:0.6rem; }
+    .cal-event-menu .menu-btn { flex:1; font-size:0.72rem; font-weight:600; padding:5px 8px; border-radius:7px; border:1px solid var(--border); background:var(--bg); color:var(--text-muted); cursor:pointer; }
+    .cal-event-menu .menu-btn.danger { border-color:#ef4444; color:#ef4444; background:transparent; }
 
     .cal-week-grid { display: grid; grid-template-columns: 60px repeat(7, 1fr); overflow-y: auto; max-height: 520px; }
     .cal-week-label { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-align: right; padding-right: 10px; height: 48px; display: flex; align-items: flex-start; padding-top: 4px; flex-shrink: 0; }
@@ -1045,7 +1050,7 @@
     // Legacy status migration: old DB values → new pipeline IDs
     const LEGACY_STATUS = {
       'IN KONTAKT':       'ERSTTERMIN',
-      'TERMIN FIXIERT':   'FOLLOW UP',
+      'TERMIN FIXIERT':   'ERSTTERMIN',
       'ABSCHLUSS / ABSAGE': 'ABGESCHLOSSEN',
     };
     const VALID_STATUSES = new Set(PIPELINES.map(p => p.id));
@@ -1998,7 +2003,7 @@
         const evs = slotMap[h] || [];
         let evHtml = evs.map(ev => {
           const name = String(ev.l.name || '–').replace(/</g, '&lt;');
-          return `<div class="cal-slot-event orange" onclick="event.stopPropagation(); showLeadDetail(${ev.idx})" title="Termin: ${name}">${name}</div>`;
+          return `<div class="cal-slot-event orange" onclick="event.stopPropagation(); openCalEventMenu(${ev.idx}, this)" title="Termin: ${name}">${name}</div>`;
         }).join('');
         return `<div class="cal-hour-label" style="${isCurr ? 'color:var(--primary);font-weight:800;' : ''}">${timeStr}</div><div class="cal-hour-slot" onclick="openApptModal(undefined, '${dayDate}', ${h})">${evHtml}</div>`;
       }).join('');
@@ -2056,7 +2061,7 @@
           const evs = weekEvents[key] || [];
           let evHtml = evs.map(ev => {
             const name = String(ev.name || '').replace(/</g, '&lt;').substring(0, 20);
-            return `<div class="cal-week-event orange" onclick="event.stopPropagation(); showLeadDetail(${ev.idx})" title="Details">${name}</div>`;
+            return `<div class="cal-week-event orange" onclick="event.stopPropagation(); openCalEventMenu(${ev.idx}, this)" title="Details">${name}</div>`;
           }).join('');
           const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
           gridHtml += `<div class="cal-week-col" onclick="openApptModal(undefined, '${ds}', ${h})">${evHtml}</div>`;
@@ -2090,7 +2095,7 @@
       for (let d = 1; d <= daysInMonth; d++) {
         const isToday = (year === today.getFullYear() && month === today.getMonth() && d === today.getDate());
         const evs = monthEvents[d] || [];
-        const evHtml = evs.slice(0,2).map(e => `<div class="cal-month-event${e.orange ? ' orange' : ''}" onclick="addToCalendar(${e.idx})">${String(e.name||'').replace(/</g,'&lt;').substring(0,18)}</div>`).join('');
+        const evHtml = evs.slice(0,2).map(e => `<div class="cal-month-event${e.orange ? ' orange' : ''}" onclick="event.stopPropagation(); openCalEventMenu(${e.idx}, this)">${String(e.name||'').replace(/</g,'&lt;').substring(0,18)}</div>`).join('');
         const more = evs.length > 2 ? `<div style="font-size:9px;color:var(--text-muted);">+${evs.length-2} mehr</div>` : '';
         html += `<div class="cal-month-cell${isToday ? ' selected':''}" onclick="calState.selectedDay=${d}; setCalView('day')">
           <div class="cal-month-num${isToday ? ' today' : ''}">${d}</div>
@@ -3303,6 +3308,39 @@
       }
 
       openModal('apptModal');
+    }
+
+    function openCalEventMenu(idx, el) {
+      document.querySelectorAll('.cal-event-menu').forEach(m => m.remove());
+      const lead = state.leads[idx];
+      if (!lead) return;
+      const name = (lead.name || '–').replace(/</g, '&lt;');
+      const st = normalizeStatus(lead.status);
+      const opts = PIPELINES
+        .filter(p => !PROTECTED_STATUSES.has(p.id))
+        .map(p => `<option value="${p.id}" ${p.id === st ? 'selected' : ''}>${p.label}</option>`)
+        .join('');
+      const menu = document.createElement('div');
+      menu.className = 'cal-event-menu';
+      menu.innerHTML = `
+        <div class="menu-name" title="${name}">${name}</div>
+        <select class="status-select-inline" style="width:100%;" onchange="saveLeadField(${idx}, 'status', this.value); document.querySelectorAll('.cal-event-menu').forEach(m=>m.remove())">${opts}</select>
+        <div class="menu-actions">
+          <button class="menu-btn" onclick="showLeadDetail(${idx}); document.querySelectorAll('.cal-event-menu').forEach(m=>m.remove())">Details</button>
+          <button class="menu-btn danger" onclick="document.querySelectorAll('.cal-event-menu').forEach(m=>m.remove()); deleteAppt(${idx})">Termin löschen</button>
+        </div>`;
+      const rect = el.getBoundingClientRect();
+      const top = Math.min(rect.bottom + 4, window.innerHeight - 180);
+      const left = Math.min(rect.left, window.innerWidth - 240);
+      menu.style.top = top + 'px';
+      menu.style.left = left + 'px';
+      document.body.appendChild(menu);
+      setTimeout(() => {
+        document.addEventListener('click', function handler() {
+          menu.remove();
+          document.removeEventListener('click', handler);
+        });
+      }, 10);
     }
 
     function deleteAppt(idx) {

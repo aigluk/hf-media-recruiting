@@ -641,7 +641,6 @@
                     </label>
                   </th>
                   <th>FIRMENNAME</th>
-                  <th>ANSPRECHPERSON</th>
                    <th>BRANCHE</th>
                    <th>ORT</th>
                    <th style="width:140px;">CRM STATUS</th>
@@ -1114,10 +1113,10 @@
     function hideLoader() { document.getElementById('loader').classList.remove('show'); }
     function showToast(msg, color = '#ef4444') {
       const t = document.createElement('div');
-      t.style.cssText = `position:fixed;bottom:2rem;right:2rem;background:${color};color:white;padding:1rem 1.5rem;border-radius:12px;font-weight:600;z-index:9999;box-shadow:0 10px 40px rgba(0,0,0,0.2);max-width:350px`;
+      t.style.cssText = `position:fixed;bottom:2rem;right:2rem;background:${color};color:white;padding:1rem 1.5rem;border-radius:12px;font-weight:600;z-index:9999;box-shadow:0 10px 40px rgba(0,0,0,0.2);max-width:380px;white-space:pre-line;line-height:1.5`;
       t.textContent = msg;
       document.body.appendChild(t);
-      setTimeout(() => t.remove(), 5000);
+      setTimeout(() => t.remove(), 7000);
     }
 
     // Normalize a status string – return canonical pipeline ID or 'NEU'
@@ -2399,7 +2398,6 @@
               </label>
             </td>
             <td><div class="td-name" onclick="showLeadDetail(${idx})" style="cursor:pointer;" title="Popup öffnen">${name}</div></td>
-            <td><div class="td-sub"><i data-lucide="user" style="width:14px;"></i>&nbsp;${owner}</div></td>
             <td style="padding-right:0.25rem;">
               <select class="status-select-inline" style="background:#f1f5f9;border-color:#e2e8f0;font-weight:600;min-width:130px;" onchange="saveLeadField(${idx}, 'industry', this.value)">
                 ${bOpts}
@@ -2423,7 +2421,6 @@
                 <button class="action-icon cal" onclick="openApptModal(${idx})" title="Termin eintragen"><i data-lucide="calendar"></i></button>
                 <a href="${tn ? 'tel:'+tn : 'javascript:;'}" class="action-icon" title="Anrufen" ${!tn ? 'style="opacity:0.3;pointer-events:none;"':''}><i data-lucide="phone"></i></a>
                 <a href="${em ? 'mailto:'+em : 'javascript:;'}" class="action-icon" title="E-Mail" ${!em ? 'style="opacity:0.3;pointer-events:none;"':''}><i data-lucide="mail"></i></a>
-                <button class="action-icon dm" style="gap:6px;" onclick="openPitchModal(${idx})"><i data-lucide="send"></i> Pitch</button>
                 <button class="action-icon del" onclick="deleteLead(${idx})" title="Lead löschen"><i data-lucide="trash-2"></i></button>
               </div>
             </td>
@@ -2445,7 +2442,26 @@
         const data = await res.json();
         if(!res.ok) throw new Error(data.error || 'Serverfehler');
         if(!data.leads || data.leads.length === 0) throw new Error('Keine Datensätze gefunden.');
-        const dbRes = await fetch('/api/leads', { method:'POST', headers:{'Authorization':`Bearer ${state.token}`,'Content-Type':'application/json'}, body: JSON.stringify({ leads: data.leads }) });
+
+        // Check for BESTANDSKUNDE / NO GO matches before syncing
+        const blockedByProtection = [];
+        const leadsToSync = data.leads.filter(newLead => {
+          const match = state.leads.find(existing => isLeadMatch(existing, newLead));
+          if (match && PROTECTED_STATUSES.has(normalizeStatus(match.status))) {
+            blockedByProtection.push({ newLead, existing: match });
+            return false;
+          }
+          return true;
+        });
+
+        if (blockedByProtection.length > 0) {
+          const names = blockedByProtection.map(b => `• ${b.existing.name} (${normalizeStatus(b.existing.status)})`).join('\n');
+          showToast(`⚠️ ${blockedByProtection.length} Lead${blockedByProtection.length > 1 ? 's' : ''} blockiert (Bestandskunde/NO GO):\n${names}`, '#f59e0b');
+        }
+
+        if (leadsToSync.length === 0) throw new Error('Alle generierten Leads sind bereits als Bestandskunde oder NO GO gespeichert.');
+
+        const dbRes = await fetch('/api/leads', { method:'POST', headers:{'Authorization':`Bearer ${state.token}`,'Content-Type':'application/json'}, body: JSON.stringify({ leads: leadsToSync }) });
         if(!dbRes.ok) throw new Error('Vercel DB Fehler.');
         await syncDatabase();
         if (document.getElementById('sortFilter')) document.getElementById('sortFilter').value = '';
@@ -2922,40 +2938,72 @@
       return rows.map(mapRowToLead).filter(l => l && l.name && l.name.length > 2);
     }
 
+    function isLeadMatch(a, b) {
+      const nameMatch = a.name && b.name && a.name.trim().toLowerCase() === b.name.trim().toLowerCase();
+      const email1 = (a.email || a.email_general || a.emails || '').split(',')[0].toLowerCase().trim();
+      const email2 = (b.email || '').toLowerCase().trim();
+      const emailMatch = email1.length > 3 && email2.length > 3 && email1 === email2;
+      const phone1 = (a.phone || '').replace(/[^\d]/g,'');
+      const phone2 = (b.phone || '').replace(/[^\d]/g,'');
+      const phoneMatch = phone1.length > 5 && phone1 === phone2;
+      return nameMatch || emailMatch || phoneMatch;
+    }
+
     function checkDuplicates() {
       const beforeCount = pendingLeads.length;
-      // Silently remove any lead that already exists in the DB (by name, email, or phone)
-      // This includes NO GO and BESTANDSKUNDE leads — they stay protected
-      const filtered = pendingLeads.filter(pl => !state.leads.some(l => {
-        const nameMatch = l.name && pl.name && l.name.trim().toLowerCase() === pl.name.trim().toLowerCase();
-        const email1 = (l.email || l.email_general || l.emails || '').split(',')[0].toLowerCase().trim();
-        const email2 = (pl.email || '').toLowerCase().trim();
-        const emailMatch = email1.length > 3 && email2.length > 3 && email1 === email2;
-        const phone1 = (l.phone || '').replace(/[^\d]/g,'');
-        const phone2 = (pl.phone || '').replace(/[^\d]/g,'');
-        const phoneMatch = phone1.length > 5 && phone1 === phone2;
-        return nameMatch || emailMatch || phoneMatch;
-      }));
 
-      // Replace pendingLeads contents in-place
+      // Separate BESTANDSKUNDE/NO GO matches (show warning) from regular dups (silent skip)
+      const bestandskundeBlocked = [];
+      const regularDups = [];
+      const clean = [];
+
+      pendingLeads.forEach(pl => {
+        const matchingExisting = state.leads.find(l => isLeadMatch(l, pl));
+        if (!matchingExisting) {
+          clean.push(pl);
+        } else if (PROTECTED_STATUSES.has(normalizeStatus(matchingExisting.status))) {
+          bestandskundeBlocked.push(pl); // BESTANDSKUNDE or NO GO — warn user
+        } else {
+          regularDups.push(pl); // regular dup — silent skip
+        }
+      });
+
+      // Replace pendingLeads with only clean leads
       pendingLeads.length = 0;
-      filtered.forEach(l => pendingLeads.push(l));
+      clean.forEach(l => pendingLeads.push(l));
 
-      const skipped = beforeCount - filtered.length;
-      const percClean = beforeCount > 0 ? Math.round((filtered.length / beforeCount) * 100) : 100;
+      const skipped = regularDups.length;
+      const blocked = bestandskundeBlocked.length;
+      const percClean = beforeCount > 0 ? Math.round((clean.length / beforeCount) * 100) : 100;
 
       const scoreBar = document.getElementById('dataScoreBar');
       const scoreText = document.getElementById('cleanlinessScore');
       const importBar = document.getElementById('importProgressBar');
       const importText = document.getElementById('importStatsText');
-      if (scoreBar) { scoreBar.style.width = percClean + '%'; scoreBar.style.background = '#16a34a'; }
+      if (scoreBar) { scoreBar.style.width = percClean + '%'; scoreBar.style.background = percClean === 100 ? '#16a34a' : '#f97316'; }
       if (scoreText) scoreText.textContent = percClean + '%';
       if (importBar) importBar.style.width = '100%';
-      if (importText) importText.textContent = `${beforeCount} analysiert · ${filtered.length} neu · ${skipped > 0 ? skipped + ' übersprungen' : 'keine Dubletten'}`;
 
-      // Hide the old warning box — handled silently now
+      let statsMsg = `${beforeCount} analysiert · ${clean.length} neu`;
+      if (skipped) statsMsg += ` · ${skipped} Dubletten übersprungen`;
+      if (blocked) statsMsg += ` · ${blocked} Bestandskunden blockiert`;
+      if (importText) importText.textContent = statsMsg;
+
+      // Show BESTANDSKUNDE warning prominently
       const dupsView = document.getElementById('importDuplicateCheck');
-      if (dupsView) dupsView.style.display = 'none';
+      if (blocked > 0 && dupsView) {
+        dupsView.style.display = 'block';
+        dupsView.style.background = '#fff7ed';
+        dupsView.style.borderColor = '#fed7aa';
+        const dupsList = document.getElementById('duplicateList');
+        if (dupsList) dupsList.innerHTML = `<div style="font-weight:700; color:#c2410c; margin-bottom:4px;">Bestandskunden — nicht importierbar:</div>` +
+          bestandskundeBlocked.map(d => `<div>• <strong>${d.name}</strong></div>`).join('');
+        const title = dupsView.querySelector('div');
+        if (title) title.innerHTML = `<i data-lucide="shield-alert" style="width:16px;"></i> ${blocked} Bestandskunde${blocked > 1 ? 'n' : ''} blockiert`;
+        lucide.createIcons();
+      } else if (dupsView) {
+        dupsView.style.display = 'none';
+      }
     }
 
     function renderImportPreview() {
